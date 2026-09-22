@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 import sqlite3
+import os
+import urllib.request
+import json
 
 app = FastAPI()
 
@@ -64,3 +67,51 @@ def create_order(order: OrderRequest):
         "order_id": order_id,
         "status": "pending"
     }
+
+
+# =====================================================
+# ReSellCodes Premium narxlarini tekshirish
+# =====================================================
+
+@app.get("/supplier-premium-prices")
+def supplier_premium_prices():
+
+    api_key = os.getenv("RESELLCODES_API_KEY")
+
+    if not api_key:
+        return {
+            "ok": False,
+            "message": "RESELLCODES_API_KEY topilmadi"
+        }
+
+    try:
+
+        request = urllib.request.Request(
+            "https://resell.codes/api/v1/telegram/premium",
+            headers={
+                "Authorization": f"Bearer {api_key}"
+            },
+            method="GET"
+        )
+
+        with urllib.request.urlopen(
+            request,
+            timeout=15
+        ) as response:
+
+            data = json.loads(
+                response.read().decode()
+            )
+
+        return {
+            "ok": True,
+            "supplier": "ReSellCodes",
+            "data": data
+        }
+
+    except Exception as e:
+
+        return {
+            "ok": False,
+            "message": str(e)
+        }
