@@ -26,31 +26,30 @@
 
         h1 {
             text-align: center;
-            margin-bottom: 25px;
         }
 
         .login {
             max-width: 400px;
-            margin: 50px auto;
+            margin: 60px auto;
             background: white;
             padding: 25px;
             border-radius: 16px;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
         }
 
         input {
             width: 100%;
             padding: 13px;
+            margin-bottom: 12px;
             border: 1px solid #ddd;
             border-radius: 10px;
-            margin-bottom: 12px;
             font-size: 16px;
         }
 
         button {
             border: none;
             border-radius: 10px;
-            padding: 12px 18px;
+            padding: 12px 16px;
             cursor: pointer;
             font-size: 15px;
         }
@@ -63,18 +62,10 @@
 
         .order {
             background: white;
-            margin-bottom: 15px;
+            margin: 15px 0;
             padding: 18px;
             border-radius: 16px;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
-        }
-
-        .order h3 {
-            margin-top: 0;
-        }
-
-        .info {
-            line-height: 1.7;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
         }
 
         .status-buttons {
@@ -84,14 +75,10 @@
             margin-top: 15px;
         }
 
-        .status-buttons button {
-            background: #eee;
-        }
-
         .refresh {
             background: #1683d8;
             color: white;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
         .hidden {
@@ -139,7 +126,7 @@
             class="refresh"
             onclick="loadOrders()"
         >
-            🔄 Buyurtmalarni yangilash
+            🔄 Yangilash
         </button>
 
         <div id="orders"></div>
@@ -151,16 +138,17 @@
 
 <script>
 
-const API_URL =
-    "https://telegram-shop-co3o.onrender.com";
+const API_URL = "https://telegram-shop-co3o.onrender.com";
 
 let adminKey = "";
 
 
 function login() {
 
-    const key =
-        document.getElementById("adminKey").value.trim();
+    const key = document
+        .getElementById("adminKey")
+        .value
+        .trim();
 
     if (!key) {
 
@@ -194,96 +182,105 @@ async function loadOrders() {
 
     try {
 
- const response = await fetch(
-    API_URL + "/orders?admin_key=" + encodeURIComponent(adminKey)
-);
+        const response = await fetch(
+            API_URL +
+            "/orders?admin_key=" +
+            encodeURIComponent(adminKey)
+        );
+
+        const data = await response.json();
+
         if (!response.ok) {
-            throw new Error("Server xatosi");
+            throw new Error("Server xatosi: " + response.status);
         }
 
-        const data =
-            await response.json();
-
-if (!data.ok) {
-    throw new Error(data.message || "Buyurtmalarni olishda xato");
-}
+        if (!data.ok) {
+            throw new Error(
+                data.message || "Buyurtmalarni olishda xato"
+            );
         }
 
         if (data.orders.length === 0) {
 
-ordersDiv.innerHTML =
-    "<p>❌ " + error.message + "</p>";
+            ordersDiv.innerHTML =
+                "<p>Hozircha buyurtmalar yo‘q.</p>";
 
             return;
         }
 
         ordersDiv.innerHTML =
-            data.orders.map(order => `
+            data.orders.map(function(order) {
 
-                <div class="order">
+                return `
+                    <div class="order">
 
-                    <h3>
-                        🛒 Buyurtma #${order.id}
-                    </h3>
+                        <h3>
+                            🛒 Buyurtma #${order.id}
+                        </h3>
 
-                    <div class="info">
+                        <p>
+                            👤 User ID:
+                            <b>${order.user_id}</b>
+                        </p>
 
-                        👤 User ID:
-                        <b>${order.user_id}</b>
-                        <br>
+                        <p>
+                            📦 Mahsulot:
+                            <b>${order.product}</b>
+                        </p>
 
-                        📦 Mahsulot:
-                        <b>${order.product}</b>
-                        <br>
+                        <p>
+                            💰 Narx:
+                            <b>
+                                ${order.amount.toLocaleString("uz-UZ")}
+                                so'm
+                            </b>
+                        </p>
 
-                        💰 Narx:
-                        <b>${order.amount.toLocaleString("uz-UZ")} so'm</b>
-                        <br>
+                        <p>
+                            📌 Status:
+                            <b>${order.status}</b>
+                        </p>
 
-                        📌 Status:
-                        <b>${order.status}</b>
+                        <div class="status-buttons">
+
+                            <button
+                                onclick="changeStatus(${order.id}, 'pending')">
+                                🟡 Kutilmoqda
+                            </button>
+
+                            <button
+                                onclick="changeStatus(${order.id}, 'paid')">
+                                🟢 To‘landi
+                            </button>
+
+                            <button
+                                onclick="changeStatus(${order.id}, 'processing')">
+                                🔵 Jarayonda
+                            </button>
+
+                            <button
+                                onclick="changeStatus(${order.id}, 'completed')">
+                                ✅ Bajarildi
+                            </button>
+
+                            <button
+                                onclick="changeStatus(${order.id}, 'cancelled')">
+                                ❌ Bekor qilindi
+                            </button>
+
+                        </div>
 
                     </div>
+                `;
 
-                    <div class="status-buttons">
-
-                        <button
-                            onclick="changeStatus(${order.id}, 'pending')">
-                            🟡 Kutilmoqda
-                        </button>
-
-                        <button
-                            onclick="changeStatus(${order.id}, 'paid')">
-                            🟢 To‘landi
-                        </button>
-
-                        <button
-                            onclick="changeStatus(${order.id}, 'processing')">
-                            🔵 Jarayonda
-                        </button>
-
-                        <button
-                            onclick="changeStatus(${order.id}, 'completed')">
-                            ✅ Bajarildi
-                        </button>
-
-                        <button
-                            onclick="changeStatus(${order.id}, 'cancelled')">
-                            ❌ Bekor qilindi
-                        </button>
-
-                    </div>
-
-                </div>
-
-            `).join("");
+            }).join("");
 
     } catch (error) {
 
         console.error(error);
 
         ordersDiv.innerHTML =
-            "<p>❌ Buyurtmalarni yuklashda xato.</p>";
+            "<p>❌ " + error.message + "</p>";
     }
 }
 
@@ -293,7 +290,11 @@ async function changeStatus(orderId, status) {
     try {
 
         const response = await fetch(
-            API_URL + "/orders/" + orderId + "/status",
+            API_URL +
+            "/orders/" +
+            orderId +
+            "/status?admin_key=" +
+            encodeURIComponent(adminKey),
             {
                 method: "PUT",
 
@@ -307,34 +308,29 @@ async function changeStatus(orderId, status) {
             }
         );
 
-        const data =
-            await response.json();
+        const data = await response.json();
 
-        if (data.ok) {
-
-            alert(
-                "✅ Status o‘zgartirildi: " +
-                status
+        if (!response.ok) {
+            throw new Error(
+                "Server xatosi: " + response.status
             );
-
-            loadOrders();
-
-        } else {
-
-            alert(
-                "❌ " +
-                (data.message || "Xatolik")
-            );
-
         }
+
+        if (!data.ok) {
+            throw new Error(
+                data.message || "Statusni o‘zgartirib bo‘lmadi"
+            );
+        }
+
+        alert("✅ Status o‘zgartirildi");
+
+        loadOrders();
 
     } catch (error) {
 
         console.error(error);
 
-        alert(
-            "❌ Server bilan bog‘lanib bo‘lmadi."
-        );
+        alert("❌ " + error.message);
     }
 }
 
