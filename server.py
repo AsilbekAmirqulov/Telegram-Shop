@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import sqlite3
 
 app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://asilbekamirqulov.github.io"],
@@ -71,4 +72,34 @@ def create_order(order: OrderRequest):
         "ok": True,
         "order_id": order_id,
         "status": "pending"
+    }
+
+
+# Barcha buyurtmalarni ko'rish
+@app.get("/orders")
+def get_orders():
+    conn = sqlite3.connect("shop.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, user_id, product, amount, status
+        FROM orders
+        ORDER BY id DESC
+    """)
+
+    orders = cursor.fetchall()
+    conn.close()
+
+    return {
+        "ok": True,
+        "orders": [
+            {
+                "id": order[0],
+                "user_id": order[1],
+                "product": order[2],
+                "amount": order[3],
+                "status": order[4]
+            }
+            for order in orders
+        ]
     }
