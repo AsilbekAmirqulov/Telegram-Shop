@@ -98,6 +98,55 @@ def get_orders():
                 "user_id": order[1],
                 "product": order[2],
                 "amount": order[3],
+                class StatusRequest(BaseModel):
+    status: str
+
+
+@app.put("/orders/{order_id}/status")
+def update_order_status(order_id: int, request: StatusRequest):
+
+    allowed_statuses = [
+        "pending",
+        "paid",
+        "processing",
+        "completed",
+        "cancelled"
+    ]
+
+    if request.status not in allowed_statuses:
+        return {
+            "ok": False,
+            "message": "Noto'g'ri status"
+        }
+
+    conn = sqlite3.connect("shop.db")
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        UPDATE orders
+        SET status = ?
+        WHERE id = ?
+        """,
+        (request.status, order_id)
+    )
+
+    conn.commit()
+
+    if cursor.rowcount == 0:
+        conn.close()
+        return {
+            "ok": False,
+            "message": "Buyurtma topilmadi"
+        }
+
+    conn.close()
+
+    return {
+        "ok": True,
+        "order_id": order_id,
+        "status": request.status
+    }
                 "status": order[4]
             }
             for order in orders
