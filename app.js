@@ -144,11 +144,62 @@ document
 
 async function buy(product, amount) {
 
-    alert(
-        "Tanlangan mahsulot: " +
-        product +
-        "\nNarxi: " +
-        amount.toLocaleString("uz-UZ") +
-        " so'm"
-    );
+    const tg = window.Telegram.WebApp;
+    const user = tg.initDataUnsafe?.user;
+
+    if (!user) {
+        alert("Telegram foydalanuvchisi aniqlanmadi.");
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            "https://telegram-shop-co3o.onrender.com/create-order",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    user_id: user.id,
+                    product: product,
+                    amount: amount
+                })
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Server xatosi: " + response.status);
+        }
+
+        const data = await response.json();
+
+        if (data.ok) {
+
+            alert(
+                "✅ Buyurtma yaratildi!\n\n" +
+                "Buyurtma №: " + data.order_id +
+                "\nMahsulot: " + product +
+                "\nNarx: " +
+                amount.toLocaleString("uz-UZ") +
+                " so'm"
+            );
+
+        } else {
+
+            alert("❌ Buyurtma yaratilmadi.");
+
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "❌ Server bilan bog‘lanib bo‘lmadi."
+        );
+    }
 }
