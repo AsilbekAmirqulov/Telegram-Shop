@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="uz">
 <head>
@@ -13,29 +14,98 @@
 
 <body>
 
-    <div class="container">
+    <div class="app">
 
-        <h1>🛍 Premium Shop</h1>
-        <p class="subtitle">Kerakli mahsulotni tanlang</p>
+        <!-- Header -->
+        <header class="header">
+            <div class="header-icon">💎</div>
 
+            <div>
+                <h1>Premium Shop</h1>
+                <p>Telegram uchun xizmatlar</p>
+            </div>
+        </header>
+
+
+        <!-- User -->
+        <div class="user-card">
+            <div class="user-avatar" id="userAvatar">
+                👤
+            </div>
+
+            <div class="user-info">
+                <span class="user-label">Xush kelibsiz</span>
+                <strong id="userName">Telegram foydalanuvchisi</strong>
+            </div>
+        </div>
+
+
+        <!-- Section title -->
+        <div class="section-header">
+            <h2>Mahsulotlar</h2>
+            <span>Tanlang</span>
+        </div>
+
+
+        <!-- Categories -->
         <div class="categories">
 
-           <div class="categories">
+            <button
+                type="button"
+                class="category active"
+                id="premiumButton"
+            >
+                <div class="category-icon premium-icon">
+                    💎
+                </div>
 
-<button type="button" id="premiumButton">
-        💎
-        <span>Telegram Premium</span>
-    </button>
+                <div class="category-info">
+                    <strong>Telegram Premium</strong>
+                    <span>3, 6 yoki 12 oy</span>
+                </div>
 
-<button type="button" id="starsButton">
-        🌟
-        <span>Telegram Stars</span>
-    </button>
+                <div class="category-arrow">
+                    ›
+                </div>
+            </button>
 
-</div>
 
+            <button
+                type="button"
+                class="category"
+                id="starsButton"
+            >
+                <div class="category-icon stars-icon">
+                    ⭐
+                </div>
+
+                <div class="category-info">
+                    <strong>Telegram Stars</strong>
+                    <span>Stars sotib olish</span>
+                </div>
+
+                <div class="category-arrow">
+                    ›
+                </div>
+            </button>
+
+        </div>
+
+
+        <!-- Products -->
+        <div class="section-header products-title">
+            <h2>Premium paketlar</h2>
+        </div>
 
         <div id="products"></div>
+
+
+        <!-- Footer -->
+        <footer class="footer">
+            <span>🔒 Xavfsiz to‘lov</span>
+            <span>•</span>
+            <span>⚡ Tez yetkazib berish</span>
+        </footer>
 
     </div>
 
@@ -44,3 +114,4 @@
 
 </body>
 </html>
+```
