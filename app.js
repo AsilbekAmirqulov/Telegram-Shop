@@ -1,4 +1,5 @@
-```javascript
+alert("YANGI APP.JS ISHLAYAPTI");
+
 const products = document.getElementById("products");
 
 
