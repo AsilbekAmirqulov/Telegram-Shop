@@ -199,3 +199,5 @@ async function buy(product, amount) {
     }
 }
 ```
+document.getElementById("premiumButton").addEventListener("click", showPremium);
+document.getElementById("starsButton").addEventListener("click", showStars);
