@@ -194,10 +194,9 @@ async function loadOrders() {
 
     try {
 
-        const response = await fetch(
-            API_URL + "/orders"
-        );
-
+ const response = await fetch(
+    API_URL + "/orders?admin_key=" + encodeURIComponent(adminKey)
+);
         if (!response.ok) {
             throw new Error("Server xatosi");
         }
