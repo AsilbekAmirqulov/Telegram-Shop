@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sqlite3
 import os
@@ -7,8 +8,26 @@ import json
 
 app = FastAPI()
 
+ADMIN_KEY = os.getenv("ADMIN_KEY")
 
-# Ma'lumotlar bazasini yaratish
+
+# =========================
+# CORS
+# =========================
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://asilbekamirqulov.github.io"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# =========================
+# DATABASE
+# =========================
+
 def init_db():
     conn = sqlite3.connect("shop.db")
     cursor = conn.cursor()
@@ -30,11 +49,29 @@ def init_db():
 init_db()
 
 
+# =========================
+# MODELS
+# =========================
+
 class OrderRequest(BaseModel):
     user_id: int
     product: str
     amount: int
 
+
+class StatusRequest(BaseModel):
+    status: str
+
+
+class PremiumTestRequest(BaseModel):
+    telegram_username: str
+    months: int
+    admin_key: str
+
+
+# =========================
+# HOME
+# =========================
 
 @app.get("/")
 def home():
@@ -44,8 +81,13 @@ def home():
     }
 
 
+# =========================
+# CREATE ORDER
+# =========================
+
 @app.post("/create-order")
 def create_order(order: OrderRequest):
+
     conn = sqlite3.connect("shop.db")
     cursor = conn.cursor()
 
@@ -54,7 +96,12 @@ def create_order(order: OrderRequest):
         INSERT INTO orders (user_id, product, amount, status)
         VALUES (?, ?, ?, ?)
         """,
-        (order.user_id, order.product, order.amount, "pending")
+        (
+            order.user_id,
+            order.product,
+            order.amount,
+            "pending"
+        )
     )
 
     order_id = cursor.lastrowid
@@ -69,9 +116,108 @@ def create_order(order: OrderRequest):
     }
 
 
-# =====================================================
-# ReSellCodes Premium narxlarini tekshirish
-# =====================================================
+# =========================
+# GET ORDERS
+# =========================
+
+@app.get("/orders")
+def get_orders(admin_key: str):
+
+    if admin_key != ADMIN_KEY:
+        return {
+            "ok": False,
+            "message": "Ruxsat yo'q"
+        }
+
+    conn = sqlite3.connect("shop.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, user_id, product, amount, status
+        FROM orders
+        ORDER BY id DESC
+    """)
+
+    orders = cursor.fetchall()
+
+    conn.close()
+
+    return {
+        "ok": True,
+        "orders": [
+            {
+                "id": order[0],
+                "user_id": order[1],
+                "product": order[2],
+                "amount": order[3],
+                "status": order[4]
+            }
+            for order in orders
+        ]
+    }
+
+
+# =========================
+# UPDATE ORDER STATUS
+# =========================
+
+@app.put("/orders/{order_id}/status")
+def update_order_status(
+    order_id: int,
+    request: StatusRequest
+):
+
+    allowed_statuses = [
+        "pending",
+        "paid",
+        "processing",
+        "completed",
+        "cancelled"
+    ]
+
+    if request.status not in allowed_statuses:
+        return {
+            "ok": False,
+            "message": "Noto'g'ri status"
+        }
+
+    conn = sqlite3.connect("shop.db")
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        UPDATE orders
+        SET status = ?
+        WHERE id = ?
+        """,
+        (
+            request.status,
+            order_id
+        )
+    )
+
+    conn.commit()
+
+    if cursor.rowcount == 0:
+        conn.close()
+
+        return {
+            "ok": False,
+            "message": "Buyurtma topilmadi"
+        }
+
+    conn.close()
+
+    return {
+        "ok": True,
+        "order_id": order_id,
+        "status": request.status
+    }
+
+
+# =========================
+# RESELLCODES - CHECK PRICES
+# =========================
 
 @app.get("/supplier-premium-prices")
 def supplier_premium_prices():
@@ -115,11 +261,11 @@ def supplier_premium_prices():
             "ok": False,
             "message": str(e)
         }
-        class PremiumTestRequest(BaseModel):
-        telegram_username: str
-        months: int
-        admin_key: str
 
+
+# =========================
+# RESELLCODES - TEST BUY
+# =========================
 
 @app.post("/test-premium-buy")
 def test_premium_buy(request: PremiumTestRequest):
@@ -131,13 +277,14 @@ def test_premium_buy(request: PremiumTestRequest):
             "message": "Ruxsat yo'q"
         }
 
-    # Faqat 3, 6 yoki 12 oy
+    # Oylar tekshiruvi
     if request.months not in [3, 6, 12]:
         return {
             "ok": False,
             "message": "months faqat 3, 6 yoki 12 bo'lishi mumkin"
         }
 
+    # Username tozalash
     username = request.telegram_username.strip().lstrip("@")
 
     if not username:
@@ -146,6 +293,7 @@ def test_premium_buy(request: PremiumTestRequest):
             "message": "Telegram username kiritilmagan"
         }
 
+    # API key
     api_key = os.getenv("RESELLCODES_API_KEY")
 
     if not api_key:
