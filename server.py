@@ -115,3 +115,80 @@ def supplier_premium_prices():
             "ok": False,
             "message": str(e)
         }
+        class PremiumTestRequest(BaseModel):
+    telegram_username: str
+    months: int
+    admin_key: str
+
+
+@app.post("/test-premium-buy")
+def test_premium_buy(request: PremiumTestRequest):
+
+    # Admin tekshirish
+    if request.admin_key != ADMIN_KEY:
+        return {
+            "ok": False,
+            "message": "Ruxsat yo'q"
+        }
+
+    # Faqat 3, 6 yoki 12 oy
+    if request.months not in [3, 6, 12]:
+        return {
+            "ok": False,
+            "message": "months faqat 3, 6 yoki 12 bo'lishi mumkin"
+        }
+
+    username = request.telegram_username.strip().lstrip("@")
+
+    if not username:
+        return {
+            "ok": False,
+            "message": "Telegram username kiritilmagan"
+        }
+
+    api_key = os.getenv("RESELLCODES_API_KEY")
+
+    if not api_key:
+        return {
+            "ok": False,
+            "message": "RESELLCODES_API_KEY topilmadi"
+        }
+
+    try:
+
+        payload = json.dumps({
+            "telegram_username": username,
+            "months": request.months
+        }).encode("utf-8")
+
+        api_request = urllib.request.Request(
+            "https://resell.codes/api/v1/telegram/premium/buy",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            method="POST"
+        )
+
+        with urllib.request.urlopen(
+            api_request,
+            timeout=30
+        ) as response:
+
+            data = json.loads(
+                response.read().decode()
+            )
+
+        return {
+            "ok": True,
+            "supplier": "ReSellCodes",
+            "order": data
+        }
+
+    except Exception as e:
+
+        return {
+            "ok": False,
+            "message": str(e)
+        }
