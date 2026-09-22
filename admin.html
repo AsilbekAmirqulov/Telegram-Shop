@@ -204,14 +204,15 @@ async function loadOrders() {
         const data =
             await response.json();
 
-        if (!data.ok) {
-            throw new Error("Buyurtmalarni olishda xato");
+if (!data.ok) {
+    throw new Error(data.message || "Buyurtmalarni olishda xato");
+}
         }
 
         if (data.orders.length === 0) {
 
-            ordersDiv.innerHTML =
-                "<p>Hozircha buyurtmalar yo‘q.</p>";
+ordersDiv.innerHTML =
+    "<p>❌ " + error.message + "</p>";
 
             return;
         }
