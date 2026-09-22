@@ -2,8 +2,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sqlite3
+import os
 
 app = FastAPI()
+ADMIN_KEY = os.getenv("ADMIN_KEY")
+
+
 
 app.add_middleware(
     CORSMiddleware,
