@@ -116,9 +116,9 @@ def supplier_premium_prices():
             "message": str(e)
         }
         class PremiumTestRequest(BaseModel):
-    telegram_username: str
-    months: int
-    admin_key: str
+        telegram_username: str
+        months: int
+        admin_key: str
 
 
 @app.post("/test-premium-buy")
