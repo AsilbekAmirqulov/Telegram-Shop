@@ -218,7 +218,52 @@ def update_order_status(
 # =========================
 # RESELLCODES - CHECK PRICES
 # =========================
+# =========================
+# RESELLCODES - CHECK ACCOUNT
+# =========================
 
+@app.get("/supplier-account")
+def supplier_account():
+
+    api_key = os.getenv("RESELLCODES_API_KEY")
+
+    if not api_key:
+        return {
+            "ok": False,
+            "message": "RESELLCODES_API_KEY topilmadi"
+        }
+
+    try:
+
+        request = urllib.request.Request(
+            "https://resell.codes/api/v1/me",
+            headers={
+                "Authorization": f"Bearer {api_key}"
+            },
+            method="GET"
+        )
+
+        with urllib.request.urlopen(
+            request,
+            timeout=15
+        ) as response:
+
+            data = json.loads(
+                response.read().decode()
+            )
+
+        return {
+            "ok": True,
+            "supplier": "ReSellCodes",
+            "data": data
+        }
+
+    except Exception as e:
+
+        return {
+            "ok": False,
+            "message": str(e)
+        }
 @app.get("/supplier-premium-prices")
 def supplier_premium_prices():
 
