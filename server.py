@@ -1,19 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import sqlite3
 import os
-import urllib.request
 import json
+import urllib.request
+import psycopg2
+
 
 app = FastAPI()
 
 ADMIN_KEY = os.getenv("ADMIN_KEY")
 
-
-# =========================
-# CORS
-# =========================
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,38 +25,38 @@ app.add_middleware(
 # DATABASE
 # =========================
 
+def get_db():
+    database_url = os.getenv("DATABASE_URL")
+
+    if not database_url:
+        raise RuntimeError("DATABASE_URL topilmadi")
+
+    return psycopg2.connect(
+        database_url,
+        sslmode="require"
+    )
+
+
 def init_db():
-    conn = sqlite3.connect("shop.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS orders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            id SERIAL PRIMARY KEY,
+            user_id BIGINT NOT NULL,
             product TEXT NOT NULL,
             amount INTEGER NOT NULL,
-            status TEXT NOT NULL
+            status TEXT NOT NULL,
+            telegram_username TEXT,
+            months INTEGER,
+            price_usd TEXT,
+            supplier_order_id TEXT
         )
     """)
 
-    # Yangi ustunlarni qo'shish
-    columns = [
-        ("telegram_username", "TEXT"),
-        ("months", "INTEGER"),
-        ("price_usd", "TEXT"),
-        ("supplier_order_id", "TEXT")
-    ]
-
-    for column_name, column_type in columns:
-        try:
-            cursor.execute(
-                f"ALTER TABLE orders ADD COLUMN {column_name} {column_type}"
-            )
-        except sqlite3.OperationalError:
-            # Ustun allaqachon mavjud
-            pass
-
     conn.commit()
+    cursor.close()
     conn.close()
 
 
@@ -86,6 +83,16 @@ class PremiumTestRequest(BaseModel):
     admin_key: str
 
 
+class MockPaymentRequest(BaseModel):
+    order_id: int
+    admin_key: str
+
+
+class MockDeliveryRequest(BaseModel):
+    order_id: int
+    admin_key: str
+
+
 # =========================
 # HOME
 # =========================
@@ -105,13 +112,19 @@ def home():
 @app.post("/create-order")
 def create_order(order: OrderRequest):
 
-    conn = sqlite3.connect("shop.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute(
         """
-        INSERT INTO orders (user_id, product, amount, status)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO orders (
+            user_id,
+            product,
+            amount,
+            status
+        )
+        VALUES (%s, %s, %s, %s)
+        RETURNING id
         """,
         (
             order.user_id,
@@ -121,9 +134,10 @@ def create_order(order: OrderRequest):
         )
     )
 
-    order_id = cursor.lastrowid
+    order_id = cursor.fetchone()[0]
 
     conn.commit()
+    cursor.close()
     conn.close()
 
     return {
@@ -146,17 +160,27 @@ def get_orders(admin_key: str):
             "message": "Ruxsat yo'q"
         }
 
-    conn = sqlite3.connect("shop.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT id, user_id, product, amount, status
+        SELECT
+            id,
+            user_id,
+            product,
+            amount,
+            status,
+            telegram_username,
+            months,
+            price_usd,
+            supplier_order_id
         FROM orders
         ORDER BY id DESC
     """)
 
     orders = cursor.fetchall()
 
+    cursor.close()
     conn.close()
 
     return {
@@ -167,7 +191,11 @@ def get_orders(admin_key: str):
                 "user_id": order[1],
                 "product": order[2],
                 "amount": order[3],
-                "status": order[4]
+                "status": order[4],
+                "telegram_username": order[5],
+                "months": order[6],
+                "price_usd": order[7],
+                "supplier_order_id": order[8]
             }
             for order in orders
         ]
@@ -189,7 +217,8 @@ def update_order_status(
         "paid",
         "processing",
         "completed",
-        "cancelled"
+        "cancelled",
+        "mock_pending"
     ]
 
     if request.status not in allowed_statuses:
@@ -198,22 +227,20 @@ def update_order_status(
             "message": "Noto'g'ri status"
         }
 
-    conn = sqlite3.connect("shop.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute(
         """
         UPDATE orders
-        SET status = ?
-        WHERE id = ?
+        SET status = %s
+        WHERE id = %s
         """,
         (
             request.status,
             order_id
         )
     )
-
-    conn.commit()
 
     if cursor.rowcount == 0:
         conn.close()
@@ -223,6 +250,9 @@ def update_order_status(
             "message": "Buyurtma topilmadi"
         }
 
+    conn.commit()
+
+    cursor.close()
     conn.close()
 
     return {
@@ -233,10 +263,7 @@ def update_order_status(
 
 
 # =========================
-# RESELLCODES - CHECK PRICES
-# =========================
-# =========================
-# RESELLCODES - CHECK ACCOUNT
+# RESELLCODES ACCOUNT
 # =========================
 
 @app.get("/supplier-account")
@@ -281,6 +308,12 @@ def supplier_account():
             "ok": False,
             "message": str(e)
         }
+
+
+# =========================
+# RESELLCODES PRICES
+# =========================
+
 @app.get("/supplier-premium-prices")
 def supplier_premium_prices():
 
@@ -326,27 +359,24 @@ def supplier_premium_prices():
 
 
 # =========================
-# RESELLCODES - TEST BUY
+# REAL PREMIUM BUY
 # =========================
 
 @app.post("/test-premium-buy")
 def test_premium_buy(request: PremiumTestRequest):
 
-    # Admin tekshirish
     if request.admin_key != ADMIN_KEY:
         return {
             "ok": False,
             "message": "Ruxsat yo'q"
         }
 
-    # Oylar tekshiruvi
     if request.months not in [3, 6, 12]:
         return {
             "ok": False,
             "message": "months faqat 3, 6 yoki 12 bo'lishi mumkin"
         }
 
-    # Username tozalash
     username = request.telegram_username.strip().lstrip("@")
 
     if not username:
@@ -355,7 +385,6 @@ def test_premium_buy(request: PremiumTestRequest):
             "message": "Telegram username kiritilmagan"
         }
 
-    # API key
     api_key = os.getenv("RESELLCODES_API_KEY")
 
     if not api_key:
@@ -402,32 +431,27 @@ def test_premium_buy(request: PremiumTestRequest):
             "ok": False,
             "message": str(e)
         }
-# =========================
-# RESELLCODES - MOCK TEST BUY
-# =========================
+
 
 # =========================
-# RESELLCODES - MOCK TEST BUY
+# MOCK PREMIUM BUY
 # =========================
 
 @app.post("/mock-premium-buy")
 def mock_premium_buy(request: PremiumTestRequest):
 
-    # Admin tekshirish
     if request.admin_key != ADMIN_KEY:
         return {
             "ok": False,
             "message": "Ruxsat yo'q"
         }
 
-    # Oylar tekshiruvi
     if request.months not in [3, 6, 12]:
         return {
             "ok": False,
             "message": "months faqat 3, 6 yoki 12 bo'lishi mumkin"
         }
 
-    # Username tozalash
     username = request.telegram_username.strip().lstrip("@")
 
     if not username:
@@ -436,7 +460,6 @@ def mock_premium_buy(request: PremiumTestRequest):
             "message": "Telegram username kiritilmagan"
         }
 
-    # Mock narxlar
     prices = {
         3: "12.1698",
         6: "16.2298",
@@ -445,8 +468,7 @@ def mock_premium_buy(request: PremiumTestRequest):
 
     price_usd = prices[request.months]
 
-    # Database'ga yozish
-    conn = sqlite3.connect("shop.db")
+    conn = get_db()
     cursor = conn.cursor()
 
     cursor.execute(
@@ -461,7 +483,8 @@ def mock_premium_buy(request: PremiumTestRequest):
             price_usd,
             supplier_order_id
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id
         """,
         (
             0,
@@ -475,9 +498,11 @@ def mock_premium_buy(request: PremiumTestRequest):
         )
     )
 
-    order_id = cursor.lastrowid
+    order_id = cursor.fetchone()[0]
 
     conn.commit()
+
+    cursor.close()
     conn.close()
 
     return {
@@ -495,77 +520,33 @@ def mock_premium_buy(request: PremiumTestRequest):
         }
     }
 
-    # Admin tekshirish
-    if request.admin_key != ADMIN_KEY:
-        return {
-            "ok": False,
-            "message": "Ruxsat yo'q"
-        }
 
-    # Oylar tekshiruvi
-    if request.months not in [3, 6, 12]:
-        return {
-            "ok": False,
-            "message": "months faqat 3, 6 yoki 12 bo'lishi mumkin"
-        }
-
-    # Username tozalash
-    username = request.telegram_username.strip().lstrip("@")
-
-    if not username:
-        return {
-            "ok": False,
-            "message": "Telegram username kiritilmagan"
-        }
-
-    # Mock narxlar
-    prices = {
-        3: "12.1698",
-        6: "16.2298",
-        12: "29.4248"
-    }
-
-    return {
-        "ok": True,
-        "mock": True,
-        "supplier": "ReSellCodes",
-        "message": "MOCK TEST: haqiqiy buyurtma yuborilmadi",
-        "order": {
-            "telegram_username": username,
-            "months": request.months,
-            "price_usd": prices[request.months],
-            "status": "mock_completed",
-            "supplier_order_id": "MOCK-TEST-001"
-        }
-    }
 # =========================
 # MOCK PAYMENT
 # =========================
 
-class MockPaymentRequest(BaseModel):
-    order_id: int
-    admin_key: str
-
-
 @app.post("/mock-payment")
 def mock_payment(request: MockPaymentRequest):
 
-    # Admin tekshirish
     if request.admin_key != ADMIN_KEY:
         return {
             "ok": False,
             "message": "Ruxsat yo'q"
         }
 
-    conn = sqlite3.connect("shop.db")
+    conn = get_db()
     cursor = conn.cursor()
 
-    # Buyurtmani topish
     cursor.execute(
         """
-        SELECT id, telegram_username, months, price_usd, status
+        SELECT
+            id,
+            telegram_username,
+            months,
+            price_usd,
+            status
         FROM orders
-        WHERE id = ?
+        WHERE id = %s
         """,
         (request.order_id,)
     )
@@ -573,6 +554,7 @@ def mock_payment(request: MockPaymentRequest):
     order = cursor.fetchone()
 
     if not order:
+        cursor.close()
         conn.close()
 
         return {
@@ -580,8 +562,8 @@ def mock_payment(request: MockPaymentRequest):
             "message": "Buyurtma topilmadi"
         }
 
-    # Faqat pending buyurtmani paid qilamiz
     if order[4] != "mock_pending":
+        cursor.close()
         conn.close()
 
         return {
@@ -589,12 +571,11 @@ def mock_payment(request: MockPaymentRequest):
             "message": f"Buyurtma holati noto'g'ri: {order[4]}"
         }
 
-    # To'lovni tasdiqlash
     cursor.execute(
         """
         UPDATE orders
-        SET status = ?
-        WHERE id = ?
+        SET status = %s
+        WHERE id = %s
         """,
         (
             "paid",
@@ -603,6 +584,8 @@ def mock_payment(request: MockPaymentRequest):
     )
 
     conn.commit()
+
+    cursor.close()
     conn.close()
 
     return {
@@ -617,34 +600,34 @@ def mock_payment(request: MockPaymentRequest):
             "status": "paid"
         }
     }
+
+
 # =========================
 # MOCK PREMIUM DELIVERY
 # =========================
 
-class MockDeliveryRequest(BaseModel):
-    order_id: int
-    admin_key: str
-
-
 @app.post("/mock-premium-delivery")
 def mock_premium_delivery(request: MockDeliveryRequest):
 
-    # Admin tekshirish
     if request.admin_key != ADMIN_KEY:
         return {
             "ok": False,
             "message": "Ruxsat yo'q"
         }
 
-    conn = sqlite3.connect("shop.db")
+    conn = get_db()
     cursor = conn.cursor()
 
-    # Buyurtmani topish
     cursor.execute(
         """
-        SELECT id, telegram_username, months, price_usd, status
+        SELECT
+            id,
+            telegram_username,
+            months,
+            price_usd,
+            status
         FROM orders
-        WHERE id = ?
+        WHERE id = %s
         """,
         (request.order_id,)
     )
@@ -652,42 +635,48 @@ def mock_premium_delivery(request: MockDeliveryRequest):
     order = cursor.fetchone()
 
     if not order:
+        cursor.close()
         conn.close()
+
         return {
             "ok": False,
             "message": "Buyurtma topilmadi"
         }
 
-    # Faqat paid buyurtmani yuboramiz
     if order[4] != "paid":
+        cursor.close()
         conn.close()
+
         return {
             "ok": False,
             "message": f"Buyurtma paid holatida emas: {order[4]}"
         }
 
-    # Processing
     cursor.execute(
         """
         UPDATE orders
-        SET status = ?
-        WHERE id = ?
+        SET status = %s
+        WHERE id = %s
         """,
-        ("processing", request.order_id)
+        (
+            "processing",
+            request.order_id
+        )
     )
 
     conn.commit()
 
-    # MOCK delivery
-    mock_supplier_order_id = f"MOCK-RESELL-{request.order_id}"
+    mock_supplier_order_id = (
+        f"MOCK-RESELL-{request.order_id}"
+    )
 
-    # Completed
     cursor.execute(
         """
         UPDATE orders
-        SET status = ?,
-            supplier_order_id = ?
-        WHERE id = ?
+        SET
+            status = %s,
+            supplier_order_id = %s
+        WHERE id = %s
         """,
         (
             "completed",
@@ -697,6 +686,8 @@ def mock_premium_delivery(request: MockDeliveryRequest):
     )
 
     conn.commit()
+
+    cursor.close()
     conn.close()
 
     return {
