@@ -140,11 +140,10 @@ function showStars() {
 
 async function buy(product, amount) {
 
-    // Telegram foydalanuvchisini olish
-    const user = tg.initDataUnsafe.user;
+    const user = tg.initDataUnsafe?.user;
 
     if (!user) {
-        tg.showAlert("Telegram foydalanuvchisi aniqlanmadi.");
+        tg.showAlert("❌ Telegram foydalanuvchisi aniqlanmadi.");
         return;
     }
 
@@ -167,12 +166,16 @@ async function buy(product, amount) {
             }
         );
 
+        if (!response.ok) {
+            throw new Error("Server xatosi: " + response.status);
+        }
+
         const data = await response.json();
 
         if (data.ok) {
 
             tg.showAlert(
-                "Buyurtma yaratildi! ✅\n\n" +
+                "✅ Buyurtma yaratildi!\n\n" +
                 "Buyurtma №: " + data.order_id +
                 "\nMahsulot: " + product +
                 "\nNarx: " + amount.toLocaleString("uz-UZ") + " so'm"
@@ -180,9 +183,8 @@ async function buy(product, amount) {
 
         } else {
 
-            tg.showAlert(
-                "Buyurtma yaratishda xatolik yuz berdi."
-            );
+            tg.showAlert("❌ Buyurtma yaratilmadi.");
+
         }
 
     } catch (error) {
@@ -190,10 +192,8 @@ async function buy(product, amount) {
         console.error(error);
 
         tg.showAlert(
-            "Server bilan bog'lanishda xatolik yuz berdi."
+            "❌ Server bilan bog‘lanib bo‘lmadi."
         );
     }
 }
 ```
-async function buy(product, amount) {
-    
