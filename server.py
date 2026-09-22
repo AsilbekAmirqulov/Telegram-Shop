@@ -42,6 +42,23 @@ def init_db():
         )
     """)
 
+    # Yangi ustunlarni qo'shish
+    columns = [
+        ("telegram_username", "TEXT"),
+        ("months", "INTEGER"),
+        ("price_usd", "TEXT"),
+        ("supplier_order_id", "TEXT")
+    ]
+
+    for column_name, column_type in columns:
+        try:
+            cursor.execute(
+                f"ALTER TABLE orders ADD COLUMN {column_name} {column_type}"
+            )
+        except sqlite3.OperationalError:
+            # Ustun allaqachon mavjud
+            pass
+
     conn.commit()
     conn.close()
 
@@ -389,8 +406,94 @@ def test_premium_buy(request: PremiumTestRequest):
 # RESELLCODES - MOCK TEST BUY
 # =========================
 
+# =========================
+# RESELLCODES - MOCK TEST BUY
+# =========================
+
 @app.post("/mock-premium-buy")
 def mock_premium_buy(request: PremiumTestRequest):
+
+    # Admin tekshirish
+    if request.admin_key != ADMIN_KEY:
+        return {
+            "ok": False,
+            "message": "Ruxsat yo'q"
+        }
+
+    # Oylar tekshiruvi
+    if request.months not in [3, 6, 12]:
+        return {
+            "ok": False,
+            "message": "months faqat 3, 6 yoki 12 bo'lishi mumkin"
+        }
+
+    # Username tozalash
+    username = request.telegram_username.strip().lstrip("@")
+
+    if not username:
+        return {
+            "ok": False,
+            "message": "Telegram username kiritilmagan"
+        }
+
+    # Mock narxlar
+    prices = {
+        3: "12.1698",
+        6: "16.2298",
+        12: "29.4248"
+    }
+
+    price_usd = prices[request.months]
+
+    # Database'ga yozish
+    conn = sqlite3.connect("shop.db")
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        INSERT INTO orders (
+            user_id,
+            product,
+            amount,
+            status,
+            telegram_username,
+            months,
+            price_usd,
+            supplier_order_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            0,
+            "Telegram Premium",
+            0,
+            "mock_pending",
+            username,
+            request.months,
+            price_usd,
+            "MOCK-TEST-001"
+        )
+    )
+
+    order_id = cursor.lastrowid
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "ok": True,
+        "mock": True,
+        "supplier": "ReSellCodes",
+        "message": "MOCK TEST: haqiqiy buyurtma yuborilmadi",
+        "order": {
+            "id": order_id,
+            "telegram_username": username,
+            "months": request.months,
+            "price_usd": price_usd,
+            "status": "mock_pending",
+            "supplier_order_id": "MOCK-TEST-001"
+        }
+    }
 
     # Admin tekshirish
     if request.admin_key != ADMIN_KEY:
