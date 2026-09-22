@@ -195,3 +195,5 @@ async function buy(product, amount) {
     }
 }
 ```
+async function buy(product, amount) {
+    
