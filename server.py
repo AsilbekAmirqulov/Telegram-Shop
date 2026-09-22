@@ -42,6 +42,10 @@ class OrderRequest(BaseModel):
     amount: int
 
 
+class StatusRequest(BaseModel):
+    status: str
+
+
 @app.get("/")
 def home():
     return {
@@ -75,7 +79,6 @@ def create_order(order: OrderRequest):
     }
 
 
-# Barcha buyurtmalarni ko'rish
 @app.get("/orders")
 def get_orders():
     conn = sqlite3.connect("shop.db")
@@ -98,8 +101,11 @@ def get_orders():
                 "user_id": order[1],
                 "product": order[2],
                 "amount": order[3],
-                class StatusRequest(BaseModel):
-    status: str
+                "status": order[4]
+            }
+            for order in orders
+        ]
+    }
 
 
 @app.put("/orders/{order_id}/status")
@@ -146,9 +152,4 @@ def update_order_status(order_id: int, request: StatusRequest):
         "ok": True,
         "order_id": order_id,
         "status": request.status
-    }
-                "status": order[4]
-            }
-            for order in orders
-        ]
     }
