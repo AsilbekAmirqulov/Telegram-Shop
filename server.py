@@ -84,7 +84,39 @@ def create_order(order: OrderRequest):
 
 
 @app.get("/orders")
-def get_orders():
+def get_orders(admin_key: str):
+
+    if admin_key != ADMIN_KEY:
+        return {
+            "ok": False,
+            "message": "Ruxsat yo'q"
+        }
+
+    conn = sqlite3.connect("shop.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, user_id, product, amount, status
+        FROM orders
+        ORDER BY id DESC
+    """)
+
+    orders = cursor.fetchall()
+    conn.close()
+
+    return {
+        "ok": True,
+        "orders": [
+            {
+                "id": order[0],
+                "user_id": order[1],
+                "product": order[2],
+                "amount": order[3],
+                "status": order[4]
+            }
+            for order in orders
+        ]
+    }
     conn = sqlite3.connect("shop.db")
     cursor = conn.cursor()
 
