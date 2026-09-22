@@ -131,6 +131,6 @@ function buy(product) {
     const tg = window.Telegram.WebApp;
 
     tg.showAlert(
-        "YANGI KOD ISHLAYAPTI: " + product
+        "Tanlangan mahsulot: " + product
     );
 }
