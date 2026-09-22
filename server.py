@@ -1,21 +1,8 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sqlite3
-import os
 
 app = FastAPI()
-ADMIN_KEY = os.getenv("ADMIN_KEY")
-
-
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://asilbekamirqulov.github.io"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 
 # Ma'lumotlar bazasini yaratish
@@ -44,10 +31,6 @@ class OrderRequest(BaseModel):
     user_id: int
     product: str
     amount: int
-
-
-class StatusRequest(BaseModel):
-    status: str
 
 
 @app.get("/")
@@ -80,112 +63,4 @@ def create_order(order: OrderRequest):
         "ok": True,
         "order_id": order_id,
         "status": "pending"
-    }
-
-
-@app.get("/orders")
-def get_orders(admin_key: str):
-
-    if admin_key != ADMIN_KEY:
-        return {
-            "ok": False,
-            "message": "Ruxsat yo'q"
-        }
-
-    conn = sqlite3.connect("shop.db")
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT id, user_id, product, amount, status
-        FROM orders
-        ORDER BY id DESC
-    """)
-
-    orders = cursor.fetchall()
-    conn.close()
-
-    return {
-        "ok": True,
-        "orders": [
-            {
-                "id": order[0],
-                "user_id": order[1],
-                "product": order[2],
-                "amount": order[3],
-                "status": order[4]
-            }
-            for order in orders
-        ]
-    }
-    conn = sqlite3.connect("shop.db")
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT id, user_id, product, amount, status
-        FROM orders
-        ORDER BY id DESC
-    """)
-
-    orders = cursor.fetchall()
-    conn.close()
-
-    return {
-        "ok": True,
-        "orders": [
-            {
-                "id": order[0],
-                "user_id": order[1],
-                "product": order[2],
-                "amount": order[3],
-                "status": order[4]
-            }
-            for order in orders
-        ]
-    }
-
-
-@app.put("/orders/{order_id}/status")
-def update_order_status(order_id: int, request: StatusRequest):
-
-    allowed_statuses = [
-        "pending",
-        "paid",
-        "processing",
-        "completed",
-        "cancelled"
-    ]
-
-    if request.status not in allowed_statuses:
-        return {
-            "ok": False,
-            "message": "Noto'g'ri status"
-        }
-
-    conn = sqlite3.connect("shop.db")
-    cursor = conn.cursor()
-
-    cursor.execute(
-        """
-        UPDATE orders
-        SET status = ?
-        WHERE id = ?
-        """,
-        (request.status, order_id)
-    )
-
-    conn.commit()
-
-    if cursor.rowcount == 0:
-        conn.close()
-        return {
-            "ok": False,
-            "message": "Buyurtma topilmadi"
-        }
-
-    conn.close()
-
-    return {
-        "ok": True,
-        "order_id": order_id,
-        "status": request.status
     }
