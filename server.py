@@ -385,3 +385,53 @@ def test_premium_buy(request: PremiumTestRequest):
             "ok": False,
             "message": str(e)
         }
+# =========================
+# RESELLCODES - MOCK TEST BUY
+# =========================
+
+@app.post("/mock-premium-buy")
+def mock_premium_buy(request: PremiumTestRequest):
+
+    # Admin tekshirish
+    if request.admin_key != ADMIN_KEY:
+        return {
+            "ok": False,
+            "message": "Ruxsat yo'q"
+        }
+
+    # Oylar tekshiruvi
+    if request.months not in [3, 6, 12]:
+        return {
+            "ok": False,
+            "message": "months faqat 3, 6 yoki 12 bo'lishi mumkin"
+        }
+
+    # Username tozalash
+    username = request.telegram_username.strip().lstrip("@")
+
+    if not username:
+        return {
+            "ok": False,
+            "message": "Telegram username kiritilmagan"
+        }
+
+    # Mock narxlar
+    prices = {
+        3: "12.1698",
+        6: "16.2298",
+        12: "29.4248"
+    }
+
+    return {
+        "ok": True,
+        "mock": True,
+        "supplier": "ReSellCodes",
+        "message": "MOCK TEST: haqiqiy buyurtma yuborilmadi",
+        "order": {
+            "telegram_username": username,
+            "months": request.months,
+            "price_usd": prices[request.months],
+            "status": "mock_completed",
+            "supplier_order_id": "MOCK-TEST-001"
+        }
+    }
