@@ -18,6 +18,7 @@ tg.expand();
 // ==========================
 
 function showPremium() {
+    alert("PREMIUM BOSILDI");
     products.innerHTML = `
         <div class="product">
             <h3>🔓 Premium — 3 oy</h3>
