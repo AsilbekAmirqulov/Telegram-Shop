@@ -1,0 +1,89 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    color: #222;
+}
+
+.container {
+    max-width: 500px;
+    margin: auto;
+    padding: 25px 18px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.subtitle {
+    text-align: center;
+    color: #777;
+    margin-bottom: 25px;
+}
+
+.categories {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.categories button {
+    border: none;
+    border-radius: 16px;
+    padding: 20px 10px;
+    background: white;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.categories button:first-child {
+    color: #1683d8;
+}
+
+.categories button:last-child {
+    color: #e8a400;
+}
+
+.categories button span {
+    display: block;
+    margin-top: 8px;
+}
+
+.product {
+    background: white;
+    margin-top: 15px;
+    padding: 18px;
+    border-radius: 16px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+}
+
+.product h3 {
+    margin: 0 0 8px;
+}
+
+.price {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+.buy-button {
+    width: 100%;
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    background: #1683d8;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.buy-button:active {
+    transform: scale(0.98);
+}
