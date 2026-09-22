@@ -538,3 +538,82 @@ def mock_premium_buy(request: PremiumTestRequest):
             "supplier_order_id": "MOCK-TEST-001"
         }
     }
+# =========================
+# MOCK PAYMENT
+# =========================
+
+class MockPaymentRequest(BaseModel):
+    order_id: int
+    admin_key: str
+
+
+@app.post("/mock-payment")
+def mock_payment(request: MockPaymentRequest):
+
+    # Admin tekshirish
+    if request.admin_key != ADMIN_KEY:
+        return {
+            "ok": False,
+            "message": "Ruxsat yo'q"
+        }
+
+    conn = sqlite3.connect("shop.db")
+    cursor = conn.cursor()
+
+    # Buyurtmani topish
+    cursor.execute(
+        """
+        SELECT id, telegram_username, months, price_usd, status
+        FROM orders
+        WHERE id = ?
+        """,
+        (request.order_id,)
+    )
+
+    order = cursor.fetchone()
+
+    if not order:
+        conn.close()
+
+        return {
+            "ok": False,
+            "message": "Buyurtma topilmadi"
+        }
+
+    # Faqat pending buyurtmani paid qilamiz
+    if order[4] != "mock_pending":
+        conn.close()
+
+        return {
+            "ok": False,
+            "message": f"Buyurtma holati noto'g'ri: {order[4]}"
+        }
+
+    # To'lovni tasdiqlash
+    cursor.execute(
+        """
+        UPDATE orders
+        SET status = ?
+        WHERE id = ?
+        """,
+        (
+            "paid",
+            request.order_id
+        )
+    )
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "ok": True,
+        "mock": True,
+        "message": "MOCK PAYMENT: to'lov simulyatsiya qilindi",
+        "payment": {
+            "order_id": order[0],
+            "telegram_username": order[1],
+            "months": order[2],
+            "amount_usd": order[3],
+            "status": "paid"
+        }
+    }
