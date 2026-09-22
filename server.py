@@ -617,3 +617,97 @@ def mock_payment(request: MockPaymentRequest):
             "status": "paid"
         }
     }
+# =========================
+# MOCK PREMIUM DELIVERY
+# =========================
+
+class MockDeliveryRequest(BaseModel):
+    order_id: int
+    admin_key: str
+
+
+@app.post("/mock-premium-delivery")
+def mock_premium_delivery(request: MockDeliveryRequest):
+
+    # Admin tekshirish
+    if request.admin_key != ADMIN_KEY:
+        return {
+            "ok": False,
+            "message": "Ruxsat yo'q"
+        }
+
+    conn = sqlite3.connect("shop.db")
+    cursor = conn.cursor()
+
+    # Buyurtmani topish
+    cursor.execute(
+        """
+        SELECT id, telegram_username, months, price_usd, status
+        FROM orders
+        WHERE id = ?
+        """,
+        (request.order_id,)
+    )
+
+    order = cursor.fetchone()
+
+    if not order:
+        conn.close()
+        return {
+            "ok": False,
+            "message": "Buyurtma topilmadi"
+        }
+
+    # Faqat paid buyurtmani yuboramiz
+    if order[4] != "paid":
+        conn.close()
+        return {
+            "ok": False,
+            "message": f"Buyurtma paid holatida emas: {order[4]}"
+        }
+
+    # Processing
+    cursor.execute(
+        """
+        UPDATE orders
+        SET status = ?
+        WHERE id = ?
+        """,
+        ("processing", request.order_id)
+    )
+
+    conn.commit()
+
+    # MOCK delivery
+    mock_supplier_order_id = f"MOCK-RESELL-{request.order_id}"
+
+    # Completed
+    cursor.execute(
+        """
+        UPDATE orders
+        SET status = ?,
+            supplier_order_id = ?
+        WHERE id = ?
+        """,
+        (
+            "completed",
+            mock_supplier_order_id,
+            request.order_id
+        )
+    )
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "ok": True,
+        "mock": True,
+        "message": "MOCK: Premium yetkazib berish simulyatsiya qilindi",
+        "delivery": {
+            "order_id": order[0],
+            "telegram_username": order[1],
+            "months": order[2],
+            "status": "completed",
+            "supplier_order_id": mock_supplier_order_id
+        }
+    }
