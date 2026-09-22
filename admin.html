@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Telegram Shop — Admin</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #222;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 25px 18px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .login {
+            max-width: 400px;
+            margin: 50px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        button {
+            border: none;
+            border-radius: 10px;
+            padding: 12px 18px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .login-button {
+            width: 100%;
+            background: #1683d8;
+            color: white;
+        }
+
+        .order {
+            background: white;
+            margin-bottom: 15px;
+            padding: 18px;
+            border-radius: 16px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .order h3 {
+            margin-top: 0;
+        }
+
+        .info {
+            line-height: 1.7;
+        }
+
+        .status-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .status-buttons button {
+            background: #eee;
+        }
+
+        .refresh {
+            background: #1683d8;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .error {
+            color: #d33;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div id="loginBox" class="login">
+
+        <h2>🔐 Admin panel</h2>
+
+        <input
+            type="password"
+            id="adminKey"
+            placeholder="Admin parol"
+        >
+
+        <button
+            class="login-button"
+            onclick="login()"
+        >
+            Kirish
+        </button>
+
+        <div id="loginError" class="error"></div>
+
+    </div>
+
+
+    <div id="adminPanel" class="hidden">
+
+        <h1>🛒 Telegram Shop</h1>
+
+        <button
+            class="refresh"
+            onclick="loadOrders()"
+        >
+            🔄 Buyurtmalarni yangilash
+        </button>
+
+        <div id="orders"></div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const API_URL =
+    "https://telegram-shop-co3o.onrender.com";
+
+let adminKey = "";
+
+
+function login() {
+
+    const key =
+        document.getElementById("adminKey").value.trim();
+
+    if (!key) {
+
+        document.getElementById("loginError").textContent =
+            "Parolni kiriting.";
+
+        return;
+    }
+
+    adminKey = key;
+
+    document
+        .getElementById("loginBox")
+        .classList.add("hidden");
+
+    document
+        .getElementById("adminPanel")
+        .classList.remove("hidden");
+
+    loadOrders();
+}
+
+
+async function loadOrders() {
+
+    const ordersDiv =
+        document.getElementById("orders");
+
+    ordersDiv.innerHTML =
+        "<p>⏳ Buyurtmalar yuklanmoqda...</p>";
+
+    try {
+
+        const response = await fetch(
+            API_URL + "/orders"
+        );
+
+        if (!response.ok) {
+            throw new Error("Server xatosi");
+        }
+
+        const data =
+            await response.json();
+
+        if (!data.ok) {
+            throw new Error("Buyurtmalarni olishda xato");
+        }
+
+        if (data.orders.length === 0) {
+
+            ordersDiv.innerHTML =
+                "<p>Hozircha buyurtmalar yo‘q.</p>";
+
+            return;
+        }
+
+        ordersDiv.innerHTML =
+            data.orders.map(order => `
+
+                <div class="order">
+
+                    <h3>
+                        🛒 Buyurtma #${order.id}
+                    </h3>
+
+                    <div class="info">
+
+                        👤 User ID:
+                        <b>${order.user_id}</b>
+                        <br>
+
+                        📦 Mahsulot:
+                        <b>${order.product}</b>
+                        <br>
+
+                        💰 Narx:
+                        <b>${order.amount.toLocaleString("uz-UZ")} so'm</b>
+                        <br>
+
+                        📌 Status:
+                        <b>${order.status}</b>
+
+                    </div>
+
+                    <div class="status-buttons">
+
+                        <button
+                            onclick="changeStatus(${order.id}, 'pending')">
+                            🟡 Kutilmoqda
+                        </button>
+
+                        <button
+                            onclick="changeStatus(${order.id}, 'paid')">
+                            🟢 To‘landi
+                        </button>
+
+                        <button
+                            onclick="changeStatus(${order.id}, 'processing')">
+                            🔵 Jarayonda
+                        </button>
+
+                        <button
+                            onclick="changeStatus(${order.id}, 'completed')">
+                            ✅ Bajarildi
+                        </button>
+
+                        <button
+                            onclick="changeStatus(${order.id}, 'cancelled')">
+                            ❌ Bekor qilindi
+                        </button>
+
+                    </div>
+
+                </div>
+
+            `).join("");
+
+    } catch (error) {
+
+        console.error(error);
+
+        ordersDiv.innerHTML =
+            "<p>❌ Buyurtmalarni yuklashda xato.</p>";
+    }
+}
+
+
+async function changeStatus(orderId, status) {
+
+    try {
+
+        const response = await fetch(
+            API_URL + "/orders/" + orderId + "/status",
+            {
+                method: "PUT",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    status: status
+                })
+            }
+        );
+
+        const data =
+            await response.json();
+
+        if (data.ok) {
+
+            alert(
+                "✅ Status o‘zgartirildi: " +
+                status
+            );
+
+            loadOrders();
+
+        } else {
+
+            alert(
+                "❌ " +
+                (data.message || "Xatolik")
+            );
+
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "❌ Server bilan bog‘lanib bo‘lmadi."
+        );
+    }
+}
+
+</script>
+
+</body>
+</html>
