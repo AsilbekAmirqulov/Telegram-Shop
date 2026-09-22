@@ -6,28 +6,11 @@ const products = document.getElementById("products");
 // ==========================
 
 function showPremium() {
-
     products.innerHTML = `
-        <div class="product">
-            <h3>🔐 Premium — 1 oy</h3>
-            <div class="price">40 000 so'm</div>
-            <button class="buy-button" onclick="buy('premium_1')">
-                💳 Sotib olish
-            </button>
-        </div>
-
-        <div class="product">
-            <h3>🔐 Premium — 1 yil</h3>
-            <div class="price">280 000 so'm</div>
-            <button class="buy-button" onclick="buy('premium_12')">
-                💳 Sotib olish
-            </button>
-        </div>
-
         <div class="product">
             <h3>🔓 Premium — 3 oy</h3>
             <div class="price">165 000 so'm</div>
-            <button class="buy-button" onclick="buy('premium_no_login_3')">
+            <button class="buy-button" onclick="buy('premium_3')">
                 💳 Sotib olish
             </button>
         </div>
@@ -35,7 +18,7 @@ function showPremium() {
         <div class="product">
             <h3>🔓 Premium — 6 oy</h3>
             <div class="price">220 000 so'm</div>
-            <button class="buy-button" onclick="buy('premium_no_login_6')">
+            <button class="buy-button" onclick="buy('premium_6')">
                 💳 Sotib olish
             </button>
         </div>
@@ -43,7 +26,7 @@ function showPremium() {
         <div class="product">
             <h3>🔓 Premium — 1 yil</h3>
             <div class="price">390 000 so'm</div>
-            <button class="buy-button" onclick="buy('premium_no_login_12')">
+            <button class="buy-button" onclick="buy('premium_12')">
                 💳 Sotib olish
             </button>
         </div>
@@ -56,7 +39,6 @@ function showPremium() {
 // ==========================
 
 function showStars() {
-
     products.innerHTML = `
         <div class="product">
             <h3>🌟 100 Stars</h3>
@@ -146,10 +128,9 @@ function showStars() {
 // ==========================
 
 function buy(product) {
-
     const tg = window.Telegram.WebApp;
 
     tg.showAlert(
-        "Tanlangan mahsulot: " + product
+        "YANGI KOD ISHLAYAPTI: " + product
     );
 }
