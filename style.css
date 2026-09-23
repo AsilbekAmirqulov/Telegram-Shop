@@ -1,26 +1,142 @@
-```css
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
+html,
+body {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100%;
+
+    overflow-x: hidden;
+
+    margin: 0;
+    padding: 0;
+
+    position: relative;
+
+    overscroll-behavior-x: none;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
     background: #0e1621;
+
     color: #ffffff;
+
     min-height: 100vh;
+
+    overflow-x: hidden;
 }
 
 button {
     font-family: inherit;
 }
 
+
+/* =========================
+   ANIMATED BACKGROUND
+========================= */
+
+.animated-bg {
+    position: fixed;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+
+    max-width: 100vw;
+    max-height: 100vh;
+
+    z-index: -1;
+
+    pointer-events: none;
+
+    overflow: hidden;
+
+    contain: strict;
+}
+
+
+/* Yuqoridagi stikerlar */
+
+.animated-bg::before,
+.animated-bg::after {
+    content: "💎     ⭐        ✨        💎        ⭐";
+
+    position: absolute;
+
+    left: 0;
+
+    width: 100%;
+    max-width: 100%;
+
+    white-space: nowrap;
+
+    text-align: center;
+
+    font-size: 28px;
+
+    opacity: 0.08;
+
+    animation: floatingUpDown 8s ease-in-out infinite;
+}
+
+
+.animated-bg::before {
+    top: 20%;
+}
+
+
+.animated-bg::after {
+    top: 65%;
+
+    font-size: 22px;
+
+    opacity: 0.06;
+
+    animation-duration: 10s;
+}
+
+
+/* Faqat yuqoriga-pastga harakat */
+
+@keyframes floatingUpDown {
+
+    0% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-15px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+
+/* =========================
+   MAIN APP
+========================= */
+
 .app {
     width: 100%;
+
     max-width: 520px;
-    margin: 0 auto;
+
+    margin-left: auto;
+    margin-right: auto;
+
     padding: 20px 16px 30px;
+
+    overflow-x: hidden;
 }
 
 
@@ -30,18 +146,25 @@ button {
 
 .header {
     display: flex;
+
     align-items: center;
+
     gap: 14px;
+
     margin-bottom: 22px;
 }
+
 
 .header-icon {
     width: 54px;
     height: 54px;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
+
+    flex-shrink: 0;
 
     border-radius: 17px;
 
@@ -53,18 +176,26 @@ button {
         #6c63ff
     );
 
-    box-shadow: 0 8px 25px rgba(36, 129, 204, 0.25);
+    box-shadow:
+        0 8px 25px
+        rgba(36, 129, 204, 0.25);
 }
+
 
 .header h1 {
     font-size: 24px;
+
     font-weight: 750;
+
     letter-spacing: -0.5px;
 }
 
+
 .header p {
     margin-top: 3px;
+
     color: #8b9bab;
+
     font-size: 13px;
 }
 
@@ -75,8 +206,12 @@ button {
 
 .user-card {
     display: flex;
+
     align-items: center;
+
     gap: 12px;
+
+    width: 100%;
 
     padding: 14px;
 
@@ -85,16 +220,25 @@ button {
     border-radius: 18px;
 
     background: #17212b;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.05);
+
+    overflow: hidden;
 }
+
 
 .user-avatar {
     width: 44px;
     height: 44px;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
+
+    flex-shrink: 0;
 
     border-radius: 50%;
 
@@ -103,19 +247,33 @@ button {
     font-size: 21px;
 }
 
+
 .user-info {
     display: flex;
+
     flex-direction: column;
+
     gap: 3px;
+
+    min-width: 0;
 }
+
 
 .user-label {
     font-size: 12px;
+
     color: #81909e;
 }
 
+
 .user-info strong {
     font-size: 15px;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
 }
 
 
@@ -125,22 +283,30 @@ button {
 
 .section-header {
     display: flex;
+
     align-items: center;
+
     justify-content: space-between;
 
     margin-bottom: 12px;
+
     padding: 0 3px;
 }
 
+
 .section-header h2 {
     font-size: 18px;
+
     font-weight: 700;
 }
 
+
 .section-header span {
     font-size: 12px;
+
     color: #7d8b99;
 }
+
 
 .products-title {
     margin-top: 28px;
@@ -148,24 +314,35 @@ button {
 
 
 /* =========================
-   CATEGORY CARDS
+   CATEGORIES
 ========================= */
 
 .categories {
     display: flex;
+
     flex-direction: column;
+
     gap: 10px;
+
+    width: 100%;
 }
+
 
 .category {
     width: 100%;
 
+    max-width: 100%;
+
     display: flex;
+
     align-items: center;
 
     padding: 14px;
 
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.05);
+
     border-radius: 18px;
 
     background: #17212b;
@@ -176,28 +353,38 @@ button {
 
     text-align: left;
 
+    overflow: hidden;
+
     transition:
         transform 0.15s ease,
         background 0.15s ease,
         border 0.15s ease;
 }
 
+
 .category:active {
     transform: scale(0.98);
 }
 
+
 .category.active {
-    border-color: rgba(36, 129, 204, 0.5);
+    border-color:
+        rgba(36, 129, 204, 0.5);
+
     background: #192f40;
 }
+
 
 .category-icon {
     width: 46px;
     height: 46px;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
+
+    flex-shrink: 0;
 
     border-radius: 14px;
 
@@ -206,34 +393,49 @@ button {
     font-size: 22px;
 }
 
+
 .premium-icon {
-    background: rgba(36, 129, 204, 0.18);
+    background:
+        rgba(36, 129, 204, 0.18);
 }
 
+
 .stars-icon {
-    background: rgba(255, 193, 7, 0.15);
+    background:
+        rgba(255, 193, 7, 0.15);
 }
+
 
 .category-info {
     flex: 1;
 
+    min-width: 0;
+
     display: flex;
+
     flex-direction: column;
 
     gap: 4px;
 }
 
+
 .category-info strong {
     font-size: 15px;
 }
 
+
 .category-info span {
     color: #8493a1;
+
     font-size: 12px;
 }
 
+
 .category-arrow {
+    flex-shrink: 0;
+
     font-size: 25px;
+
     color: #71808e;
 }
 
@@ -244,34 +446,58 @@ button {
 
 #products {
     display: flex;
+
     flex-direction: column;
+
     gap: 10px;
+
+    width: 100%;
+
+    max-width: 100%;
+
+    overflow-x: hidden;
 }
+
 
 .product-card {
     position: relative;
+
+    width: 100%;
+
+    max-width: 100%;
 
     padding: 17px;
 
     border-radius: 18px;
 
     background: #17212b;
-    border: 1px solid rgba(255, 255, 255, 0.05);
 
-    transition: transform 0.15s ease;
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.05);
+
+    overflow: hidden;
+
+    transition:
+        transform 0.15s ease;
 }
+
 
 .product-card:active {
     transform: scale(0.985);
 }
 
+
 .product-card h3 {
     font-size: 16px;
+
     margin-bottom: 5px;
 }
 
+
 .product-card p {
     color: #8593a0;
+
     font-size: 13px;
 }
 
@@ -284,26 +510,41 @@ button {
     margin-top: 14px;
 
     display: flex;
+
     align-items: center;
+
     justify-content: space-between;
+
+    gap: 10px;
+
+    width: 100%;
 }
+
 
 .price {
     font-size: 19px;
+
     font-weight: 750;
+
+    min-width: 0;
 }
+
 
 .buy-button {
     border: none;
+
+    flex-shrink: 0;
 
     padding: 10px 17px;
 
     border-radius: 12px;
 
     background: #2481cc;
+
     color: white;
 
     font-size: 14px;
+
     font-weight: 650;
 
     cursor: pointer;
@@ -313,9 +554,122 @@ button {
         opacity 0.15s ease;
 }
 
+
 .buy-button:active {
     transform: scale(0.95);
+
     opacity: 0.85;
+}
+
+
+/* =========================
+   USERNAME / GIFT FORM
+========================= */
+
+.gift-form {
+    width: 100%;
+
+    max-width: 100%;
+
+    margin: 18px 0 20px;
+
+    padding: 20px;
+
+    border-radius: 20px;
+
+    background:
+        rgba(255, 255, 255, 0.08);
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.14);
+
+    backdrop-filter: blur(12px);
+
+    -webkit-backdrop-filter: blur(12px);
+
+    box-shadow:
+        0 8px 30px
+        rgba(0, 0, 0, 0.12);
+
+    overflow: hidden;
+}
+
+
+.gift-form h2 {
+    margin: 0 0 8px;
+
+    font-size: 20px;
+
+    font-weight: 700;
+}
+
+
+.gift-description {
+    margin: 0 0 16px;
+
+    opacity: 0.75;
+
+    font-size: 14px;
+}
+
+
+.username-input {
+    display: block;
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 14px 16px;
+
+    border-radius: 14px;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.18);
+
+    background:
+        rgba(0, 0, 0, 0.16);
+
+    color: inherit;
+
+    font-size: 16px;
+
+    outline: none;
+
+    transition: 0.2s ease;
+}
+
+
+.username-input::placeholder {
+    opacity: 0.5;
+}
+
+
+.username-input:focus {
+    border-color:
+        rgba(100, 180, 255, 0.8);
+
+    background:
+        rgba(0, 0, 0, 0.22);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(100, 180, 255, 0.12);
+}
+
+
+.username-hint {
+    margin: 8px 2px 0;
+
+    font-size: 12px;
+
+    opacity: 0.5;
 }
 
 
@@ -325,8 +679,11 @@ button {
 
 .footer {
     display: flex;
+
     justify-content: center;
+
     align-items: center;
+
     gap: 7px;
 
     margin-top: 30px;
@@ -344,180 +701,101 @@ button {
 @media (max-width: 380px) {
 
     .app {
-        padding: 16px 12px 25px;
+        width: 100%;
+
+        max-width: 100%;
+
+        padding:
+            16px 12px 25px;
     }
+
 
     .header h1 {
         font-size: 21px;
     }
+
 
     .header-icon {
         width: 48px;
         height: 48px;
     }
 
+
     .user-card {
         padding: 12px;
     }
-}
-```
-.animated-bg {
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    overflow: hidden;
-}
 
-.animated-bg::before,
-.animated-bg::after {
-    content: "💎     ⭐        ✨        💎        ⭐";
-    position: absolute;
-    left: -20%;
-    width: 140%;
-    font-size: 28px;
-    opacity: 0.08;
-    white-space: nowrap;
-    animation: floatingStars 18s linear infinite;
-}
 
-.animated-bg::before {
-    top: 20%;
-}
-
-.animated-bg::after {
-    top: 65%;
-    animation-duration: 24s;
-    animation-direction: reverse;
-    font-size: 22px;
-    opacity: 0.06;
-}
-
-@keyframes floatingStars {
-    from {
-        transform: translateX(-10%) translateY(0);
+    .product-price {
+        flex-wrap: wrap;
     }
 
-    50% {
-        transform: translateX(10%) translateY(-25px);
+
+    .price {
+        font-size: 17px;
     }
 
-    to {
-        transform: translateX(-10%) translateY(0);
+
+    .buy-button {
+        padding:
+            9px 14px;
     }
 }
+
+
 /* =========================
-   PREMIUM GIFT USERNAME
-   ========================= */
+   EXTRA SMALL SCREENS
+========================= */
 
-.gift-form {
-    margin: 18px 0 20px;
-    padding: 20px;
-    border-radius: 20px;
+@media (max-width: 320px) {
 
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    .app {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
 
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
 
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    .product-card {
+        padding: 14px;
+    }
+
+
+    .gift-form {
+        padding: 16px;
+    }
+
+
+    .buy-button {
+        font-size: 13px;
+
+        padding:
+            9px 12px;
+    }
 }
 
-.gift-form h2 {
-    margin: 0 0 8px;
 
-    font-size: 20px;
-    font-weight: 700;
-}
+/* =========================
+   SAFETY: NO HORIZONTAL SCROLL
+========================= */
 
-.gift-description {
-    margin: 0 0 16px;
-
-    opacity: 0.75;
-    font-size: 14px;
-}
-
-.username-input {
-    width: 100%;
-    box-sizing: border-box;
-
-    padding: 14px 16px;
-
-    border-radius: 14px;
-
-    border: 1px solid rgba(255, 255, 255, 0.18);
-
-    background: rgba(0, 0, 0, 0.16);
-
-    color: inherit;
-
-    font-size: 16px;
-    outline: none;
-
-    transition: 0.2s ease;
-}
-
-.username-input::placeholder {
-    opacity: 0.5;
-}
-
-.username-input:focus {
-    border-color: rgba(100, 180, 255, 0.8);
-
-    background: rgba(0, 0, 0, 0.22);
-
-    box-shadow: 0 0 0 3px rgba(100, 180, 255, 0.12);
-}
-
-.username-hint {
-    margin: 8px 2px 0;
-
-    font-size: 12px;
-    opacity: 0.5;
-}
-html,
-body {
-    width: 100%;
+img,
+video,
+canvas,
+svg,
+iframe {
     max-width: 100%;
-    min-height: 100%;
-    margin: 0;
-    padding: 0;
-
-    overflow-x: hidden;
-
-    position: relative;
 }
 
-* {
-    box-sizing: border-box;
-}
 
-body {
-    overscroll-behavior-x: none;
-}
-
-/* Asosiy container ekran enidan chiqmasin */
 #app,
 .container,
 .main-container {
     width: 100%;
+
     max-width: 100%;
+
     margin-left: auto;
     margin-right: auto;
-}
 
-/* Hech qanday element ekran enidan oshib ketmasin */
-img,
-video,
-canvas,
-svg {
-    max-width: 100%;
-}
-
-/* Background harakatini to'xtatish */
-body::before,
-body::after {
-    max-width: 100vw;
-    overflow: hidden;
+    overflow-x: hidden;
 }
