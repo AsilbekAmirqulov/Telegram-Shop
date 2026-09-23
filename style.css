@@ -361,3 +361,48 @@ button {
     }
 }
 ```
+.animated-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.animated-bg::before,
+.animated-bg::after {
+    content: "💎     ⭐        ✨        💎        ⭐";
+    position: absolute;
+    left: -20%;
+    width: 140%;
+    font-size: 28px;
+    opacity: 0.08;
+    white-space: nowrap;
+    animation: floatingStars 18s linear infinite;
+}
+
+.animated-bg::before {
+    top: 20%;
+}
+
+.animated-bg::after {
+    top: 65%;
+    animation-duration: 24s;
+    animation-direction: reverse;
+    font-size: 22px;
+    opacity: 0.06;
+}
+
+@keyframes floatingStars {
+    from {
+        transform: translateX(-10%) translateY(0);
+    }
+
+    50% {
+        transform: translateX(10%) translateY(-25px);
+    }
+
+    to {
+        transform: translateX(-10%) translateY(0);
+    }
+}
