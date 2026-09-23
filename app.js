@@ -1,4 +1,5 @@
 ```javascript
+alert("APP.JS ISHLADI");
 document.addEventListener("DOMContentLoaded", function () {
 
     const products = document.getElementById("products");
