@@ -406,3 +406,73 @@ button {
         transform: translateX(-10%) translateY(0);
     }
 }
+/* =========================
+   PREMIUM GIFT USERNAME
+   ========================= */
+
+.gift-form {
+    margin: 18px 0 20px;
+    padding: 20px;
+    border-radius: 20px;
+
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.gift-form h2 {
+    margin: 0 0 8px;
+
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.gift-description {
+    margin: 0 0 16px;
+
+    opacity: 0.75;
+    font-size: 14px;
+}
+
+.username-input {
+    width: 100%;
+    box-sizing: border-box;
+
+    padding: 14px 16px;
+
+    border-radius: 14px;
+
+    border: 1px solid rgba(255, 255, 255, 0.18);
+
+    background: rgba(0, 0, 0, 0.16);
+
+    color: inherit;
+
+    font-size: 16px;
+    outline: none;
+
+    transition: 0.2s ease;
+}
+
+.username-input::placeholder {
+    opacity: 0.5;
+}
+
+.username-input:focus {
+    border-color: rgba(100, 180, 255, 0.8);
+
+    background: rgba(0, 0, 0, 0.22);
+
+    box-shadow: 0 0 0 3px rgba(100, 180, 255, 0.12);
+}
+
+.username-hint {
+    margin: 8px 2px 0;
+
+    font-size: 12px;
+    opacity: 0.5;
+}
