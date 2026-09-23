@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // PREMIUM PAKETLARI
+    // PREMIUM
     // =========================
 
     const premiumPlans = [
@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // STARS PAKETLARI
+    // STARS
     // =========================
 
     const starsPlans = [
@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // USERNAME OYNASI
+    // USERNAME FORM
     // =========================
 
     function showRecipientForm() {
@@ -80,11 +80,25 @@ document.addEventListener("DOMContentLoaded", function () {
                     inputmode="text"
                 >
 
+                <div
+                    id="usernameError"
+                    style="
+                        display:none;
+                        margin-top:8px;
+                        padding:8px 10px;
+                        border-radius:10px;
+                        background:rgba(255,70,70,0.12);
+                        color:#ff5c5c;
+                        font-size:13px;
+                    "
+                ></div>
+
                 <p class="username-hint">
                     Masalan: @amirquiov
                 </p>
 
             </div>
+
 
             <div class="product-card">
 
@@ -103,6 +117,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 </button>
 
             </div>
+
 
             <div class="product-card">
 
@@ -124,57 +139,37 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
 
 
-        // Inputni olish
         const input =
-            document.getElementById("recipientUsername");
-
-
-        // Input mavjud bo'lsa
-        if (input) {
-
-            input.disabled = false;
-            input.readOnly = false;
-
-
-            // Bosilganda fokus
-            input.addEventListener(
-                "click",
-                function (event) {
-
-                    event.stopPropagation();
-
-                    this.focus();
-                }
+            document.getElementById(
+                "recipientUsername"
             );
 
 
-            // Telefon / Telegram touch
-            input.addEventListener(
-                "touchstart",
-                function (event) {
-
-                    event.stopPropagation();
-
-                    this.focus();
-                },
-                { passive: true }
+        const error =
+            document.getElementById(
+                "usernameError"
             );
-
-
-            // Fokus yo'qolsa ham qayta yozish mumkin
-            input.addEventListener(
-                "blur",
-                function () {
-
-                    this.disabled = false;
-                    this.readOnly = false;
-                }
-            );
-        }
 
 
         // =========================
-        // PREMIUM TANLASH
+        // INPUTDA YOZISH BOSHLANSA
+        // XATOLIKNI O'CHIRAMIZ
+        // =========================
+
+        input.addEventListener(
+            "input",
+            function () {
+
+                error.style.display = "none";
+                error.textContent = "";
+
+                input.style.borderColor = "";
+            }
+        );
+
+
+        // =========================
+        // PREMIUM
         // =========================
 
         document
@@ -196,7 +191,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =========================
-        // STARS TANLASH
+        // STARS
         // =========================
 
         document
@@ -229,13 +224,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 "recipientUsername"
             );
 
-
-        if (!input) {
-
-            alert(
-                "Username maydoni topilmadi."
+        const error =
+            document.getElementById(
+                "usernameError"
             );
 
+
+        if (!input || !error) {
             return null;
         }
 
@@ -245,42 +240,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =========================
-        // BO'SH USERNAME
+        // BO'SH
         // =========================
 
         if (!username) {
 
-            alert(
-                "❗ Avval Telegram username kiriting."
-            );
+            error.textContent =
+                "❗ Avval Telegram username kiriting.";
 
+            error.style.display =
+                "block";
 
-            // Alert yopilgandan keyin
-            // inputni yana aktiv qilish
-            setTimeout(
-                function () {
-
-                    input.disabled = false;
-                    input.readOnly = false;
-
-                    input.focus();
-
-                },
-                200
-            );
-
+            input.style.borderColor =
+                "#ff5c5c";
 
             return null;
         }
 
 
-        // @ belgisini olib tashlash
+        // @ ni olib tashlash
+
         username =
             username.replace(/^@/, "");
 
 
         // =========================
-        // USERNAME VALIDATSIYA
+        // NOTO'G'RI USERNAME
         // =========================
 
         if (
@@ -289,25 +274,14 @@ document.addEventListener("DOMContentLoaded", function () {
             )
         ) {
 
-            alert(
-                "❗ Telegram username noto‘g‘ri.\n\n" +
-                "Masalan: @amirquiov"
-            );
+            error.textContent =
+                "❗ Username noto‘g‘ri. Masalan: @amirquiov";
 
+            error.style.display =
+                "block";
 
-            setTimeout(
-                function () {
-
-                    input.disabled = false;
-                    input.readOnly = false;
-
-                    input.focus();
-                    input.select();
-
-                },
-                200
-            );
-
+            input.style.borderColor =
+                "#ff5c5c";
 
             return null;
         }
@@ -393,22 +367,15 @@ document.addEventListener("DOMContentLoaded", function () {
                         "click",
                         function () {
 
-                            const months =
-                                Number(
-                                    button.dataset.months
-                                );
-
-                            const price =
-                                Number(
-                                    button.dataset.price
-                                );
-
-
                             createOrder(
                                 "Telegram Premium",
                                 username,
-                                months,
-                                price
+                                Number(
+                                    button.dataset.months
+                                ),
+                                Number(
+                                    button.dataset.price
+                                )
                             );
                         }
                     );
@@ -497,20 +464,15 @@ document.addEventListener("DOMContentLoaded", function () {
                         "click",
                         function () {
 
-                            const count =
-                                button.dataset.count;
-
-                            const price =
-                                Number(
-                                    button.dataset.price
-                                );
-
-
                             createOrder(
                                 "Telegram Stars",
                                 username,
-                                count,
-                                price
+                                Number(
+                                    button.dataset.count
+                                ),
+                                Number(
+                                    button.dataset.price
+                                )
                             );
                         }
                     );
@@ -520,7 +482,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // BUYURTMA YARATISH
+    // BUYURTMA
     // =========================
 
     async function createOrder(
@@ -537,8 +499,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ) {
 
             alert(
-                "❗ Telegram foydalanuvchisi aniqlanmadi.\n\n" +
-                "Mini App'ni Telegram ichidan oching."
+                "❗ Telegram foydalanuvchisi aniqlanmadi."
             );
 
             return;
@@ -572,20 +533,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 "🎁 Buyurtma\n\n" +
 
-                "👤 Qabul qiluvchi: @" +
+                "👤 @" +
                 username +
-                "\n\n" +
+                "\n" +
 
-                "📦 Mahsulot: " +
+                "📦 " +
                 product +
                 "\n" +
 
-                "🔹 Miqdor: " +
+                "🔹 " +
                 detail +
                 "\n" +
 
-                "💰 Narx: " +
-                amount.toLocaleString("uz-UZ") +
+                "💰 " +
+                amount.toLocaleString(
+                    "uz-UZ"
+                ) +
                 " so'm\n\n" +
 
                 "Davom etasizmi?"
@@ -606,13 +569,11 @@ document.addEventListener("DOMContentLoaded", function () {
             "Telegram Premium"
         ) {
 
-            months =
-                Number(option);
+            months = option;
 
         } else {
 
-            stars =
-                Number(option);
+            stars = option;
         }
 
 
@@ -669,7 +630,6 @@ document.addEventListener("DOMContentLoaded", function () {
             if (data.ok) {
 
                 alert(
-
                     "✅ Buyurtma yaratildi!\n\n" +
 
                     "📦 Buyurtma №: " +
@@ -689,22 +649,23 @@ document.addEventListener("DOMContentLoaded", function () {
                     "\n\n" +
 
                     "💰 " +
-                    amount.toLocaleString("uz-UZ") +
+                    amount.toLocaleString(
+                        "uz-UZ"
+                    ) +
                     " so'm"
                 );
 
             } else {
 
                 alert(
-
                     "❌ Buyurtma yaratilmadi.\n\n" +
-
                     (
                         data.message ||
                         "Noma'lum xato"
                     )
                 );
             }
+
 
         } catch (error) {
 
@@ -760,7 +721,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // BOSHLANG'ICH OYNA
+    // BOSHLANG'ICH HOLAT
     // =========================
 
     showRecipientForm();
