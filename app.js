@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // PREMIUM
+    // PREMIUM PAKETLARI
     // =========================
 
     const premiumPlans = [
@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // STARS
+    // STARS PAKETLARI
     // =========================
 
     const starsPlans = [
@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // UMUMIY USERNAME OYNASI
+    // USERNAME FORM
     // =========================
 
     function showRecipientForm() {
@@ -74,7 +74,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     class="username-input"
                     placeholder="@username"
                     autocomplete="off"
-                    maxlength="33"
+                    autocorrect="off"
+                    autocapitalize="none"
+                    spellcheck="false"
+                    inputmode="text"
                 >
 
                 <p class="username-hint">
@@ -92,6 +95,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 </p>
 
                 <button
+                    type="button"
                     class="buy-button"
                     id="choosePremium"
                 >
@@ -109,6 +113,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 </p>
 
                 <button
+                    type="button"
                     class="buy-button"
                     id="chooseStars"
                 >
@@ -119,32 +124,85 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
 
 
+        // =========================
+        // INPUTNI AKTIVLASHTIRISH
+        // =========================
+
+        const input =
+            document.getElementById("recipientUsername");
+
+
+        if (input) {
+
+            input.disabled = false;
+            input.readOnly = false;
+
+            input.addEventListener(
+                "click",
+                function () {
+                    this.focus();
+                }
+            );
+
+            input.addEventListener(
+                "touchstart",
+                function () {
+                    this.focus();
+                },
+                { passive: true }
+            );
+
+            input.addEventListener(
+                "focus",
+                function () {
+                    this.style.cursor = "text";
+                }
+            );
+        }
+
+
+        // =========================
+        // PREMIUM TANLASH
+        // =========================
+
         document
             .getElementById("choosePremium")
-            .addEventListener("click", function () {
+            .addEventListener(
+                "click",
+                function () {
 
-                const username = getUsername();
+                    const username =
+                        getUsername();
 
-                if (!username) {
-                    return;
+                    if (!username) {
+                        return;
+                    }
+
+                    showPremium(username);
                 }
+            );
 
-                showPremium(username);
-            });
 
+        // =========================
+        // STARS TANLASH
+        // =========================
 
         document
             .getElementById("chooseStars")
-            .addEventListener("click", function () {
+            .addEventListener(
+                "click",
+                function () {
 
-                const username = getUsername();
+                    const username =
+                        getUsername();
 
-                if (!username) {
-                    return;
+                    if (!username) {
+                        return;
+                    }
+
+                    showStars(username);
                 }
-
-                showStars(username);
-            });
+            );
     }
 
 
@@ -155,14 +213,24 @@ document.addEventListener("DOMContentLoaded", function () {
     function getUsername() {
 
         const input =
-            document.getElementById("recipientUsername");
+            document.getElementById(
+                "recipientUsername"
+            );
+
 
         if (!input) {
+
+            alert(
+                "Username maydoni topilmadi."
+            );
+
             return null;
         }
 
+
         let username =
             input.value.trim();
+
 
         if (!username) {
 
@@ -176,10 +244,15 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        username = username.replace(/^@/, "");
+        username =
+            username.replace(/^@/, "");
 
 
-        if (!/^[a-zA-Z0-9_]{5,32}$/.test(username)) {
+        if (
+            !/^[a-zA-Z0-9_]{5,32}$/.test(
+                username
+            )
+        ) {
 
             alert(
                 "❗ Telegram username noto‘g‘ri.\n\n" +
@@ -197,7 +270,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // PREMIUM PAKETLARI
+    // PREMIUM
     // =========================
 
     function showPremium(username) {
@@ -215,83 +288,89 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
 
             <div id="premiumPlans"></div>
-
         `;
 
 
         const plans =
-            document.getElementById("premiumPlans");
+            document.getElementById(
+                "premiumPlans"
+            );
 
 
-        premiumPlans.forEach(function (plan) {
+        premiumPlans.forEach(
+            function (plan) {
 
-            plans.innerHTML += `
+                plans.innerHTML += `
 
-                <div class="product-card">
+                    <div class="product-card">
 
-                    <h3>
-                        💎 Premium — ${plan.title}
-                    </h3>
+                        <h3>
+                            💎 Premium — ${plan.title}
+                        </h3>
 
-                    <p>
-                        @${username} ga sovg‘a
-                    </p>
+                        <p>
+                            @${username} ga sovg‘a
+                        </p>
 
-                    <div class="product-price">
+                        <div class="product-price">
 
-                        <span class="price">
-                            ${plan.price.toLocaleString("uz-UZ")}
-                            so'm
-                        </span>
+                            <span class="price">
+                                ${plan.price.toLocaleString("uz-UZ")}
+                                so'm
+                            </span>
 
-                        <button
-                            class="buy-button premium-buy"
-                            data-months="${plan.months}"
-                            data-price="${plan.price}"
-                        >
-                            🎁 Davom etish
-                        </button>
+                            <button
+                                type="button"
+                                class="buy-button premium-buy"
+                                data-months="${plan.months}"
+                                data-price="${plan.price}"
+                            >
+                                🎁 Davom etish
+                            </button>
+
+                        </div>
 
                     </div>
-
-                </div>
-
-            `;
-        });
+                `;
+            }
+        );
 
 
         document
             .querySelectorAll(".premium-buy")
-            .forEach(function (button) {
+            .forEach(
+                function (button) {
 
-                button.addEventListener(
-                    "click",
-                    function () {
+                    button.addEventListener(
+                        "click",
+                        function () {
 
-                        const months =
-                            Number(
-                                button.dataset.months
+                            const months =
+                                Number(
+                                    button.dataset.months
+                                );
+
+                            const price =
+                                Number(
+                                    button.dataset.price
+                                );
+
+
+                            createOrder(
+                                "Telegram Premium",
+                                username,
+                                months,
+                                price
                             );
-
-                        const price =
-                            Number(
-                                button.dataset.price
-                            );
-
-                        createOrder(
-                            "Telegram Premium",
-                            username,
-                            months,
-                            price
-                        );
-                    }
-                );
-            });
+                        }
+                    );
+                }
+            );
     }
 
 
     // =========================
-    // STARS PAKETLARI
+    // STARS
     // =========================
 
     function showStars(username) {
@@ -309,80 +388,86 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
 
             <div id="starsPlans"></div>
-
         `;
 
 
         const plans =
-            document.getElementById("starsPlans");
+            document.getElementById(
+                "starsPlans"
+            );
 
 
-        starsPlans.forEach(function (item) {
+        starsPlans.forEach(
+            function (item) {
 
-            const count = item[0];
-            const price = item[1];
+                const count = item[0];
+                const price = item[1];
 
 
-            plans.innerHTML += `
+                plans.innerHTML += `
 
-                <div class="product-card">
+                    <div class="product-card">
 
-                    <h3>
-                        ⭐ ${count} Telegram Stars
-                    </h3>
+                        <h3>
+                            ⭐ ${count} Telegram Stars
+                        </h3>
 
-                    <p>
-                        @${username} ga sovg‘a
-                    </p>
+                        <p>
+                            @${username} ga sovg‘a
+                        </p>
 
-                    <div class="product-price">
+                        <div class="product-price">
 
-                        <span class="price">
-                            ${price.toLocaleString("uz-UZ")}
-                            so'm
-                        </span>
+                            <span class="price">
+                                ${price.toLocaleString("uz-UZ")}
+                                so'm
+                            </span>
 
-                        <button
-                            class="buy-button stars-buy"
-                            data-count="${count}"
-                            data-price="${price}"
-                        >
-                            🎁 Davom etish
-                        </button>
+                            <button
+                                type="button"
+                                class="buy-button stars-buy"
+                                data-count="${count}"
+                                data-price="${price}"
+                            >
+                                🎁 Davom etish
+                            </button>
+
+                        </div>
 
                     </div>
-
-                </div>
-
-            `;
-        });
+                `;
+            }
+        );
 
 
         document
             .querySelectorAll(".stars-buy")
-            .forEach(function (button) {
+            .forEach(
+                function (button) {
 
-                button.addEventListener(
-                    "click",
-                    function () {
+                    button.addEventListener(
+                        "click",
+                        function () {
 
-                        const count =
-                            button.dataset.count;
+                            const count =
+                                button.dataset.count;
 
-                        const price =
-                            Number(
-                                button.dataset.price
+                            const price =
+                                Number(
+                                    button.dataset.price
+                                );
+
+
+                            createOrder(
+                                "Telegram Stars",
+                                username,
+                                count,
+                                price
                             );
-
-                        createOrder(
-                            "Telegram Stars",
-                            username,
-                            count,
-                            price
-                        );
-                    }
-                );
-            });
+                        }
+                    );
+                }
+            );
     }
 
 
@@ -399,7 +484,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (
             !tg ||
-            !tg.initDataUnsafe?.user
+            !tg.initDataUnsafe ||
+            !tg.initDataUnsafe.user
         ) {
 
             alert(
@@ -415,10 +501,13 @@ document.addEventListener("DOMContentLoaded", function () {
             tg.initDataUnsafe.user;
 
 
-        let detail = "";
+        let detail;
 
 
-        if (product === "Telegram Premium") {
+        if (
+            product ===
+            "Telegram Premium"
+        ) {
 
             detail =
                 option + " oy";
@@ -430,28 +519,29 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        const confirmed = confirm(
+        const confirmed =
+            confirm(
 
-            "🎁 Buyurtma\n\n" +
+                "🎁 Buyurtma\n\n" +
 
-            "👤 Qabul qiluvchi: @" +
-            username +
-            "\n" +
+                "👤 Qabul qiluvchi: @" +
+                username +
+                "\n\n" +
 
-            "📦 Mahsulot: " +
-            product +
-            "\n" +
+                "📦 Mahsulot: " +
+                product +
+                "\n" +
 
-            "🔹 Miqdor: " +
-            detail +
-            "\n" +
+                "🔹 Miqdor: " +
+                detail +
+                "\n" +
 
-            "💰 Narx: " +
-            amount.toLocaleString("uz-UZ") +
-            " so'm\n\n" +
+                "💰 Narx: " +
+                amount.toLocaleString("uz-UZ") +
+                " so'm\n\n" +
 
-            "Davom etasizmi?"
-        );
+                "Davom etasizmi?"
+            );
 
 
         if (!confirmed) {
@@ -459,61 +549,60 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        // =========================
-        // PREMIUM
-        // =========================
-
         let months = null;
-
-
-        if (product === "Telegram Premium") {
-
-            months = Number(option);
-        }
-
-
-        // =========================
-        // STARS
-        // =========================
-
         let stars = null;
 
 
-        if (product === "Telegram Stars") {
+        if (
+            product ===
+            "Telegram Premium"
+        ) {
 
-            stars = Number(option);
+            months =
+                Number(option);
+
+        } else {
+
+            stars =
+                Number(option);
         }
 
 
         try {
 
-            const response = await fetch(
-                "https://telegram-shop-co3o.onrender.com/create-order",
-                {
-                    method: "POST",
+            const response =
+                await fetch(
+                    "https://telegram-shop-co3o.onrender.com/create-order",
+                    {
+                        method: "POST",
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
 
-                    body: JSON.stringify({
+                        body: JSON.stringify({
 
-                        user_id: buyer.id,
+                            user_id:
+                                buyer.id,
 
-                        product: product,
+                            product:
+                                product,
 
-                        amount: amount,
+                            amount:
+                                amount,
 
-                        recipient_username:
-                            username,
+                            recipient_username:
+                                username,
 
-                        months: months,
+                            months:
+                                months,
 
-                        stars: stars
-                    })
-                }
-            );
+                            stars:
+                                stars
+                        })
+                    }
+                );
 
 
             if (!response.ok) {
@@ -581,7 +670,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // CATEGORY TUGMALARI
+    // PREMIUM BUTTON
     // =========================
 
     premiumButton.addEventListener(
@@ -601,6 +690,10 @@ document.addEventListener("DOMContentLoaded", function () {
     );
 
 
+    // =========================
+    // STARS BUTTON
+    // =========================
+
     starsButton.addEventListener(
         "click",
         function () {
@@ -619,7 +712,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // BOSHLANG‘ICH HOLAT
+    // BOSHLANG‘ICH OYNA
     // =========================
 
     showRecipientForm();
