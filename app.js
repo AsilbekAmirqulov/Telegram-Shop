@@ -1,4 +1,52 @@
+```javascript
 const products = document.getElementById("products");
+
+const tg = window.Telegram.WebApp;
+
+
+// ==========================
+// TELEGRAM MINI APP
+// ==========================
+
+tg.ready();
+tg.expand();
+
+
+// ==========================
+// USER
+// ==========================
+
+const user = tg.initDataUnsafe?.user;
+
+if (user) {
+
+    const userName = document.getElementById("userName");
+    const userAvatar = document.getElementById("userAvatar");
+
+    const fullName =
+        [user.first_name, user.last_name]
+            .filter(Boolean)
+            .join(" ");
+
+    userName.textContent =
+        fullName || user.username || "Telegram foydalanuvchisi";
+
+    if (user.photo_url) {
+
+        userAvatar.innerHTML = `
+            <img
+                src="${user.photo_url}"
+                alt="Avatar"
+                style="
+                    width:100%;
+                    height:100%;
+                    object-fit:cover;
+                    border-radius:50%;
+                "
+            >
+        `;
+    }
+}
 
 
 // ==========================
@@ -8,29 +56,84 @@ const products = document.getElementById("products");
 function showPremium() {
 
     products.innerHTML = `
-        <div class="product">
-            <h3>🔓 Premium — 3 oy</h3>
-            <div class="price">165 000 so'm</div>
-            <button class="buy-button" onclick="buy('premium_3', 165000)">
-                💳 Sotib olish
-            </button>
+
+        <div class="product-card">
+
+            <h3>💎 Telegram Premium — 3 oy</h3>
+
+            <p>
+                Premium xizmatidan 3 oy foydalaning
+            </p>
+
+            <div class="product-price">
+
+                <span class="price">
+                    165 000 so'm
+                </span>
+
+                <button
+                    class="buy-button"
+                    onclick="buy('premium_3', 165000)"
+                >
+                    Sotib olish
+                </button>
+
+            </div>
+
         </div>
 
-        <div class="product">
-            <h3>🔓 Premium — 6 oy</h3>
-            <div class="price">220 000 so'm</div>
-            <button class="buy-button" onclick="buy('premium_6', 220000)">
-                💳 Sotib olish
-            </button>
+
+        <div class="product-card">
+
+            <h3>💎 Telegram Premium — 6 oy</h3>
+
+            <p>
+                Premium xizmatidan 6 oy foydalaning
+            </p>
+
+            <div class="product-price">
+
+                <span class="price">
+                    220 000 so'm
+                </span>
+
+                <button
+                    class="buy-button"
+                    onclick="buy('premium_6', 220000)"
+                >
+                    Sotib olish
+                </button>
+
+            </div>
+
         </div>
 
-        <div class="product">
-            <h3>🔓 Premium — 1 yil</h3>
-            <div class="price">390 000 so'm</div>
-            <button class="buy-button" onclick="buy('premium_12', 390000)">
-                💳 Sotib olish
-            </button>
+
+        <div class="product-card">
+
+            <h3>💎 Telegram Premium — 1 yil</h3>
+
+            <p>
+                Premium xizmatidan 12 oy foydalaning
+            </p>
+
+            <div class="product-price">
+
+                <span class="price">
+                    390 000 so'm
+                </span>
+
+                <button
+                    class="buy-button"
+                    onclick="buy('premium_12', 390000)"
+                >
+                    Sotib olish
+                </button>
+
+            </div>
+
         </div>
+
     `;
 }
 
@@ -41,116 +144,124 @@ function showPremium() {
 
 function showStars() {
 
-    products.innerHTML = `
-        <div class="product">
-            <h3>🌟 100 Stars</h3>
-            <div class="price">30 000 so'm</div>
-            <button class="buy-button" onclick="buy('stars_100', 30000)">
-                💳 Sotib olish
-            </button>
-        </div>
+    const stars = [
+        ["100", 30000],
+        ["150", 40000],
+        ["250", 64000],
+        ["350", 89000],
+        ["500", 125000],
+        ["750", 185000],
+        ["1000", 244000],
+        ["1500", 365000],
+        ["2500", 605000],
+        ["5000", 1205000]
+    ];
 
-        <div class="product">
-            <h3>🌟 150 Stars</h3>
-            <div class="price">40 000 so'm</div>
-            <button class="buy-button" onclick="buy('stars_150', 40000)">
-                💳 Sotib olish
-            </button>
-        </div>
+    products.innerHTML = stars.map(
+        ([count, price]) => `
 
-        <div class="product">
-            <h3>🌟 250 Stars</h3>
-            <div class="price">64 000 so'm</div>
-            <button class="buy-button" onclick="buy('stars_250', 64000)">
-                💳 Sotib olish
-            </button>
-        </div>
+            <div class="product-card">
 
-        <div class="product">
-            <h3>🌟 350 Stars</h3>
-            <div class="price">89 000 so'm</div>
-            <button class="buy-button" onclick="buy('stars_350', 89000)">
-                💳 Sotib olish
-            </button>
-        </div>
+                <h3>⭐ ${count} Telegram Stars</h3>
 
-        <div class="product">
-            <h3>🌟 500 Stars</h3>
-            <div class="price">125 000 so'm</div>
-            <button class="buy-button" onclick="buy('stars_500', 125000)">
-                💳 Sotib olish
-            </button>
-        </div>
+                <p>
+                    Telegram Stars
+                </p>
 
-        <div class="product">
-            <h3>🌟 750 Stars</h3>
-            <div class="price">185 000 so'm</div>
-            <button class="buy-button" onclick="buy('stars_750', 185000)">
-                💳 Sotib olish
-            </button>
-        </div>
+                <div class="product-price">
 
-        <div class="product">
-            <h3>🌟 1000 Stars</h3>
-            <div class="price">244 000 so'm</div>
-            <button class="buy-button" onclick="buy('stars_1000', 244000)">
-                💳 Sotib olish
-            </button>
-        </div>
+                    <span class="price">
+                        ${price.toLocaleString("uz-UZ")} so'm
+                    </span>
 
-        <div class="product">
-            <h3>🌟 1500 Stars</h3>
-            <div class="price">365 000 so'm</div>
-            <button class="buy-button" onclick="buy('stars_1500', 365000)">
-                💳 Sotib olish
-            </button>
-        </div>
+                    <button
+                        class="buy-button"
+                        onclick="buy('stars_${count}', ${price})"
+                    >
+                        Sotib olish
+                    </button>
 
-        <div class="product">
-            <h3>🌟 2500 Stars</h3>
-            <div class="price">605 000 so'm</div>
-            <button class="buy-button" onclick="buy('stars_2500', 605000)">
-                💳 Sotib olish
-            </button>
-        </div>
+                </div>
 
-        <div class="product">
-            <h3>🌟 5000 Stars</h3>
-            <div class="price">1 205 000 so'm</div>
-            <button class="buy-button" onclick="buy('stars_5000', 1205000)">
-                💳 Sotib olish
-            </button>
-        </div>
-    `;
+            </div>
+
+        `
+    ).join("");
 }
 
 
 // ==========================
-// TUGMALARNI ULASH
+// CATEGORY BUTTONS
 // ==========================
 
-document
-    .getElementById("premiumButton")
-    .addEventListener("click", showPremium);
+const premiumButton =
+    document.getElementById("premiumButton");
 
-document
-    .getElementById("starsButton")
-    .addEventListener("click", showStars);
+const starsButton =
+    document.getElementById("starsButton");
+
+
+premiumButton.addEventListener(
+    "click",
+    () => {
+
+        premiumButton.classList.add("active");
+        starsButton.classList.remove("active");
+
+        showPremium();
+    }
+);
+
+
+starsButton.addEventListener(
+    "click",
+    () => {
+
+        starsButton.classList.add("active");
+        premiumButton.classList.remove("active");
+
+        showStars();
+    }
+);
 
 
 // ==========================
-// SOTIB OLISH
+// DEFAULT
+// ==========================
+
+showPremium();
+
+
+// ==========================
+// BUY
 // ==========================
 
 async function buy(product, amount) {
 
-    const tg = window.Telegram.WebApp;
-    const user = tg.initDataUnsafe?.user;
-
     if (!user) {
-        alert("Telegram foydalanuvchisi aniqlanmadi.");
+
+        tg.showAlert(
+            "Telegram foydalanuvchisi aniqlanmadi."
+        );
+
         return;
     }
+
+
+    // Telegram Mini App confirmation
+    const confirmed = confirm(
+        "Buyurtmani tasdiqlaysizmi?\n\n" +
+        "Mahsulot: " + product +
+        "\nNarx: " +
+        amount.toLocaleString("uz-UZ") +
+        " so'm"
+    );
+
+
+    if (!confirmed) {
+        return;
+    }
+
 
     try {
 
@@ -171,35 +282,50 @@ async function buy(product, amount) {
             }
         );
 
+
         if (!response.ok) {
-            throw new Error("Server xatosi: " + response.status);
+
+            throw new Error(
+                "Server xatosi: " +
+                response.status
+            );
         }
 
-        const data = await response.json();
+
+        const data =
+            await response.json();
+
 
         if (data.ok) {
 
-            alert(
+            tg.showAlert(
                 "✅ Buyurtma yaratildi!\n\n" +
-                "Buyurtma №: " + data.order_id +
-                "\nMahsulot: " + product +
-                "\nNarx: " +
+                "Buyurtma №: " +
+                data.order_id +
+                "\n\n" +
+                "Mahsulot: " +
+                product +
+                "\n" +
+                "Narx: " +
                 amount.toLocaleString("uz-UZ") +
                 " so'm"
             );
 
         } else {
 
-            alert("❌ Buyurtma yaratilmadi.");
-
+            tg.showAlert(
+                "❌ Buyurtma yaratilmadi."
+            );
         }
+
 
     } catch (error) {
 
         console.error(error);
 
-        alert(
+        tg.showAlert(
             "❌ Server bilan bog‘lanib bo‘lmadi."
         );
     }
 }
+```
