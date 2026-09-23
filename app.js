@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // USERNAME FORM
+    // USERNAME OYNASI
     // =========================
 
     function showRecipientForm() {
@@ -124,38 +124,50 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
 
 
-        // =========================
-        // INPUTNI AKTIVLASHTIRISH
-        // =========================
-
+        // Inputni olish
         const input =
             document.getElementById("recipientUsername");
 
 
+        // Input mavjud bo'lsa
         if (input) {
 
             input.disabled = false;
             input.readOnly = false;
 
+
+            // Bosilganda fokus
             input.addEventListener(
                 "click",
-                function () {
+                function (event) {
+
+                    event.stopPropagation();
+
                     this.focus();
                 }
             );
 
+
+            // Telefon / Telegram touch
             input.addEventListener(
                 "touchstart",
-                function () {
+                function (event) {
+
+                    event.stopPropagation();
+
                     this.focus();
                 },
                 { passive: true }
             );
 
+
+            // Fokus yo'qolsa ham qayta yozish mumkin
             input.addEventListener(
-                "focus",
+                "blur",
                 function () {
-                    this.style.cursor = "text";
+
+                    this.disabled = false;
+                    this.readOnly = false;
                 }
             );
         }
@@ -207,7 +219,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // USERNAME OLISH
+    // USERNAME TEKSHIRISH
     // =========================
 
     function getUsername() {
@@ -232,21 +244,44 @@ document.addEventListener("DOMContentLoaded", function () {
             input.value.trim();
 
 
+        // =========================
+        // BO'SH USERNAME
+        // =========================
+
         if (!username) {
 
             alert(
-                "❗ Telegram username kiriting."
+                "❗ Avval Telegram username kiriting."
             );
 
-            input.focus();
+
+            // Alert yopilgandan keyin
+            // inputni yana aktiv qilish
+            setTimeout(
+                function () {
+
+                    input.disabled = false;
+                    input.readOnly = false;
+
+                    input.focus();
+
+                },
+                200
+            );
+
 
             return null;
         }
 
 
+        // @ belgisini olib tashlash
         username =
             username.replace(/^@/, "");
 
+
+        // =========================
+        // USERNAME VALIDATSIYA
+        // =========================
 
         if (
             !/^[a-zA-Z0-9_]{5,32}$/.test(
@@ -259,7 +294,20 @@ document.addEventListener("DOMContentLoaded", function () {
                 "Masalan: @amirquiov"
             );
 
-            input.focus();
+
+            setTimeout(
+                function () {
+
+                    input.disabled = false;
+                    input.readOnly = false;
+
+                    input.focus();
+                    input.select();
+
+                },
+                200
+            );
+
 
             return null;
         }
@@ -270,7 +318,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // PREMIUM
+    // PREMIUM PAKETLARI
     // =========================
 
     function showPremium(username) {
@@ -370,7 +418,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // STARS
+    // STARS PAKETLARI
     // =========================
 
     function showStars(username) {
@@ -712,7 +760,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // BOSHLANG‘ICH OYNA
+    // BOSHLANG'ICH OYNA
     // =========================
 
     showRecipientForm();
