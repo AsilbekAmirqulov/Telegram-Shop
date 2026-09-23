@@ -11,8 +11,9 @@ document.addEventListener("DOMContentLoaded", function () {
         tg.expand();
     }
 
+
     // =========================
-    // PREMIUM PAKETLARI
+    // PREMIUM
     // =========================
 
     const premiumPlans = [
@@ -35,18 +36,36 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // PREMIUM
+    // STARS
     // =========================
 
-    function showPremium() {
+    const starsPlans = [
+        ["100", 30000],
+        ["150", 40000],
+        ["250", 64000],
+        ["350", 89000],
+        ["500", 125000],
+        ["750", 185000],
+        ["1000", 244000],
+        ["1500", 365000],
+        ["2500", 605000],
+        ["5000", 1205000]
+    ];
+
+
+    // =========================
+    // UMUMIY USERNAME OYNASI
+    // =========================
+
+    function showRecipientForm() {
 
         products.innerHTML = `
             <div class="gift-form">
 
-                <h2>🎁 Premium sovg‘asi</h2>
+                <h2>🎁 Kimga yubormoqchisiz?</h2>
 
                 <p class="gift-description">
-                    Premiumni kimga yubormoqchisiz?
+                    Telegram username'ini kiriting
                 </p>
 
                 <input
@@ -55,6 +74,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     class="username-input"
                     placeholder="@username"
                     autocomplete="off"
+                    maxlength="33"
                 >
 
                 <p class="username-hint">
@@ -63,30 +83,169 @@ document.addEventListener("DOMContentLoaded", function () {
 
             </div>
 
-            <div id="premiumPlans"></div>
+            <div class="product-card">
+
+                <h3>💎 Telegram Premium</h3>
+
+                <p>
+                    Telegram Premium sovg‘a qiling
+                </p>
+
+                <button
+                    class="buy-button"
+                    id="choosePremium"
+                >
+                    💎 Premium
+                </button>
+
+            </div>
+
+            <div class="product-card">
+
+                <h3>⭐ Telegram Stars</h3>
+
+                <p>
+                    Telegram Stars sovg‘a qiling
+                </p>
+
+                <button
+                    class="buy-button"
+                    id="chooseStars"
+                >
+                    ⭐ Stars
+                </button>
+
+            </div>
         `;
 
-        const plans = document.getElementById("premiumPlans");
+
+        document
+            .getElementById("choosePremium")
+            .addEventListener("click", function () {
+
+                const username = getUsername();
+
+                if (!username) {
+                    return;
+                }
+
+                showPremium(username);
+            });
+
+
+        document
+            .getElementById("chooseStars")
+            .addEventListener("click", function () {
+
+                const username = getUsername();
+
+                if (!username) {
+                    return;
+                }
+
+                showStars(username);
+            });
+    }
+
+
+    // =========================
+    // USERNAME OLISH
+    // =========================
+
+    function getUsername() {
+
+        const input =
+            document.getElementById("recipientUsername");
+
+        if (!input) {
+            return null;
+        }
+
+        let username =
+            input.value.trim();
+
+        if (!username) {
+
+            alert(
+                "❗ Telegram username kiriting."
+            );
+
+            input.focus();
+
+            return null;
+        }
+
+
+        username = username.replace(/^@/, "");
+
+
+        if (!/^[a-zA-Z0-9_]{5,32}$/.test(username)) {
+
+            alert(
+                "❗ Telegram username noto‘g‘ri.\n\n" +
+                "Masalan: @amirquiov"
+            );
+
+            input.focus();
+
+            return null;
+        }
+
+
+        return username;
+    }
+
+
+    // =========================
+    // PREMIUM PAKETLARI
+    // =========================
+
+    function showPremium(username) {
+
+        products.innerHTML = `
+
+            <div class="gift-form">
+
+                <h2>💎 Telegram Premium</h2>
+
+                <p class="gift-description">
+                    🎁 @${username} uchun Premium
+                </p>
+
+            </div>
+
+            <div id="premiumPlans"></div>
+
+        `;
+
+
+        const plans =
+            document.getElementById("premiumPlans");
+
 
         premiumPlans.forEach(function (plan) {
 
             plans.innerHTML += `
+
                 <div class="product-card">
 
-                    <h3>💎 Telegram Premium — ${plan.title}</h3>
+                    <h3>
+                        💎 Premium — ${plan.title}
+                    </h3>
 
                     <p>
-                        Premium ${plan.title} uchun sovg‘a
+                        @${username} ga sovg‘a
                     </p>
 
                     <div class="product-price">
 
                         <span class="price">
-                            ${plan.price.toLocaleString("uz-UZ")} so'm
+                            ${plan.price.toLocaleString("uz-UZ")}
+                            so'm
                         </span>
 
                         <button
-                            class="buy-button"
+                            class="buy-button premium-buy"
                             data-months="${plan.months}"
                             data-price="${plan.price}"
                         >
@@ -96,52 +255,133 @@ document.addEventListener("DOMContentLoaded", function () {
                     </div>
 
                 </div>
+
             `;
         });
 
+
         document
-            .querySelectorAll(".buy-button")
+            .querySelectorAll(".premium-buy")
             .forEach(function (button) {
 
-                button.addEventListener("click", function () {
+                button.addEventListener(
+                    "click",
+                    function () {
 
-                    const usernameInput =
-                        document.getElementById("recipientUsername");
+                        const months =
+                            Number(
+                                button.dataset.months
+                            );
 
-                    let username =
-                        usernameInput.value.trim();
+                        const price =
+                            Number(
+                                button.dataset.price
+                            );
 
-                    if (!username) {
-                        alert(
-                            "❗ Avval Premium kimga yuborilishini kiriting."
+                        createOrder(
+                            "Telegram Premium",
+                            username,
+                            months,
+                            price
                         );
-                        usernameInput.focus();
-                        return;
                     }
+                );
+            });
+    }
 
-                    username = username.replace(/^@/, "");
 
-                    if (!/^[a-zA-Z0-9_]{5,32}$/.test(username)) {
-                        alert(
-                            "❗ Telegram username noto‘g‘ri.\n\n" +
-                            "Masalan: @amirquiov"
+    // =========================
+    // STARS PAKETLARI
+    // =========================
+
+    function showStars(username) {
+
+        products.innerHTML = `
+
+            <div class="gift-form">
+
+                <h2>⭐ Telegram Stars</h2>
+
+                <p class="gift-description">
+                    🎁 @${username} uchun Stars
+                </p>
+
+            </div>
+
+            <div id="starsPlans"></div>
+
+        `;
+
+
+        const plans =
+            document.getElementById("starsPlans");
+
+
+        starsPlans.forEach(function (item) {
+
+            const count = item[0];
+            const price = item[1];
+
+
+            plans.innerHTML += `
+
+                <div class="product-card">
+
+                    <h3>
+                        ⭐ ${count} Telegram Stars
+                    </h3>
+
+                    <p>
+                        @${username} ga sovg‘a
+                    </p>
+
+                    <div class="product-price">
+
+                        <span class="price">
+                            ${price.toLocaleString("uz-UZ")}
+                            so'm
+                        </span>
+
+                        <button
+                            class="buy-button stars-buy"
+                            data-count="${count}"
+                            data-price="${price}"
+                        >
+                            🎁 Davom etish
+                        </button>
+
+                    </div>
+
+                </div>
+
+            `;
+        });
+
+
+        document
+            .querySelectorAll(".stars-buy")
+            .forEach(function (button) {
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        const count =
+                            button.dataset.count;
+
+                        const price =
+                            Number(
+                                button.dataset.price
+                            );
+
+                        createOrder(
+                            "Telegram Stars",
+                            username,
+                            count,
+                            price
                         );
-                        usernameInput.focus();
-                        return;
                     }
-
-                    const months =
-                        Number(button.dataset.months);
-
-                    const price =
-                        Number(button.dataset.price);
-
-                    createOrder(
-                        username,
-                        months,
-                        price
-                    );
-                });
+                );
             });
     }
 
@@ -151,12 +391,16 @@ document.addEventListener("DOMContentLoaded", function () {
     // =========================
 
     async function createOrder(
-        recipientUsername,
-        months,
+        product,
+        username,
+        option,
         amount
     ) {
 
-        if (!tg || !tg.initDataUnsafe?.user) {
+        if (
+            !tg ||
+            !tg.initDataUnsafe?.user
+        ) {
 
             alert(
                 "❗ Telegram foydalanuvchisi aniqlanmadi.\n\n" +
@@ -166,25 +410,80 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        const buyer = tg.initDataUnsafe.user;
+
+        const buyer =
+            tg.initDataUnsafe.user;
+
+
+        let detail = "";
+
+
+        if (product === "Telegram Premium") {
+
+            detail =
+                option + " oy";
+
+        } else {
+
+            detail =
+                option + " Stars";
+        }
+
 
         const confirmed = confirm(
-            "🎁 Premium sovg‘asi\n\n" +
+
+            "🎁 Buyurtma\n\n" +
+
             "👤 Qabul qiluvchi: @" +
-            recipientUsername +
+            username +
             "\n" +
-            "💎 Muddat: " +
-            months +
-            " oy\n" +
+
+            "📦 Mahsulot: " +
+            product +
+            "\n" +
+
+            "🔹 Miqdor: " +
+            detail +
+            "\n" +
+
             "💰 Narx: " +
             amount.toLocaleString("uz-UZ") +
             " so'm\n\n" +
-            "Buyurtmani davom ettirasizmi?"
+
+            "Davom etasizmi?"
         );
+
 
         if (!confirmed) {
             return;
         }
+
+
+        // =========================
+        // PREMIUM
+        // =========================
+
+        let months = null;
+
+
+        if (product === "Telegram Premium") {
+
+            months = Number(option);
+        }
+
+
+        // =========================
+        // STARS
+        // =========================
+
+        let stars = null;
+
+
+        if (product === "Telegram Stars") {
+
+            stars = Number(option);
+        }
+
 
         try {
 
@@ -194,23 +493,28 @@ document.addEventListener("DOMContentLoaded", function () {
                     method: "POST",
 
                     headers: {
-                        "Content-Type": "application/json"
+                        "Content-Type":
+                            "application/json"
                     },
 
                     body: JSON.stringify({
 
                         user_id: buyer.id,
 
-                        product: "Telegram Premium",
+                        product: product,
 
                         amount: amount,
 
-                        recipient_username: recipientUsername,
+                        recipient_username:
+                            username,
 
-                        months: months
+                        months: months,
+
+                        stars: stars
                     })
                 }
             );
+
 
             if (!response.ok) {
 
@@ -220,30 +524,48 @@ document.addEventListener("DOMContentLoaded", function () {
                 );
             }
 
+
             const data =
                 await response.json();
+
 
             if (data.ok) {
 
                 alert(
+
                     "✅ Buyurtma yaratildi!\n\n" +
-                    "Buyurtma №: " +
+
+                    "📦 Buyurtma №: " +
                     data.order_id +
                     "\n\n" +
-                    "🎁 @" +
-                    recipientUsername +
+
+                    "👤 @" +
+                    username +
                     "\n" +
-                    "💎 Premium: " +
-                    months +
-                    " oy\n\n" +
-                    "To‘lov tizimi keyingi bosqichda ulanadi."
+
+                    "📦 " +
+                    product +
+                    "\n" +
+
+                    "🔹 " +
+                    detail +
+                    "\n\n" +
+
+                    "💰 " +
+                    amount.toLocaleString("uz-UZ") +
+                    " so'm"
                 );
 
             } else {
 
                 alert(
+
                     "❌ Buyurtma yaratilmadi.\n\n" +
-                    (data.message || "")
+
+                    (
+                        data.message ||
+                        "Noma'lum xato"
+                    )
                 );
             }
 
@@ -259,74 +581,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // STARS
-    // =========================
-
-    function showStars() {
-
-        const stars = [
-            ["100", 30000],
-            ["150", 40000],
-            ["250", 64000],
-            ["350", 89000],
-            ["500", 125000],
-            ["750", 185000],
-            ["1000", 244000],
-            ["1500", 365000],
-            ["2500", 605000],
-            ["5000", 1205000]
-        ];
-
-        products.innerHTML = "";
-
-        stars.forEach(function (item) {
-
-            const count = item[0];
-            const price = item[1];
-
-            products.innerHTML += `
-                <div class="product-card">
-
-                    <h3>⭐ ${count} Telegram Stars</h3>
-
-                    <p>
-                        Telegram Stars
-                    </p>
-
-                    <div class="product-price">
-
-                        <span class="price">
-                            ${price.toLocaleString("uz-UZ")} so'm
-                        </span>
-
-                        <button
-                            class="buy-button"
-                            onclick="alert('⭐ Stars bo‘limi keyingi bosqichda ulanadi.')"
-                        >
-                            Sotib olish
-                        </button>
-
-                    </div>
-
-                </div>
-            `;
-        });
-    }
-
-
-    // =========================
-    // TUGMALAR
+    // CATEGORY TUGMALARI
     // =========================
 
     premiumButton.addEventListener(
         "click",
         function () {
 
-            premiumButton.classList.add("active");
+            premiumButton.classList.add(
+                "active"
+            );
 
-            starsButton.classList.remove("active");
+            starsButton.classList.remove(
+                "active"
+            );
 
-            showPremium();
+            showRecipientForm();
         }
     );
 
@@ -335,11 +605,15 @@ document.addEventListener("DOMContentLoaded", function () {
         "click",
         function () {
 
-            starsButton.classList.add("active");
+            starsButton.classList.add(
+                "active"
+            );
 
-            premiumButton.classList.remove("active");
+            premiumButton.classList.remove(
+                "active"
+            );
 
-            showStars();
+            showRecipientForm();
         }
     );
 
@@ -348,6 +622,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // BOSHLANG‘ICH HOLAT
     // =========================
 
-    showPremium();
+    showRecipientForm();
 
 });
