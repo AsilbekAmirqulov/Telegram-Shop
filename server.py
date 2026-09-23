@@ -12,12 +12,18 @@ app = FastAPI()
 ADMIN_KEY = os.getenv("ADMIN_KEY")
 
 
+# =========================
+# CORS
+# =========================
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://asilbekamirqulov.github.io"],
+    allow_origins=[
+        "https://asilbekamirqulov.github.io"
+    ],
     allow_credentials=False,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 
 
@@ -26,10 +32,13 @@ app.add_middleware(
 # =========================
 
 def get_db():
+
     database_url = os.getenv("DATABASE_URL")
 
     if not database_url:
-        raise RuntimeError("DATABASE_URL topilmadi")
+        raise RuntimeError(
+            "DATABASE_URL topilmadi"
+        )
 
     return psycopg2.connect(
         database_url,
@@ -38,6 +47,7 @@ def get_db():
 
 
 def init_db():
+
     conn = get_db()
     cursor = conn.cursor()
 
@@ -56,6 +66,7 @@ def init_db():
     """)
 
     conn.commit()
+
     cursor.close()
     conn.close()
 
@@ -68,28 +79,23 @@ init_db()
 # =========================
 
 class OrderRequest(BaseModel):
+
     user_id: int
     product: str
     amount: int
+    recipient_username: str
+    months: int
 
 
 class StatusRequest(BaseModel):
+
     status: str
 
 
 class PremiumTestRequest(BaseModel):
+
     telegram_username: str
     months: int
-    admin_key: str
-
-
-class MockPaymentRequest(BaseModel):
-    order_id: int
-    admin_key: str
-
-
-class MockDeliveryRequest(BaseModel):
-    order_id: int
     admin_key: str
 
 
@@ -99,6 +105,7 @@ class MockDeliveryRequest(BaseModel):
 
 @app.get("/")
 def home():
+
     return {
         "ok": True,
         "message": "Telegram Shop server is running!"
@@ -112,8 +119,64 @@ def home():
 @app.post("/create-order")
 def create_order(order: OrderRequest):
 
+    # =========================
+    # VALIDATION
+    # =========================
+
+    if order.product != "Telegram Premium":
+
+        return {
+            "ok": False,
+            "message": "Hozircha faqat Telegram Premium mavjud"
+        }
+
+
+    if order.months not in [3, 6, 12]:
+
+        return {
+            "ok": False,
+            "message": "Premium muddati 3, 6 yoki 12 oy bo'lishi kerak"
+        }
+
+
+    if order.amount <= 0:
+
+        return {
+            "ok": False,
+            "message": "Narx noto'g'ri"
+        }
+
+
+    username = (
+        order.recipient_username
+        .strip()
+        .lstrip("@")
+    )
+
+
+    if not username:
+
+        return {
+            "ok": False,
+            "message": "Qabul qiluvchi username kiritilmagan"
+        }
+
+
+    if len(username) < 5 or len(username) > 32:
+
+        return {
+            "ok": False,
+            "message": "Telegram username noto'g'ri"
+        }
+
+
+    # =========================
+    # DATABASE
+    # =========================
+
     conn = get_db()
     cursor = conn.cursor()
+
 
     cursor.execute(
         """
@@ -121,29 +184,41 @@ def create_order(order: OrderRequest):
             user_id,
             product,
             amount,
-            status
+            status,
+            telegram_username,
+            months
         )
-        VALUES (%s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s)
         RETURNING id
         """,
         (
             order.user_id,
             order.product,
             order.amount,
-            "pending"
+            "pending",
+            username,
+            order.months
         )
     )
+
 
     order_id = cursor.fetchone()[0]
 
     conn.commit()
+
     cursor.close()
     conn.close()
+
 
     return {
         "ok": True,
         "order_id": order_id,
-        "status": "pending"
+        "status": "pending",
+        "buyer_user_id": order.user_id,
+        "recipient_username": username,
+        "product": order.product,
+        "months": order.months,
+        "amount": order.amount
     }
 
 
@@ -155,13 +230,16 @@ def create_order(order: OrderRequest):
 def get_orders(admin_key: str):
 
     if admin_key != ADMIN_KEY:
+
         return {
             "ok": False,
             "message": "Ruxsat yo'q"
         }
 
+
     conn = get_db()
     cursor = conn.cursor()
+
 
     cursor.execute("""
         SELECT
@@ -178,10 +256,12 @@ def get_orders(admin_key: str):
         ORDER BY id DESC
     """)
 
+
     orders = cursor.fetchall()
 
     cursor.close()
     conn.close()
+
 
     return {
         "ok": True,
@@ -217,18 +297,21 @@ def update_order_status(
         "paid",
         "processing",
         "completed",
-        "cancelled",
-        "mock_pending"
+        "cancelled"
     ]
 
+
     if request.status not in allowed_statuses:
+
         return {
             "ok": False,
             "message": "Noto'g'ri status"
         }
 
+
     conn = get_db()
     cursor = conn.cursor()
+
 
     cursor.execute(
         """
@@ -242,7 +325,10 @@ def update_order_status(
         )
     )
 
+
     if cursor.rowcount == 0:
+
+        cursor.close()
         conn.close()
 
         return {
@@ -250,10 +336,12 @@ def update_order_status(
             "message": "Buyurtma topilmadi"
         }
 
+
     conn.commit()
 
     cursor.close()
     conn.close()
+
 
     return {
         "ok": True,
@@ -269,23 +357,30 @@ def update_order_status(
 @app.get("/supplier-account")
 def supplier_account():
 
-    api_key = os.getenv("RESELLCODES_API_KEY")
+    api_key = os.getenv(
+        "RESELLCODES_API_KEY"
+    )
+
 
     if not api_key:
+
         return {
             "ok": False,
             "message": "RESELLCODES_API_KEY topilmadi"
         }
+
 
     try:
 
         request = urllib.request.Request(
             "https://resell.codes/api/v1/me",
             headers={
-                "Authorization": f"Bearer {api_key}"
+                "Authorization":
+                f"Bearer {api_key}"
             },
             method="GET"
         )
+
 
         with urllib.request.urlopen(
             request,
@@ -296,11 +391,13 @@ def supplier_account():
                 response.read().decode()
             )
 
+
         return {
             "ok": True,
             "supplier": "ReSellCodes",
             "data": data
         }
+
 
     except Exception as e:
 
@@ -311,29 +408,36 @@ def supplier_account():
 
 
 # =========================
-# RESELLCODES PRICES
+# RESELLCODES PREMIUM PRICES
 # =========================
 
 @app.get("/supplier-premium-prices")
 def supplier_premium_prices():
 
-    api_key = os.getenv("RESELLCODES_API_KEY")
+    api_key = os.getenv(
+        "RESELLCODES_API_KEY"
+    )
+
 
     if not api_key:
+
         return {
             "ok": False,
             "message": "RESELLCODES_API_KEY topilmadi"
         }
+
 
     try:
 
         request = urllib.request.Request(
             "https://resell.codes/api/v1/telegram/premium",
             headers={
-                "Authorization": f"Bearer {api_key}"
+                "Authorization":
+                f"Bearer {api_key}"
             },
             method="GET"
         )
+
 
         with urllib.request.urlopen(
             request,
@@ -344,11 +448,13 @@ def supplier_premium_prices():
                 response.read().decode()
             )
 
+
         return {
             "ok": True,
             "supplier": "ReSellCodes",
             "data": data
         }
+
 
     except Exception as e:
 
@@ -361,37 +467,61 @@ def supplier_premium_prices():
 # =========================
 # REAL PREMIUM BUY
 # =========================
+# Hozircha admin/test endpoint.
+# To'lov API tayyor bo'lgach,
+# shu jarayonni paid order bilan bog'laymiz.
 
 @app.post("/test-premium-buy")
-def test_premium_buy(request: PremiumTestRequest):
+def test_premium_buy(
+    request: PremiumTestRequest
+):
 
     if request.admin_key != ADMIN_KEY:
+
         return {
             "ok": False,
             "message": "Ruxsat yo'q"
         }
 
+
     if request.months not in [3, 6, 12]:
+
         return {
             "ok": False,
-            "message": "months faqat 3, 6 yoki 12 bo'lishi mumkin"
+            "message":
+            "months faqat 3, 6 yoki 12 bo'lishi mumkin"
         }
 
-    username = request.telegram_username.strip().lstrip("@")
+
+    username = (
+        request.telegram_username
+        .strip()
+        .lstrip("@")
+    )
+
 
     if not username:
+
         return {
             "ok": False,
-            "message": "Telegram username kiritilmagan"
+            "message":
+            "Telegram username kiritilmagan"
         }
 
-    api_key = os.getenv("RESELLCODES_API_KEY")
+
+    api_key = os.getenv(
+        "RESELLCODES_API_KEY"
+    )
+
 
     if not api_key:
+
         return {
             "ok": False,
-            "message": "RESELLCODES_API_KEY topilmadi"
+            "message":
+            "RESELLCODES_API_KEY topilmadi"
         }
+
 
     try:
 
@@ -400,15 +530,19 @@ def test_premium_buy(request: PremiumTestRequest):
             "months": request.months
         }).encode("utf-8")
 
+
         api_request = urllib.request.Request(
             "https://resell.codes/api/v1/telegram/premium/buy",
             data=payload,
             headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
+                "Authorization":
+                f"Bearer {api_key}",
+                "Content-Type":
+                "application/json"
             },
             method="POST"
         )
+
 
         with urllib.request.urlopen(
             api_request,
@@ -419,11 +553,13 @@ def test_premium_buy(request: PremiumTestRequest):
                 response.read().decode()
             )
 
+
         return {
             "ok": True,
             "supplier": "ReSellCodes",
             "order": data
         }
+
 
     except Exception as e:
 
@@ -431,274 +567,3 @@ def test_premium_buy(request: PremiumTestRequest):
             "ok": False,
             "message": str(e)
         }
-
-
-# =========================
-# MOCK PREMIUM BUY
-# =========================
-
-@app.post("/mock-premium-buy")
-def mock_premium_buy(request: PremiumTestRequest):
-
-    if request.admin_key != ADMIN_KEY:
-        return {
-            "ok": False,
-            "message": "Ruxsat yo'q"
-        }
-
-    if request.months not in [3, 6, 12]:
-        return {
-            "ok": False,
-            "message": "months faqat 3, 6 yoki 12 bo'lishi mumkin"
-        }
-
-    username = request.telegram_username.strip().lstrip("@")
-
-    if not username:
-        return {
-            "ok": False,
-            "message": "Telegram username kiritilmagan"
-        }
-
-    prices = {
-        3: "12.1698",
-        6: "16.2298",
-        12: "29.4248"
-    }
-
-    price_usd = prices[request.months]
-
-    conn = get_db()
-    cursor = conn.cursor()
-
-    cursor.execute(
-        """
-        INSERT INTO orders (
-            user_id,
-            product,
-            amount,
-            status,
-            telegram_username,
-            months,
-            price_usd,
-            supplier_order_id
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        RETURNING id
-        """,
-        (
-            0,
-            "Telegram Premium",
-            0,
-            "mock_pending",
-            username,
-            request.months,
-            price_usd,
-            "MOCK-TEST-001"
-        )
-    )
-
-    order_id = cursor.fetchone()[0]
-
-    conn.commit()
-
-    cursor.close()
-    conn.close()
-
-    return {
-        "ok": True,
-        "mock": True,
-        "supplier": "ReSellCodes",
-        "message": "MOCK TEST: haqiqiy buyurtma yuborilmadi",
-        "order": {
-            "id": order_id,
-            "telegram_username": username,
-            "months": request.months,
-            "price_usd": price_usd,
-            "status": "mock_pending",
-            "supplier_order_id": "MOCK-TEST-001"
-        }
-    }
-
-
-# =========================
-# MOCK PAYMENT
-# =========================
-
-@app.post("/mock-payment")
-def mock_payment(request: MockPaymentRequest):
-
-    if request.admin_key != ADMIN_KEY:
-        return {
-            "ok": False,
-            "message": "Ruxsat yo'q"
-        }
-
-    conn = get_db()
-    cursor = conn.cursor()
-
-    cursor.execute(
-        """
-        SELECT
-            id,
-            telegram_username,
-            months,
-            price_usd,
-            status
-        FROM orders
-        WHERE id = %s
-        """,
-        (request.order_id,)
-    )
-
-    order = cursor.fetchone()
-
-    if not order:
-        cursor.close()
-        conn.close()
-
-        return {
-            "ok": False,
-            "message": "Buyurtma topilmadi"
-        }
-
-    if order[4] != "mock_pending":
-        cursor.close()
-        conn.close()
-
-        return {
-            "ok": False,
-            "message": f"Buyurtma holati noto'g'ri: {order[4]}"
-        }
-
-    cursor.execute(
-        """
-        UPDATE orders
-        SET status = %s
-        WHERE id = %s
-        """,
-        (
-            "paid",
-            request.order_id
-        )
-    )
-
-    conn.commit()
-
-    cursor.close()
-    conn.close()
-
-    return {
-        "ok": True,
-        "mock": True,
-        "message": "MOCK PAYMENT: to'lov simulyatsiya qilindi",
-        "payment": {
-            "order_id": order[0],
-            "telegram_username": order[1],
-            "months": order[2],
-            "amount_usd": order[3],
-            "status": "paid"
-        }
-    }
-
-
-# =========================
-# MOCK PREMIUM DELIVERY
-# =========================
-
-@app.post("/mock-premium-delivery")
-def mock_premium_delivery(request: MockDeliveryRequest):
-
-    if request.admin_key != ADMIN_KEY:
-        return {
-            "ok": False,
-            "message": "Ruxsat yo'q"
-        }
-
-    conn = get_db()
-    cursor = conn.cursor()
-
-    cursor.execute(
-        """
-        SELECT
-            id,
-            telegram_username,
-            months,
-            price_usd,
-            status
-        FROM orders
-        WHERE id = %s
-        """,
-        (request.order_id,)
-    )
-
-    order = cursor.fetchone()
-
-    if not order:
-        cursor.close()
-        conn.close()
-
-        return {
-            "ok": False,
-            "message": "Buyurtma topilmadi"
-        }
-
-    if order[4] != "paid":
-        cursor.close()
-        conn.close()
-
-        return {
-            "ok": False,
-            "message": f"Buyurtma paid holatida emas: {order[4]}"
-        }
-
-    cursor.execute(
-        """
-        UPDATE orders
-        SET status = %s
-        WHERE id = %s
-        """,
-        (
-            "processing",
-            request.order_id
-        )
-    )
-
-    conn.commit()
-
-    mock_supplier_order_id = (
-        f"MOCK-RESELL-{request.order_id}"
-    )
-
-    cursor.execute(
-        """
-        UPDATE orders
-        SET
-            status = %s,
-            supplier_order_id = %s
-        WHERE id = %s
-        """,
-        (
-            "completed",
-            mock_supplier_order_id,
-            request.order_id
-        )
-    )
-
-    conn.commit()
-
-    cursor.close()
-    conn.close()
-
-    return {
-        "ok": True,
-        "mock": True,
-        "message": "MOCK: Premium yetkazib berish simulyatsiya qilindi",
-        "delivery": {
-            "order_id": order[0],
-            "telegram_username": order[1],
-            "months": order[2],
-            "status": "completed",
-            "supplier_order_id": mock_supplier_order_id
-        }
-    }
