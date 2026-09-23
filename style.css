@@ -1,89 +1,363 @@
+```css
 * {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f4f6f8;
-    color: #222;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0e1621;
+    color: #ffffff;
+    min-height: 100vh;
 }
 
-.container {
-    max-width: 500px;
-    margin: auto;
-    padding: 25px 18px;
+button {
+    font-family: inherit;
 }
 
-h1 {
-    text-align: center;
+.app {
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 20px 16px 30px;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 22px;
+}
+
+.header-icon {
+    width: 54px;
+    height: 54px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 17px;
+
+    font-size: 27px;
+
+    background: linear-gradient(
+        135deg,
+        #2481cc,
+        #6c63ff
+    );
+
+    box-shadow: 0 8px 25px rgba(36, 129, 204, 0.25);
+}
+
+.header h1 {
+    font-size: 24px;
+    font-weight: 750;
+    letter-spacing: -0.5px;
+}
+
+.header p {
+    margin-top: 3px;
+    color: #8b9bab;
+    font-size: 13px;
+}
+
+
+/* =========================
+   USER CARD
+========================= */
+
+.user-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    padding: 14px;
+
+    margin-bottom: 26px;
+
+    border-radius: 18px;
+
+    background: #17212b;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.user-avatar {
+    width: 44px;
+    height: 44px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: #2481cc;
+
+    font-size: 21px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.user-label {
+    font-size: 12px;
+    color: #81909e;
+}
+
+.user-info strong {
+    font-size: 15px;
+}
+
+
+/* =========================
+   SECTION HEADER
+========================= */
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 12px;
+    padding: 0 3px;
+}
+
+.section-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.section-header span {
+    font-size: 12px;
+    color: #7d8b99;
+}
+
+.products-title {
+    margin-top: 28px;
+}
+
+
+/* =========================
+   CATEGORY CARDS
+========================= */
+
+.categories {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.category {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    padding: 14px;
+
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 18px;
+
+    background: #17212b;
+
+    color: white;
+
+    cursor: pointer;
+
+    text-align: left;
+
+    transition:
+        transform 0.15s ease,
+        background 0.15s ease,
+        border 0.15s ease;
+}
+
+.category:active {
+    transform: scale(0.98);
+}
+
+.category.active {
+    border-color: rgba(36, 129, 204, 0.5);
+    background: #192f40;
+}
+
+.category-icon {
+    width: 46px;
+    height: 46px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 14px;
+
+    margin-right: 12px;
+
+    font-size: 22px;
+}
+
+.premium-icon {
+    background: rgba(36, 129, 204, 0.18);
+}
+
+.stars-icon {
+    background: rgba(255, 193, 7, 0.15);
+}
+
+.category-info {
+    flex: 1;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+}
+
+.category-info strong {
+    font-size: 15px;
+}
+
+.category-info span {
+    color: #8493a1;
+    font-size: 12px;
+}
+
+.category-arrow {
+    font-size: 25px;
+    color: #71808e;
+}
+
+
+/* =========================
+   PRODUCTS
+========================= */
+
+#products {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.product-card {
+    position: relative;
+
+    padding: 17px;
+
+    border-radius: 18px;
+
+    background: #17212b;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+
+    transition: transform 0.15s ease;
+}
+
+.product-card:active {
+    transform: scale(0.985);
+}
+
+.product-card h3 {
+    font-size: 16px;
     margin-bottom: 5px;
 }
 
-.subtitle {
-    text-align: center;
-    color: #777;
-    margin-bottom: 25px;
+.product-card p {
+    color: #8593a0;
+    font-size: 13px;
 }
 
-.categories {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-}
 
-.categories button {
-    border: none;
-    border-radius: 16px;
-    padding: 20px 10px;
-    background: white;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
-    font-size: 16px;
-    cursor: pointer;
-}
+/* =========================
+   PRICE
+========================= */
 
-.categories button:first-child {
-    color: #1683d8;
-}
+.product-price {
+    margin-top: 14px;
 
-.categories button:last-child {
-    color: #e8a400;
-}
-
-.categories button span {
-    display: block;
-    margin-top: 8px;
-}
-
-.product {
-    background: white;
-    margin-top: 15px;
-    padding: 18px;
-    border-radius: 16px;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
-}
-
-.product h3 {
-    margin: 0 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .price {
-    font-size: 18px;
-    font-weight: bold;
-    margin-bottom: 12px;
+    font-size: 19px;
+    font-weight: 750;
 }
 
 .buy-button {
-    width: 100%;
     border: none;
+
+    padding: 10px 17px;
+
     border-radius: 12px;
-    padding: 12px;
-    background: #1683d8;
+
+    background: #2481cc;
     color: white;
-    font-size: 16px;
+
+    font-size: 14px;
+    font-weight: 650;
+
     cursor: pointer;
+
+    transition:
+        transform 0.15s ease,
+        opacity 0.15s ease;
 }
 
 .buy-button:active {
-    transform: scale(0.98);
+    transform: scale(0.95);
+    opacity: 0.85;
 }
+
+
+/* =========================
+   FOOTER
+========================= */
+
+.footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+
+    margin-top: 30px;
+
+    color: #687785;
+
+    font-size: 11px;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 380px) {
+
+    .app {
+        padding: 16px 12px 25px;
+    }
+
+    .header h1 {
+        font-size: 21px;
+    }
+
+    .header-icon {
+        width: 48px;
+        height: 48px;
+    }
+
+    .user-card {
+        padding: 12px;
+    }
+}
+```
