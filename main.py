@@ -19,7 +19,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 # SOZLAMALAR
 # =========================
 
-TOKEN = "7922724316:AAFQOTtIUELq0QFE7l8U-c42-8_TtUhqIL0"
+TOKEN = "7922724316:AAGYigqU5A_U8-UQdX_iBtWT4A8OZg-OVqw"
 
 WEB_APP_URL = "https://asilbekamirqulov.github.io/Telegram-Shop/"
 
