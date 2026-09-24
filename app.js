@@ -60,6 +60,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function showRecipientForm() {
 
         products.innerHTML = `
+
             <div class="gift-form">
 
                 <h2>🎁 Kimga yubormoqchisiz?</h2>
@@ -94,7 +95,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 ></div>
 
                 <p class="username-hint">
-                    Masalan: @amirquiov
+                    Masalan: @qwerty123
                 </p>
 
             </div>
@@ -275,7 +276,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ) {
 
             error.textContent =
-                "❗ Username noto‘g‘ri. Masalan: @amirquiov";
+                "❗ Username noto‘g‘ri. Masalan: @qwerty123";
 
             error.style.display =
                 "block";
