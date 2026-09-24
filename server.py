@@ -7,6 +7,7 @@ import urllib.request
 import psycopg2
 import base64
 import tempfile
+import re
 from telethon.sync import TelegramClient
 from telethon.tl.types import User
 from telethon.errors import UsernameInvalidError, UsernameNotOccupiedError, RPCError
@@ -206,6 +207,42 @@ def home():
     return {
         "ok": True,
         "message": "Telegram Shop server is running!"
+    }
+
+
+# =========================
+# CHECK USERNAME
+# =========================
+
+@app.get("/check-username")
+def check_username(username: str):
+
+    username = username.strip().lstrip("@")
+
+    if not username:
+        return {
+            "ok": False,
+            "message": "❗ Username kiriting"
+        }
+
+    if not re.fullmatch(r"[A-Za-z0-9_]{5,32}", username):
+        return {
+            "ok": False,
+            "message": "❗ Username noto'g'ri. Masalan: @qwerty123"
+        }
+
+    valid, real_username, error = check_telegram_username(username)
+
+    if not valid:
+        return {
+            "ok": False,
+            "message": "❗ Username noto'g'ri. Masalan: @qwerty123"
+        }
+
+    return {
+        "ok": True,
+        "username": real_username,
+        "message": f"👤 Telegram foydalanuvchisi: @{real_username}"
     }
 
 
