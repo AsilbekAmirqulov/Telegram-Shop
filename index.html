@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="uz">
 <head>
@@ -36,7 +35,9 @@
 
             <div class="user-info">
                 <span class="user-label">Xush kelibsiz</span>
-                <strong id="userName">Telegram foydalanuvchisi</strong>
+                <strong id="userName">
+                    Telegram foydalanuvchisi
+                </strong>
             </div>
         </div>
 
@@ -51,9 +52,10 @@
         <!-- Categories -->
         <div class="categories">
 
+            <!-- Telegram Premium -->
             <button
                 type="button"
-                class="category active"
+                class="category"
                 id="premiumButton"
             >
                 <div class="category-icon premium-icon">
@@ -71,6 +73,7 @@
             </button>
 
 
+            <!-- Telegram Stars -->
             <button
                 type="button"
                 class="category"
@@ -94,11 +97,21 @@
 
 
         <!-- Products -->
-        <div class="section-header products-title">
-            <h2>Premium paketlar</h2>
-        </div>
+        <!-- Dastlab yashirin -->
+        <div
+            id="productsSection"
+            style="display: none;"
+        >
 
-        <div id="products"></div>
+            <div class="section-header products-title">
+                <h2 id="productsTitle">
+                    Premium paketlar
+                </h2>
+            </div>
+
+            <div id="products"></div>
+
+        </div>
 
 
         <!-- Footer -->
@@ -111,8 +124,7 @@
     </div>
 
 
-<script src="app.js?v=2"></script>
+    <script src="app.js?v=3"></script>
 
 </body>
 </html>
-
