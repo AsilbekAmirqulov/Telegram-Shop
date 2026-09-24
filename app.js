@@ -37,6 +37,7 @@ document.addEventListener("DOMContentLoaded", function () {
         {
             months: 1,
             title: "1 oy",
+            price: 40000,
             contact: true
         },
         {
@@ -54,6 +55,13 @@ document.addEventListener("DOMContentLoaded", function () {
         {
             months: 12,
             title: "1 yil",
+            price: 390000,
+            contact: false
+        },
+        {
+            months: 12,
+            title: "1 yil — Murojaat orqali",
+            price: 280000,
             contact: true
         }
     ];
@@ -341,8 +349,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
 
-                // @ belgisi faqat boshida
-
                 if (
                     raw.includes("@") &&
                     !raw.startsWith("@")
@@ -361,8 +367,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     raw.replace(/^@/, "");
 
 
-                // Faqat ruxsat berilgan belgilar
-
                 if (
                     !/^[a-zA-Z0-9_]*$/.test(
                         username
@@ -378,8 +382,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
 
-                // Maksimal 32 ta belgi
-
                 if (
                     username.length > 32
                 ) {
@@ -392,8 +394,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     return;
                 }
 
-
-                // Kamida 5 ta belgi
 
                 if (
                     username.length < 5
@@ -408,8 +408,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     return;
                 }
 
-
-                // Telegramdan qidirish
 
                 searchTimer =
                     setTimeout(
@@ -486,8 +484,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
 
-            // Oldin tekshirilgan username
-
             if (
                 verifiedUsername.toLowerCase() ===
                 username.toLowerCase()
@@ -496,8 +492,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 return verifiedUsername;
             }
 
-
-            // Qayta tekshirish
 
             const result =
                 await checkUsername(
@@ -525,19 +519,18 @@ document.addEventListener("DOMContentLoaded", function () {
     // CONTACT ADMIN
     // =========================
 
-    function showContactMessage(username, months) {
-
-        const monthText =
-            months === 1
-                ? "1 oylik"
-                : "12 oylik";
-
+    function showContactMessage(
+        username,
+        months,
+        price,
+        title
+    ) {
 
         products.innerHTML = `
 
             <div class="gift-form">
 
-                <h2>💎 ${monthText} Premium</h2>
+                <h2>💎 ${title}</h2>
 
                 <p class="gift-description">
                     🎁 @${username} uchun
@@ -549,21 +542,29 @@ document.addEventListener("DOMContentLoaded", function () {
             <div class="product-card">
 
                 <h3>
-                    💎 ${monthText} Premium obuna
+                    💎 ${title}
                 </h3>
 
                 <p>
-                    ${monthText} Premium obuna olish uchun
-                    <strong>@AmirquIov</strong> ga yozing.
+                    @${username} uchun Premium
                 </p>
 
-                <button
-                    type="button"
-                    class="buy-button"
-                    id="contactAdminButton"
-                >
-                    ✉️ @AmirquIov ga yozish
-                </button>
+                <div class="product-price">
+
+                    <span class="price">
+                        ${price.toLocaleString("uz-UZ")}
+                        so'm
+                    </span>
+
+                    <button
+                        type="button"
+                        class="buy-button"
+                        id="contactAdminButton"
+                    >
+                        ✉️ @AmirquIov ga yozish
+                    </button>
+
+                </div>
 
             </div>
         `;
@@ -620,7 +621,7 @@ document.addEventListener("DOMContentLoaded", function () {
         products.innerHTML =
             createRecipientForm() +
             `
-            <div id="premiumPlans"></div>
+                <div id="premiumPlans"></div>
             `;
 
 
@@ -628,11 +629,6 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById(
                 "premiumPlans"
             );
-
-
-        // Paketlar dastlab yashirin
-
-        premiumPlansContainer.innerHTML = "";
 
 
         let getUsername = null;
@@ -667,7 +663,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 function (plan) {
 
                     // =========================
-                    // 1 VA 12 OYLIK
+                    // CONTACT PACKAGE
                     // =========================
 
                     if (plan.contact) {
@@ -687,17 +683,18 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <div class="product-price">
 
                                     <span class="price">
-                                        ${plan.months === 1
-                                            ? "1 oylik Premium"
-                                            : "12 oylik Premium"}
+                                        ${plan.price.toLocaleString("uz-UZ")}
+                                        so'm
                                     </span>
 
                                     <button
                                         type="button"
                                         class="buy-button contact-premium"
                                         data-months="${plan.months}"
+                                        data-price="${plan.price}"
+                                        data-title="${plan.title}"
                                     >
-                                        ✉️ Batafsil
+                                        ✉️ Murojaat qilish
                                     </button>
 
                                 </div>
@@ -709,7 +706,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
                     // =========================
-                    // 3 VA 6 OYLIK
+                    // NORMAL PACKAGE
                     // =========================
 
                     else {
@@ -752,7 +749,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
             // =========================
-            // 1 / 12 OYLIK BUTTONLAR
+            // CONTACT BUTTONS
             // =========================
 
             document
@@ -780,9 +777,21 @@ document.addEventListener("DOMContentLoaded", function () {
                                     );
 
 
+                                const price =
+                                    Number(
+                                        button.dataset.price
+                                    );
+
+
+                                const title =
+                                    button.dataset.title;
+
+
                                 showContactMessage(
                                     username,
-                                    months
+                                    months,
+                                    price,
+                                    title
                                 );
                             }
                         );
@@ -791,7 +800,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
             // =========================
-            // 3 / 6 OYLIK BUTTONLAR
+            // NORMAL BUY BUTTONS
             // =========================
 
             document
@@ -845,7 +854,7 @@ document.addEventListener("DOMContentLoaded", function () {
         products.innerHTML =
             createRecipientForm() +
             `
-            <div id="starsPlans"></div>
+                <div id="starsPlans"></div>
             `;
 
 
@@ -853,9 +862,6 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById(
                 "starsPlans"
             );
-
-
-        starsPlansContainer.innerHTML = "";
 
 
         let getUsername = null;
@@ -1232,12 +1238,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // BOSHLANG'ICH HOLAT
     // =========================
 
-    // Muhim:
-    // Hech qanday mahsulot avtomatik
-    // ochilmaydi.
-    //
-    // Foydalanuvchi yuqoridagi
-    // Premium yoki Stars tugmasini
-    // bosishi kerak.
+    // Premium yoki Stars bosilmaguncha
+    // mahsulotlar ko‘rsatilmaydi.
 
 });
