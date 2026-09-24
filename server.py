@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
 import os
 import json
 import urllib.request
@@ -9,7 +10,7 @@ import base64
 import tempfile
 import re
 
-from telethon.sync import TelegramClient
+from telethon import TelegramClient
 from telethon.tl.types import User
 from telethon.tl.functions.contacts import ResolveUsernameRequest
 from telethon.errors import (
@@ -20,7 +21,7 @@ from telethon.errors import (
 
 
 # ============================================================
-# TELEGRAM USERNAME CHECK
+# TELEGRAM SETTINGS
 # ============================================================
 
 TG_API_ID = os.getenv("TG_API_ID")
@@ -31,11 +32,51 @@ telegram_client = None
 telegram_session_path = None
 
 
-if TG_API_ID and TG_API_HASH and TG_SESSION:
+# ============================================================
+# FASTAPI
+# ============================================================
+
+app = FastAPI()
+
+ADMIN_KEY = os.getenv("ADMIN_KEY")
+
+
+# ============================================================
+# CORS
+# ============================================================
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://asilbekamirqulov.github.io"
+    ],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
+
+# ============================================================
+# TELEGRAM CLIENT STARTUP
+# ============================================================
+
+@app.on_event("startup")
+async def startup_telegram():
+
+    global telegram_client
+    global telegram_session_path
+
+    if not TG_API_ID or not TG_API_HASH or not TG_SESSION:
+
+        print(
+            "WARNING: TG_API_ID, TG_API_HASH yoki TG_SESSION topilmadi."
+        )
+
+        return
 
     try:
 
-        # TG_SESSION Base64 ko'rinishidagi .session fayl
+        # Base64 session faylni ochamiz
         session_bytes = base64.b64decode(TG_SESSION)
 
         session_file = tempfile.NamedTemporaryFile(
@@ -49,32 +90,35 @@ if TG_API_ID and TG_API_HASH and TG_SESSION:
 
         telegram_session_path = session_file.name
 
+        # ASYNC TELETHON CLIENT
         telegram_client = TelegramClient(
             telegram_session_path,
             int(TG_API_ID),
             TG_API_HASH
         )
 
-        telegram_client.connect()
+        # FastAPI startup event loop ichida ulanadi
+        await telegram_client.connect()
 
-        if not telegram_client.is_user_authorized():
+        if not await telegram_client.is_user_authorized():
 
             print(
                 "WARNING: Telegram session is not authorized."
             )
 
-            telegram_client.disconnect()
+            await telegram_client.disconnect()
+
             telegram_client = None
 
-        else:
+            return
 
-            print(
-                "Telegram session is authorized."
-            )
+        print(
+            "Telegram session is authorized."
+        )
 
-            print(
-                "Telegram username checker is ready."
-            )
+        print(
+            "Telegram username checker is ready."
+        )
 
     except Exception as e:
 
@@ -84,18 +128,38 @@ if TG_API_ID and TG_API_HASH and TG_SESSION:
 
         telegram_client = None
 
-else:
 
-    print(
-        "WARNING: TG_API_ID, TG_API_HASH yoki TG_SESSION topilmadi."
-    )
+# ============================================================
+# TELEGRAM CLIENT SHUTDOWN
+# ============================================================
+
+@app.on_event("shutdown")
+async def shutdown_telegram():
+
+    global telegram_client
+
+    if telegram_client is not None:
+
+        try:
+
+            await telegram_client.disconnect()
+
+            print(
+                "Telegram client disconnected."
+            )
+
+        except Exception as e:
+
+            print(
+                f"Telegram disconnect error: {e}"
+            )
 
 
 # ============================================================
-# TELEGRAM USERNAME TEKSHIRISH
+# TELEGRAM USERNAME CHECK
 # ============================================================
 
-def check_telegram_username(username: str):
+async def check_telegram_username(username: str):
 
     """
     Telegram username'ni Telegram serveri orqali tekshiradi.
@@ -133,15 +197,16 @@ def check_telegram_username(username: str):
             f"USERNAME_CHECK: @{username}"
         )
 
-        # Telegram serveridan username'ni resolve qilish
-        result = telegram_client(
+        # Telegram serveriga async so'rov
+        result = await telegram_client(
             ResolveUsernameRequest(username)
         )
 
-        # Telegram qaytargan entitylarni tekshiramiz
+        # Telegram qaytargan userlarni tekshiramiz
         for entity in result.users:
 
             if not isinstance(entity, User):
+
                 continue
 
             # Botlarni qabul qilmaymiz
@@ -235,30 +300,6 @@ def check_telegram_username(username: str):
 
 
 # ============================================================
-# FASTAPI
-# ============================================================
-
-app = FastAPI()
-
-ADMIN_KEY = os.getenv("ADMIN_KEY")
-
-
-# ============================================================
-# CORS
-# ============================================================
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://asilbekamirqulov.github.io"
-    ],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
-
-
-# ============================================================
 # DATABASE
 # ============================================================
 
@@ -349,7 +390,7 @@ def home():
 # ============================================================
 
 @app.get("/check-username")
-def check_username(username: str):
+async def check_username(username: str):
 
     username = (
         username
@@ -364,7 +405,7 @@ def check_username(username: str):
             "message": "❗ Username kiriting"
         }
 
-    # Telegram username formatini tekshirish
+    # Telegram username format
     if not re.fullmatch(
         r"[A-Za-z0-9_]{5,32}",
         username
@@ -378,15 +419,14 @@ def check_username(username: str):
 
     # Telegram serverida mavjudligini tekshirish
     valid, real_username, error = (
-        check_telegram_username(username)
+        await check_telegram_username(username)
     )
 
     if not valid:
 
         return {
             "ok": False,
-            "message":
-            "❗ Username noto'g'ri. Masalan: @qwerty123"
+            "message": error
         }
 
     return {
@@ -405,7 +445,7 @@ def check_username(username: str):
 # ============================================================
 
 @app.post("/create-order")
-def create_order(order: OrderRequest):
+async def create_order(order: OrderRequest):
 
     # --------------------------------------------------------
     # PRODUCT
@@ -481,11 +521,11 @@ def create_order(order: OrderRequest):
         }
 
     # --------------------------------------------------------
-    # TELEGRAM USERNAME EXISTENCE CHECK
+    # TELEGRAM USERNAME CHECK
     # --------------------------------------------------------
 
     valid_username, real_username, username_error = (
-        check_telegram_username(username)
+        await check_telegram_username(username)
     )
 
     if not valid_username:
@@ -815,7 +855,7 @@ def supplier_premium_prices():
 # ============================================================
 
 @app.post("/test-premium-buy")
-def test_premium_buy(
+async def test_premium_buy(
     request: PremiumTestRequest
 ):
 
@@ -862,7 +902,7 @@ def test_premium_buy(
 
     # Premium berishdan oldin username mavjudligini tekshirish
     valid_username, real_username, username_error = (
-        check_telegram_username(username)
+        await check_telegram_username(username)
     )
 
     if not valid_username:
@@ -873,6 +913,10 @@ def test_premium_buy(
         }
 
     username = real_username
+
+    # --------------------------------------------------------
+    # RESELLCODES API KEY
+    # --------------------------------------------------------
 
     api_key = os.getenv(
         "RESELLCODES_API_KEY"
