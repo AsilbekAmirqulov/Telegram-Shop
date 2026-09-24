@@ -8,14 +8,20 @@ import psycopg2
 import base64
 import tempfile
 import re
+
 from telethon.sync import TelegramClient
 from telethon.tl.types import User
-from telethon.errors import UsernameInvalidError, UsernameNotOccupiedError, RPCError
+from telethon.tl.functions.contacts import ResolveUsernameRequest
+from telethon.errors import (
+    UsernameInvalidError,
+    UsernameNotOccupiedError,
+    RPCError
+)
 
 
-# =========================
+# ============================================================
 # TELEGRAM USERNAME CHECK
-# =========================
+# ============================================================
 
 TG_API_ID = os.getenv("TG_API_ID")
 TG_API_HASH = os.getenv("TG_API_HASH")
@@ -24,15 +30,20 @@ TG_SESSION = os.getenv("TG_SESSION")
 telegram_client = None
 telegram_session_path = None
 
+
 if TG_API_ID and TG_API_HASH and TG_SESSION:
+
     try:
-        # TG_SESSION contains the Base64-encoded .session file.
+
+        # TG_SESSION Base64 ko'rinishidagi .session fayl
         session_bytes = base64.b64decode(TG_SESSION)
+
         session_file = tempfile.NamedTemporaryFile(
             prefix="telegram_shop_",
             suffix=".session",
             delete=False
         )
+
         session_file.write(session_bytes)
         session_file.close()
 
@@ -43,24 +54,67 @@ if TG_API_ID and TG_API_HASH and TG_SESSION:
             int(TG_API_ID),
             TG_API_HASH
         )
+
         telegram_client.connect()
 
         if not telegram_client.is_user_authorized():
-            print("WARNING: Telegram session is not authorized.")
+
+            print(
+                "WARNING: Telegram session is not authorized."
+            )
+
             telegram_client.disconnect()
             telegram_client = None
+
+        else:
+
+            print(
+                "Telegram session is authorized."
+            )
+
+            print(
+                "Telegram username checker is ready."
+            )
+
     except Exception as e:
-        print(f"WARNING: Telegram client ishga tushmadi: {e}")
+
+        print(
+            f"WARNING: Telegram client ishga tushmadi: {e}"
+        )
+
         telegram_client = None
 
+else:
+
+    print(
+        "WARNING: TG_API_ID, TG_API_HASH yoki TG_SESSION topilmadi."
+    )
+
+
+# ============================================================
+# TELEGRAM USERNAME TEKSHIRISH
+# ============================================================
 
 def check_telegram_username(username: str):
+
     """
-    Telegram username'ni haqiqiy Telegram user sifatida tekshiradi.
-    Natija: (True, normalized_username, None) yoki
-            (False, None, xato_xabari)
+    Telegram username'ni Telegram serveri orqali tekshiradi.
+
+    Natija:
+
+    (True, real_username, None)
+
+    yoki
+
+    (False, None, error_message)
     """
+
     if telegram_client is None:
+
+        print(
+            "USERNAME_CHECK ERROR: Telegram client mavjud emas"
+        )
+
         return (
             False,
             None,
@@ -68,51 +122,130 @@ def check_telegram_username(username: str):
         )
 
     try:
-        entity = telegram_client.get_entity(username)
 
-        if not isinstance(entity, User):
-            return (
-                False,
-                None,
-                "Bu username Telegram foydalanuvchisiga tegishli emas"
+        username = (
+            username
+            .strip()
+            .lstrip("@")
+        )
+
+        print(
+            f"USERNAME_CHECK: @{username}"
+        )
+
+        # Telegram serveridan username'ni resolve qilish
+        result = telegram_client(
+            ResolveUsernameRequest(username)
+        )
+
+        # Telegram qaytargan entitylarni tekshiramiz
+        for entity in result.users:
+
+            if not isinstance(entity, User):
+                continue
+
+            # Botlarni qabul qilmaymiz
+            if getattr(entity, "bot", False):
+
+                print(
+                    f"USERNAME_CHECK BOT: @{username}"
+                )
+
+                return (
+                    False,
+                    None,
+                    "Bot username'iga Premium sovg'a qilib bo'lmaydi"
+                )
+
+            real_username = getattr(
+                entity,
+                "username",
+                None
             )
 
-        if getattr(entity, "bot", False):
-            return (
-                False,
-                None,
-                "Bot username'iga Premium sovg'a qilib bo'lmaydi"
-            )
+            if real_username:
 
-        real_username = getattr(entity, "username", None)
+                print(
+                    f"USERNAME_CHECK OK: @{real_username}"
+                )
 
-        if not real_username:
-            return (
-                False,
-                None,
-                "Bu foydalanuvchida username mavjud emas"
-            )
+                return (
+                    True,
+                    real_username,
+                    None
+                )
 
-        return True, real_username, None
+        print(
+            f"USERNAME_CHECK NOT_FOUND: @{username}"
+        )
+
+        return (
+            False,
+            None,
+            "Bunday username mavjud emas"
+        )
 
     except UsernameNotOccupiedError:
-        return False, None, "Bunday username mavjud emas"
-    except UsernameInvalidError:
-        return False, None, "Telegram username noto'g'ri"
-    except RPCError:
-        return False, None, "Telegram username'ni tekshirib bo'lmadi"
-    except Exception:
-        return False, None, "Telegram username'ni tekshirib bo'lmadi"
 
+        print(
+            f"USERNAME_CHECK NOT_FOUND: @{username}"
+        )
+
+        return (
+            False,
+            None,
+            "Bunday username mavjud emas"
+        )
+
+    except UsernameInvalidError:
+
+        print(
+            f"USERNAME_CHECK INVALID: @{username}"
+        )
+
+        return (
+            False,
+            None,
+            "Telegram username noto'g'ri"
+        )
+
+    except RPCError as e:
+
+        print(
+            f"USERNAME_CHECK RPC_ERROR: {e}"
+        )
+
+        return (
+            False,
+            None,
+            "Telegram username'ni tekshirib bo'lmadi"
+        )
+
+    except Exception as e:
+
+        print(
+            f"USERNAME_CHECK ERROR: {type(e).__name__}: {e}"
+        )
+
+        return (
+            False,
+            None,
+            "Telegram username'ni tekshirib bo'lmadi"
+        )
+
+
+# ============================================================
+# FASTAPI
+# ============================================================
 
 app = FastAPI()
 
 ADMIN_KEY = os.getenv("ADMIN_KEY")
 
 
-# =========================
+# ============================================================
 # CORS
-# =========================
+# ============================================================
 
 app.add_middleware(
     CORSMiddleware,
@@ -125,15 +258,16 @@ app.add_middleware(
 )
 
 
-# =========================
+# ============================================================
 # DATABASE
-# =========================
+# ============================================================
 
 def get_db():
 
     database_url = os.getenv("DATABASE_URL")
 
     if not database_url:
+
         raise RuntimeError(
             "DATABASE_URL topilmadi"
         )
@@ -172,9 +306,9 @@ def init_db():
 init_db()
 
 
-# =========================
+# ============================================================
 # MODELS
-# =========================
+# ============================================================
 
 class OrderRequest(BaseModel):
 
@@ -197,9 +331,9 @@ class PremiumTestRequest(BaseModel):
     admin_key: str
 
 
-# =========================
+# ============================================================
 # HOME
-# =========================
+# ============================================================
 
 @app.get("/")
 def home():
@@ -210,76 +344,108 @@ def home():
     }
 
 
-# =========================
+# ============================================================
 # CHECK USERNAME
-# =========================
+# ============================================================
 
 @app.get("/check-username")
 def check_username(username: str):
 
-    username = username.strip().lstrip("@")
+    username = (
+        username
+        .strip()
+        .lstrip("@")
+    )
 
     if not username:
+
         return {
             "ok": False,
             "message": "❗ Username kiriting"
         }
 
-    if not re.fullmatch(r"[A-Za-z0-9_]{5,32}", username):
+    # Telegram username formatini tekshirish
+    if not re.fullmatch(
+        r"[A-Za-z0-9_]{5,32}",
+        username
+    ):
+
         return {
             "ok": False,
-            "message": "❗ Username noto'g'ri. Masalan: @qwerty123"
+            "message":
+            "❗ Username noto'g'ri. Masalan: @qwerty123"
         }
 
-    valid, real_username, error = check_telegram_username(username)
+    # Telegram serverida mavjudligini tekshirish
+    valid, real_username, error = (
+        check_telegram_username(username)
+    )
 
     if not valid:
+
         return {
             "ok": False,
-            "message": "❗ Username noto'g'ri. Masalan: @qwerty123"
+            "message":
+            "❗ Username noto'g'ri. Masalan: @qwerty123"
         }
 
     return {
+
         "ok": True,
+
         "username": real_username,
-        "message": f"👤 Telegram foydalanuvchisi: @{real_username}"
+
+        "message":
+        f"👤 Telegram foydalanuvchisi: @{real_username}"
     }
 
 
-# =========================
+# ============================================================
 # CREATE ORDER
-# =========================
+# ============================================================
 
 @app.post("/create-order")
 def create_order(order: OrderRequest):
 
-    # =========================
-    # VALIDATION
-    # =========================
+    # --------------------------------------------------------
+    # PRODUCT
+    # --------------------------------------------------------
 
     if order.product != "Telegram Premium":
 
         return {
             "ok": False,
-            "message": "Hozircha faqat Telegram Premium mavjud"
+            "message":
+            "Hozircha faqat Telegram Premium mavjud"
         }
 
+    # --------------------------------------------------------
+    # MONTHS
+    # --------------------------------------------------------
 
     if order.months not in [3, 6, 12]:
 
         return {
             "ok": False,
-            "message": "Premium muddati 3, 6 yoki 12 oy bo'lishi kerak"
+            "message":
+            "Premium muddati 3, 6 yoki 12 oy bo'lishi kerak"
         }
 
+    # --------------------------------------------------------
+    # AMOUNT
+    # --------------------------------------------------------
 
     if order.amount <= 0:
 
         return {
             "ok": False,
-            "message": "Narx noto'g'ri"
+            "message":
+            "Narx noto'g'ri"
         }
 
+    # --------------------------------------------------------
+    # USERNAME
+    # --------------------------------------------------------
 
     username = (
         order.recipient_username
@@ -287,25 +453,39 @@ def create_order(order: OrderRequest):
         .lstrip("@")
     )
 
-
     if not username:
 
         return {
             "ok": False,
-            "message": "Qabul qiluvchi username kiritilmagan"
+            "message":
+            "Qabul qiluvchi username kiritilmagan"
         }
-
 
     if len(username) < 5 or len(username) > 32:
 
         return {
             "ok": False,
-            "message": "Telegram username noto'g'ri"
+            "message":
+            "Telegram username noto'g'ri"
         }
 
-    # Telegram'da username haqiqatan mavjudligini tekshirish
-    valid_username, real_username, username_error = check_telegram_username(
+    if not re.fullmatch(
+        r"[A-Za-z0-9_]{5,32}",
         username
+    ):
+
+        return {
+            "ok": False,
+            "message":
+            "Telegram username noto'g'ri"
+        }
+
+    # --------------------------------------------------------
+    # TELEGRAM USERNAME EXISTENCE CHECK
+    # --------------------------------------------------------
+
+    valid_username, real_username, username_error = (
+        check_telegram_username(username)
     )
 
     if not valid_username:
@@ -317,14 +497,12 @@ def create_order(order: OrderRequest):
 
     username = real_username
 
-
-    # =========================
+    # --------------------------------------------------------
     # DATABASE
-    # =========================
+    # --------------------------------------------------------
 
     conn = get_db()
     cursor = conn.cursor()
-
 
     cursor.execute(
         """
@@ -349,7 +527,6 @@ def create_order(order: OrderRequest):
         )
     )
 
-
     order_id = cursor.fetchone()[0]
 
     conn.commit()
@@ -357,22 +534,29 @@ def create_order(order: OrderRequest):
     cursor.close()
     conn.close()
 
-
     return {
+
         "ok": True,
+
         "order_id": order_id,
+
         "status": "pending",
+
         "buyer_user_id": order.user_id,
+
         "recipient_username": username,
+
         "product": order.product,
+
         "months": order.months,
+
         "amount": order.amount
     }
 
 
-# =========================
+# ============================================================
 # GET ORDERS
-# =========================
+# ============================================================
 
 @app.get("/orders")
 def get_orders(admin_key: str):
@@ -384,10 +568,8 @@ def get_orders(admin_key: str):
             "message": "Ruxsat yo'q"
         }
 
-
     conn = get_db()
     cursor = conn.cursor()
-
 
     cursor.execute("""
         SELECT
@@ -404,16 +586,17 @@ def get_orders(admin_key: str):
         ORDER BY id DESC
     """)
 
-
     orders = cursor.fetchall()
 
     cursor.close()
     conn.close()
 
-
     return {
+
         "ok": True,
+
         "orders": [
+
             {
                 "id": order[0],
                 "user_id": order[1],
@@ -425,14 +608,15 @@ def get_orders(admin_key: str):
                 "price_usd": order[7],
                 "supplier_order_id": order[8]
             }
+
             for order in orders
         ]
     }
 
 
-# =========================
+# ============================================================
 # UPDATE ORDER STATUS
-# =========================
+# ============================================================
 
 @app.put("/orders/{order_id}/status")
 def update_order_status(
@@ -448,18 +632,16 @@ def update_order_status(
         "cancelled"
     ]
 
-
     if request.status not in allowed_statuses:
 
         return {
             "ok": False,
-            "message": "Noto'g'ri status"
+            "message":
+            "Noto'g'ri status"
         }
-
 
     conn = get_db()
     cursor = conn.cursor()
-
 
     cursor.execute(
         """
@@ -473,7 +655,6 @@ def update_order_status(
         )
     )
 
-
     if cursor.rowcount == 0:
 
         cursor.close()
@@ -481,26 +662,28 @@ def update_order_status(
 
         return {
             "ok": False,
-            "message": "Buyurtma topilmadi"
+            "message":
+            "Buyurtma topilmadi"
         }
-
 
     conn.commit()
 
     cursor.close()
     conn.close()
 
-
     return {
+
         "ok": True,
+
         "order_id": order_id,
+
         "status": request.status
     }
 
 
-# =========================
+# ============================================================
 # RESELLCODES ACCOUNT
-# =========================
+# ============================================================
 
 @app.get("/supplier-account")
 def supplier_account():
@@ -509,26 +692,27 @@ def supplier_account():
         "RESELLCODES_API_KEY"
     )
 
-
     if not api_key:
 
         return {
             "ok": False,
-            "message": "RESELLCODES_API_KEY topilmadi"
+            "message":
+            "RESELLCODES_API_KEY topilmadi"
         }
-
 
     try:
 
         request = urllib.request.Request(
+
             "https://resell.codes/api/v1/me",
+
             headers={
                 "Authorization":
                 f"Bearer {api_key}"
             },
+
             method="GET"
         )
-
 
         with urllib.request.urlopen(
             request,
@@ -539,25 +723,29 @@ def supplier_account():
                 response.read().decode()
             )
 
-
         return {
+
             "ok": True,
-            "supplier": "ReSellCodes",
+
+            "supplier":
+            "ReSellCodes",
+
             "data": data
         }
-
 
     except Exception as e:
 
         return {
+
             "ok": False,
+
             "message": str(e)
         }
 
 
-# =========================
+# ============================================================
 # RESELLCODES PREMIUM PRICES
-# =========================
+# ============================================================
 
 @app.get("/supplier-premium-prices")
 def supplier_premium_prices():
@@ -566,26 +754,27 @@ def supplier_premium_prices():
         "RESELLCODES_API_KEY"
     )
 
-
     if not api_key:
 
         return {
             "ok": False,
-            "message": "RESELLCODES_API_KEY topilmadi"
+            "message":
+            "RESELLCODES_API_KEY topilmadi"
         }
-
 
     try:
 
         request = urllib.request.Request(
+
             "https://resell.codes/api/v1/telegram/premium",
+
             headers={
                 "Authorization":
                 f"Bearer {api_key}"
             },
+
             method="GET"
         )
-
 
         with urllib.request.urlopen(
             request,
@@ -596,28 +785,34 @@ def supplier_premium_prices():
                 response.read().decode()
             )
 
-
         return {
+
             "ok": True,
-            "supplier": "ReSellCodes",
+
+            "supplier":
+            "ReSellCodes",
+
             "data": data
         }
-
 
     except Exception as e:
 
         return {
+
             "ok": False,
+
             "message": str(e)
         }
 
 
-# =========================
+# ============================================================
 # REAL PREMIUM BUY
-# =========================
+# ============================================================
+#
 # Hozircha admin/test endpoint.
 # To'lov API tayyor bo'lgach,
 # shu jarayonni paid order bilan bog'laymiz.
+# ============================================================
 
 @app.post("/test-premium-buy")
 def test_premium_buy(
@@ -628,9 +823,9 @@ def test_premium_buy(
 
         return {
             "ok": False,
-            "message": "Ruxsat yo'q"
+            "message":
+            "Ruxsat yo'q"
         }
-
 
     if request.months not in [3, 6, 12]:
 
@@ -640,13 +835,11 @@ def test_premium_buy(
             "months faqat 3, 6 yoki 12 bo'lishi mumkin"
         }
 
-
     username = (
         request.telegram_username
         .strip()
         .lstrip("@")
     )
-
 
     if not username:
 
@@ -656,11 +849,34 @@ def test_premium_buy(
             "Telegram username kiritilmagan"
         }
 
+    if not re.fullmatch(
+        r"[A-Za-z0-9_]{5,32}",
+        username
+    ):
+
+        return {
+            "ok": False,
+            "message":
+            "Telegram username noto'g'ri"
+        }
+
+    # Premium berishdan oldin username mavjudligini tekshirish
+    valid_username, real_username, username_error = (
+        check_telegram_username(username)
+    )
+
+    if not valid_username:
+
+        return {
+            "ok": False,
+            "message": username_error
+        }
+
+    username = real_username
 
     api_key = os.getenv(
         "RESELLCODES_API_KEY"
     )
-
 
     if not api_key:
 
@@ -670,27 +886,35 @@ def test_premium_buy(
             "RESELLCODES_API_KEY topilmadi"
         }
 
-
     try:
 
         payload = json.dumps({
-            "telegram_username": username,
-            "months": request.months
+
+            "telegram_username":
+            username,
+
+            "months":
+            request.months
+
         }).encode("utf-8")
 
-
         api_request = urllib.request.Request(
+
             "https://resell.codes/api/v1/telegram/premium/buy",
+
             data=payload,
+
             headers={
+
                 "Authorization":
                 f"Bearer {api_key}",
+
                 "Content-Type":
                 "application/json"
             },
+
             method="POST"
         )
-
 
         with urllib.request.urlopen(
             api_request,
@@ -701,17 +925,23 @@ def test_premium_buy(
                 response.read().decode()
             )
 
-
         return {
-            "ok": True,
-            "supplier": "ReSellCodes",
-            "order": data
-        }
 
+            "ok": True,
+
+            "supplier":
+            "ReSellCodes",
+
+            "order":
+            data
+        }
 
     except Exception as e:
 
         return {
+
             "ok": False,
-            "message": str(e)
+
+            "message":
+            str(e)
         }
