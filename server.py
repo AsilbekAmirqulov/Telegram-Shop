@@ -5,6 +5,103 @@ import os
 import json
 import urllib.request
 import psycopg2
+import base64
+import tempfile
+from telethon.sync import TelegramClient
+from telethon.tl.types import User
+from telethon.errors import UsernameInvalidError, UsernameNotOccupiedError, RPCError
+
+
+# =========================
+# TELEGRAM USERNAME CHECK
+# =========================
+
+TG_API_ID = os.getenv("TG_API_ID")
+TG_API_HASH = os.getenv("TG_API_HASH")
+TG_SESSION = os.getenv("TG_SESSION")
+
+telegram_client = None
+telegram_session_path = None
+
+if TG_API_ID and TG_API_HASH and TG_SESSION:
+    try:
+        # TG_SESSION contains the Base64-encoded .session file.
+        session_bytes = base64.b64decode(TG_SESSION)
+        session_file = tempfile.NamedTemporaryFile(
+            prefix="telegram_shop_",
+            suffix=".session",
+            delete=False
+        )
+        session_file.write(session_bytes)
+        session_file.close()
+
+        telegram_session_path = session_file.name
+
+        telegram_client = TelegramClient(
+            telegram_session_path,
+            int(TG_API_ID),
+            TG_API_HASH
+        )
+        telegram_client.connect()
+
+        if not telegram_client.is_user_authorized():
+            print("WARNING: Telegram session is not authorized.")
+            telegram_client.disconnect()
+            telegram_client = None
+    except Exception as e:
+        print(f"WARNING: Telegram client ishga tushmadi: {e}")
+        telegram_client = None
+
+
+def check_telegram_username(username: str):
+    """
+    Telegram username'ni haqiqiy Telegram user sifatida tekshiradi.
+    Natija: (True, normalized_username, None) yoki
+            (False, None, xato_xabari)
+    """
+    if telegram_client is None:
+        return (
+            False,
+            None,
+            "Telegram username tekshiruvi hozircha ishlamayapti"
+        )
+
+    try:
+        entity = telegram_client.get_entity(username)
+
+        if not isinstance(entity, User):
+            return (
+                False,
+                None,
+                "Bu username Telegram foydalanuvchisiga tegishli emas"
+            )
+
+        if getattr(entity, "bot", False):
+            return (
+                False,
+                None,
+                "Bot username'iga Premium sovg'a qilib bo'lmaydi"
+            )
+
+        real_username = getattr(entity, "username", None)
+
+        if not real_username:
+            return (
+                False,
+                None,
+                "Bu foydalanuvchida username mavjud emas"
+            )
+
+        return True, real_username, None
+
+    except UsernameNotOccupiedError:
+        return False, None, "Bunday username mavjud emas"
+    except UsernameInvalidError:
+        return False, None, "Telegram username noto'g'ri"
+    except RPCError:
+        return False, None, "Telegram username'ni tekshirib bo'lmadi"
+    except Exception:
+        return False, None, "Telegram username'ni tekshirib bo'lmadi"
 
 
 app = FastAPI()
@@ -168,6 +265,20 @@ def create_order(order: OrderRequest):
             "ok": False,
             "message": "Telegram username noto'g'ri"
         }
+
+    # Telegram'da username haqiqatan mavjudligini tekshirish
+    valid_username, real_username, username_error = check_telegram_username(
+        username
+    )
+
+    if not valid_username:
+
+        return {
+            "ok": False,
+            "message": username_error
+        }
+
+    username = real_username
 
 
     # =========================
