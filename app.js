@@ -82,14 +82,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 >
 
                 <div
-                    id="usernameError"
+                    id="usernameStatus"
                     style="
                         display:none;
                         margin-top:8px;
                         padding:8px 10px;
                         border-radius:10px;
-                        background:rgba(255,70,70,0.12);
-                        color:#ff5c5c;
                         font-size:13px;
                     "
                 ></div>
@@ -141,30 +139,241 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         const input =
-            document.getElementById(
-                "recipientUsername"
-            );
+            document.getElementById("recipientUsername");
+
+        const status =
+            document.getElementById("usernameStatus");
 
 
-        const error =
-            document.getElementById(
-                "usernameError"
-            );
+        let verifiedUsername = "";
+        let searchTimer = null;
 
 
         // =========================
-        // INPUTDA YOZISH BOSHLANSA
-        // XATOLIKNI O'CHIRAMIZ
+        // STATUS KO'RSATISH
+        // =========================
+
+        function showStatus(message, type) {
+
+            status.textContent = message;
+            status.style.display = "block";
+
+            if (type === "success") {
+
+                status.style.background =
+                    "rgba(50,200,100,0.12)";
+
+                status.style.color =
+                    "#35c759";
+
+                input.style.borderColor =
+                    "#35c759";
+
+            } else if (type === "loading") {
+
+                status.style.background =
+                    "rgba(80,150,255,0.12)";
+
+                status.style.color =
+                    "#4d9cff";
+
+                input.style.borderColor =
+                    "#4d9cff";
+
+            } else {
+
+                status.style.background =
+                    "rgba(255,70,70,0.12)";
+
+                status.style.color =
+                    "#ff5c5c";
+
+                input.style.borderColor =
+                    "#ff5c5c";
+            }
+        }
+
+
+        function clearStatus() {
+
+            status.style.display = "none";
+            status.textContent = "";
+            input.style.borderColor = "";
+            verifiedUsername = "";
+        }
+
+
+        // =========================
+        // USERNAME TEKSHIRISH
+        // =========================
+
+        async function checkUsername(username) {
+
+            try {
+
+                showStatus(
+                    "🔍 Telegram foydalanuvchisi qidirilmoqda...",
+                    "loading"
+                );
+
+
+                const response =
+                    await fetch(
+                        "https://telegram-shop-co3o.onrender.com/check-username?username=" +
+                        encodeURIComponent(username)
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (data.ok) {
+
+                    verifiedUsername =
+                        data.username;
+
+                    showStatus(
+                        "👤 Telegram foydalanuvchisi: @" +
+                        data.username,
+                        "success"
+                    );
+
+                    return data.username;
+                }
+
+
+                verifiedUsername = "";
+
+                showStatus(
+                    "❗ Username noto‘g‘ri. Masalan: @qwerty123",
+                    "error"
+                );
+
+                return null;
+
+
+            } catch (error) {
+
+                console.error(error);
+
+                verifiedUsername = "";
+
+                showStatus(
+                    "❗ Username tekshirilmadi. Qaytadan urinib ko‘ring.",
+                    "error"
+                );
+
+                return null;
+            }
+        }
+
+
+        // =========================
+        // INPUT
         // =========================
 
         input.addEventListener(
             "input",
             function () {
 
-                error.style.display = "none";
-                error.textContent = "";
+                clearTimeout(searchTimer);
 
-                input.style.borderColor = "";
+                verifiedUsername = "";
+
+                const raw =
+                    input.value.trim();
+
+
+                if (!raw) {
+
+                    clearStatus();
+
+                    return;
+                }
+
+
+                // @ belgisi faqat boshida bo'lishi mumkin
+
+                if (
+                    raw.includes("@") &&
+                    !raw.startsWith("@")
+                ) {
+
+                    showStatus(
+                        "❗ Username noto‘g‘ri. Masalan: @qwerty123",
+                        "error"
+                    );
+
+                    return;
+                }
+
+
+                const username =
+                    raw.replace(/^@/, "");
+
+
+                // =========================
+                // FORMAT TEKSHIRUVI
+                // =========================
+
+                if (
+                    !/^[a-zA-Z0-9_]*$/.test(
+                        username
+                    )
+                ) {
+
+                    showStatus(
+                        "❗ Username noto‘g‘ri. Masalan: @qwerty123",
+                        "error"
+                    );
+
+                    return;
+                }
+
+
+                if (
+                    username.length > 32
+                ) {
+
+                    showStatus(
+                        "❗ Username noto‘g‘ri. Masalan: @qwerty123",
+                        "error"
+                    );
+
+                    return;
+                }
+
+
+                if (
+                    username.length < 5
+                ) {
+
+                    status.style.display =
+                        "none";
+
+                    input.style.borderColor =
+                        "";
+
+                    return;
+                }
+
+
+                // =========================
+                // TELEGRAMDAN QIDIRISH
+                // =========================
+
+                searchTimer =
+                    setTimeout(
+                        function () {
+
+                            checkUsername(
+                                username
+                            );
+
+                        },
+                        600
+                    );
             }
         );
 
@@ -177,10 +386,10 @@ document.addEventListener("DOMContentLoaded", function () {
             .getElementById("choosePremium")
             .addEventListener(
                 "click",
-                function () {
+                async function () {
 
                     const username =
-                        getUsername();
+                        await getUsername();
 
                     if (!username) {
                         return;
@@ -199,10 +408,10 @@ document.addEventListener("DOMContentLoaded", function () {
             .getElementById("chooseStars")
             .addEventListener(
                 "click",
-                function () {
+                async function () {
 
                     const username =
-                        getUsername();
+                        await getUsername();
 
                     if (!username) {
                         return;
@@ -211,84 +420,98 @@ document.addEventListener("DOMContentLoaded", function () {
                     showStars(username);
                 }
             );
-    }
 
 
-    // =========================
-    // USERNAME TEKSHIRISH
-    // =========================
+        // =========================
+        // GET USERNAME
+        // =========================
 
-    function getUsername() {
+        async function getUsername() {
 
-        const input =
-            document.getElementById(
-                "recipientUsername"
-            );
-
-        const error =
-            document.getElementById(
-                "usernameError"
-            );
+            const raw =
+                input.value.trim();
 
 
-        if (!input || !error) {
-            return null;
+            if (!raw) {
+
+                showStatus(
+                    "❗ Avval Telegram username kiriting.",
+                    "error"
+                );
+
+                input.focus();
+
+                return null;
+            }
+
+
+            if (
+                raw.includes("@") &&
+                !raw.startsWith("@")
+            ) {
+
+                showStatus(
+                    "❗ Username noto‘g‘ri. Masalan: @qwerty123",
+                    "error"
+                );
+
+                input.focus();
+
+                return null;
+            }
+
+
+            const username =
+                raw.replace(/^@/, "");
+
+
+            if (
+                !/^[a-zA-Z0-9_]{5,32}$/.test(
+                    username
+                )
+            ) {
+
+                showStatus(
+                    "❗ Username noto‘g‘ri. Masalan: @qwerty123",
+                    "error"
+                );
+
+                input.focus();
+
+                return null;
+            }
+
+
+            // Agar aynan shu username
+            // oldin tasdiqlangan bo'lsa
+
+            if (
+                verifiedUsername.toLowerCase() ===
+                username.toLowerCase()
+            ) {
+
+                return verifiedUsername;
+            }
+
+
+            // Tugmani bosganda yana tekshiramiz
+
+            const result =
+                await checkUsername(
+                    username
+                );
+
+
+            if (!result) {
+
+                input.focus();
+
+                return null;
+            }
+
+
+            return result;
         }
-
-
-        let username =
-            input.value.trim();
-
-
-        // =========================
-        // BO'SH
-        // =========================
-
-        if (!username) {
-
-            error.textContent =
-                "❗ Avval Telegram username kiriting.";
-
-            error.style.display =
-                "block";
-
-            input.style.borderColor =
-                "#ff5c5c";
-
-            return null;
-        }
-
-
-        // @ ni olib tashlash
-
-        username =
-            username.replace(/^@/, "");
-
-
-        // =========================
-        // NOTO'G'RI USERNAME
-        // =========================
-
-        if (
-            !/^[a-zA-Z0-9_]{5,32}$/.test(
-                username
-            )
-        ) {
-
-            error.textContent =
-                "❗ Username noto‘g‘ri. Masalan: @qwerty123";
-
-            error.style.display =
-                "block";
-
-            input.style.borderColor =
-                "#ff5c5c";
-
-            return null;
-        }
-
-
-        return username;
     }
 
 
@@ -613,15 +836,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         })
                     }
                 );
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    "Server xatosi: " +
-                    response.status
-                );
-            }
 
 
             const data =
