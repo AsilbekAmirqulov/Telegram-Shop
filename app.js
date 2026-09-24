@@ -35,19 +35,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const premiumPlans = [
         {
+            months: 1,
+            title: "1 oy",
+            contact: true
+        },
+        {
             months: 3,
             title: "3 oy",
-            price: 165000
+            price: 165000,
+            contact: false
         },
         {
             months: 6,
             title: "6 oy",
-            price: 220000
+            price: 220000,
+            contact: false
         },
         {
             months: 12,
             title: "1 yil",
-            price: 390000
+            contact: true
         }
     ];
 
@@ -71,7 +78,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // PRODUCTS SECTIONNI OCHISH
+    // PRODUCTS SECTION
     // =========================
 
     function openProducts(title) {
@@ -135,7 +142,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // USERNAME TEKSHIRISH
+    // USERNAME CHECKER
     // =========================
 
     function setupUsernameChecker(onVerified) {
@@ -152,7 +159,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         if (!input || !status) {
-            return;
+            return null;
         }
 
 
@@ -161,7 +168,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =========================
-        // STATUS
+        // SHOW STATUS
         // =========================
 
         function showStatus(message, type) {
@@ -210,6 +217,10 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
+        // =========================
+        // CLEAR STATUS
+        // =========================
+
         function clearStatus() {
 
             status.style.display = "none";
@@ -221,7 +232,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =========================
-        // SERVERDAN TEKSHIRISH
+        // CHECK USERNAME
         // =========================
 
         async function checkUsername(username) {
@@ -258,7 +269,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     );
 
 
-                    if (typeof onVerified === "function") {
+                    if (
+                        typeof onVerified ===
+                        "function"
+                    ) {
 
                         onVerified(
                             data.username
@@ -281,7 +295,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
                 return null;
-
 
             }
 
@@ -328,7 +341,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
 
-                // @ faqat boshida bo'lishi mumkin
+                // @ belgisi faqat boshida
 
                 if (
                     raw.includes("@") &&
@@ -348,7 +361,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     raw.replace(/^@/, "");
 
 
-                // Belgilarni tekshirish
+                // Faqat ruxsat berilgan belgilar
 
                 if (
                     !/^[a-zA-Z0-9_]*$/.test(
@@ -365,7 +378,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
 
-                // Maksimal uzunlik
+                // Maksimal 32 ta belgi
 
                 if (
                     username.length > 32
@@ -380,7 +393,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
 
-                // Minimal uzunlikka yetmagan
+                // Kamida 5 ta belgi
 
                 if (
                     username.length < 5
@@ -473,7 +486,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
 
-            // Oldin tekshirilgan bo'lsa
+            // Oldin tekshirilgan username
 
             if (
                 verifiedUsername.toLowerCase() ===
@@ -509,7 +522,92 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // PREMIUM BO'LIMI
+    // CONTACT ADMIN
+    // =========================
+
+    function showContactMessage(username, months) {
+
+        const monthText =
+            months === 1
+                ? "1 oylik"
+                : "12 oylik";
+
+
+        products.innerHTML = `
+
+            <div class="gift-form">
+
+                <h2>💎 ${monthText} Premium</h2>
+
+                <p class="gift-description">
+                    🎁 @${username} uchun
+                </p>
+
+            </div>
+
+
+            <div class="product-card">
+
+                <h3>
+                    💎 ${monthText} Premium obuna
+                </h3>
+
+                <p>
+                    ${monthText} Premium obuna olish uchun
+                    <strong>@AmirquIov</strong> ga yozing.
+                </p>
+
+                <button
+                    type="button"
+                    class="buy-button"
+                    id="contactAdminButton"
+                >
+                    ✉️ @AmirquIov ga yozish
+                </button>
+
+            </div>
+        `;
+
+
+        const contactButton =
+            document.getElementById(
+                "contactAdminButton"
+            );
+
+
+        if (contactButton) {
+
+            contactButton.addEventListener(
+                "click",
+                function () {
+
+                    if (
+                        tg &&
+                        typeof tg.openTelegramLink ===
+                        "function"
+                    ) {
+
+                        tg.openTelegramLink(
+                            "https://t.me/AmirquIov"
+                        );
+
+                    }
+
+                    else {
+
+                        window.open(
+                            "https://t.me/AmirquIov",
+                            "_blank"
+                        );
+                    }
+                }
+            );
+        }
+    }
+
+
+    // =========================
+    // PREMIUM
     // =========================
 
     function showPremium() {
@@ -532,19 +630,17 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-        // Username checker
-        // Keyin paketlarni username mavjud
-        // bo'lgandan so'ng ko'rsatamiz.
+        // Paketlar dastlab yashirin
 
-        let currentUsername = "";
+        premiumPlansContainer.innerHTML = "";
 
 
-        const getUsername =
+        let getUsername = null;
+
+
+        getUsername =
             setupUsernameChecker(
                 function (username) {
-
-                    currentUsername =
-                        username;
 
                     renderPremiumPlans(
                         username
@@ -553,7 +649,9 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-        // Paketlarni dastlab ko'rsatmaymiz
+        // =========================
+        // RENDER PREMIUM PLANS
+        // =========================
 
         function renderPremiumPlans(username) {
 
@@ -568,44 +666,138 @@ document.addEventListener("DOMContentLoaded", function () {
             premiumPlans.forEach(
                 function (plan) {
 
-                    premiumPlansContainer.innerHTML += `
+                    // =========================
+                    // 1 VA 12 OYLIK
+                    // =========================
 
-                        <div class="product-card">
+                    if (plan.contact) {
 
-                            <h3>
-                                💎 Premium — ${plan.title}
-                            </h3>
+                        premiumPlansContainer.innerHTML += `
 
-                            <p>
-                                @${username} ga sovg‘a
-                            </p>
+                            <div class="product-card">
 
-                            <div class="product-price">
+                                <h3>
+                                    💎 Premium — ${plan.title}
+                                </h3>
 
-                                <span class="price">
-                                    ${plan.price.toLocaleString("uz-UZ")}
-                                    so'm
-                                </span>
+                                <p>
+                                    @${username} uchun
+                                </p>
 
-                                <button
-                                    type="button"
-                                    class="buy-button premium-buy"
-                                    data-months="${plan.months}"
-                                    data-price="${plan.price}"
-                                >
-                                    🎁 Davom etish
-                                </button>
+                                <div class="product-price">
+
+                                    <span class="price">
+                                        ${plan.months === 1
+                                            ? "1 oylik Premium"
+                                            : "12 oylik Premium"}
+                                    </span>
+
+                                    <button
+                                        type="button"
+                                        class="buy-button contact-premium"
+                                        data-months="${plan.months}"
+                                    >
+                                        ✉️ Batafsil
+                                    </button>
+
+                                </div>
 
                             </div>
+                        `;
 
-                        </div>
-                    `;
+                    }
+
+
+                    // =========================
+                    // 3 VA 6 OYLIK
+                    // =========================
+
+                    else {
+
+                        premiumPlansContainer.innerHTML += `
+
+                            <div class="product-card">
+
+                                <h3>
+                                    💎 Premium — ${plan.title}
+                                </h3>
+
+                                <p>
+                                    @${username} ga sovg‘a
+                                </p>
+
+                                <div class="product-price">
+
+                                    <span class="price">
+                                        ${plan.price.toLocaleString("uz-UZ")}
+                                        so'm
+                                    </span>
+
+                                    <button
+                                        type="button"
+                                        class="buy-button premium-buy"
+                                        data-months="${plan.months}"
+                                        data-price="${plan.price}"
+                                    >
+                                        🎁 Davom etish
+                                    </button>
+
+                                </div>
+
+                            </div>
+                        `;
+                    }
                 }
             );
 
 
+            // =========================
+            // 1 / 12 OYLIK BUTTONLAR
+            // =========================
+
             document
-                .querySelectorAll(".premium-buy")
+                .querySelectorAll(
+                    ".contact-premium"
+                )
+                .forEach(
+                    function (button) {
+
+                        button.addEventListener(
+                            "click",
+                            async function () {
+
+                                const username =
+                                    await getUsername();
+
+                                if (!username) {
+                                    return;
+                                }
+
+
+                                const months =
+                                    Number(
+                                        button.dataset.months
+                                    );
+
+
+                                showContactMessage(
+                                    username,
+                                    months
+                                );
+                            }
+                        );
+                    }
+                );
+
+
+            // =========================
+            // 3 / 6 OYLIK BUTTONLAR
+            // =========================
+
+            document
+                .querySelectorAll(
+                    ".premium-buy"
+                )
                 .forEach(
                     function (button) {
 
@@ -640,7 +832,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // STARS BO'LIMI
+    // STARS
     // =========================
 
     function showStars() {
@@ -663,15 +855,15 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-        let currentUsername = "";
+        starsPlansContainer.innerHTML = "";
 
 
-        const getUsername =
+        let getUsername = null;
+
+
+        getUsername =
             setupUsernameChecker(
                 function (username) {
-
-                    currentUsername =
-                        username;
 
                     renderStarsPlans(
                         username
@@ -681,7 +873,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =========================
-        // STARS PAKETLARI
+        // RENDER STARS
         // =========================
 
         function renderStarsPlans(username) {
@@ -741,7 +933,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
             document
-                .querySelectorAll(".stars-buy")
+                .querySelectorAll(
+                    ".stars-buy"
+                )
                 .forEach(
                     function (button) {
 
@@ -757,12 +951,6 @@ document.addEventListener("DOMContentLoaded", function () {
                                 }
 
 
-                                // Stars backend hali
-                                // ulanmagan bo'lsa,
-                                // foydalanuvchini
-                                // noto'g'ri buyurtmaga
-                                // o'tkazmaymiz.
-
                                 alert(
                                     "⭐ Telegram Stars to‘lovi tez orada qo‘shiladi."
                                 );
@@ -775,7 +963,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================
-    // BUYURTMA
+    // CREATE ORDER
     // =========================
 
     async function createOrder(
@@ -814,7 +1002,9 @@ document.addEventListener("DOMContentLoaded", function () {
             detail =
                 option + " oy";
 
-        } else {
+        }
+
+        else {
 
             detail =
                 option + " Stars";
@@ -864,7 +1054,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
             months = option;
 
-        } else {
+        }
+
+        else {
 
             stars = option;
         }
@@ -939,7 +1131,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     " so'm"
                 );
 
-            } else {
+            }
+
+            else {
 
                 alert(
                     "❌ Buyurtma yaratilmadi.\n\n" +
@@ -983,8 +1177,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
             showPremium();
 
-
-            // Pastga avtomatik tushirish
 
             setTimeout(
                 function () {
@@ -1041,12 +1233,11 @@ document.addEventListener("DOMContentLoaded", function () {
     // =========================
 
     // Muhim:
-    // Bu yerda showRecipientForm()
-    // YO'Q.
+    // Hech qanday mahsulot avtomatik
+    // ochilmaydi.
     //
-    // Dastlab paketlar yashirin turadi.
     // Foydalanuvchi yuqoridagi
     // Premium yoki Stars tugmasini
-    // bosgandan keyingina chiqadi.
+    // bosishi kerak.
 
 });
