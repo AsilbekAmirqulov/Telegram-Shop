@@ -799,3 +799,24 @@ iframe {
 
     overflow-x: hidden;
 }
+/* =========================
+   CATEGORY BUTTON CLICK FIX
+========================= */
+
+.categories {
+    position: relative;
+    z-index: 20;
+    pointer-events: auto;
+}
+
+.category {
+    position: relative;
+    z-index: 21;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.category * {
+    pointer-events: none;
+}
