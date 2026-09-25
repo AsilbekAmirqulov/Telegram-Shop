@@ -314,11 +314,11 @@ document.addEventListener("DOMContentLoaded", function () {
     // USERNAME FORM
     // =====================================================
 
-    function showRecipientForm() {
+function showRecipientForm() {
 
-        clearProducts();
-
-        verifiedUsername = "";
+    clearProducts();
+    productsSection.style.display = "block";
+    verifiedUsername = "";
 
 
         products.innerHTML = `
