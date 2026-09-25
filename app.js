@@ -1,11 +1,12 @@
 document.addEventListener("DOMContentLoaded", function () {
 
+    // =========================================================
+    // ELEMENTLAR
+    // =========================================================
+
     const products = document.getElementById("products");
     const premiumButton = document.getElementById("premiumButton");
     const starsButton = document.getElementById("starsButton");
-
-    const API_URL =
-        "https://telegram-shop-co3o.onrender.com";
 
     const tg = window.Telegram?.WebApp;
 
@@ -21,31 +22,37 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const premiumPlans = [
         {
-            type: "contact",
+            months: 3,
+            title: "3 oy",
+            price: 165000,
+            type: "gift"
+        },
+        {
+            months: 6,
+            title: "6 oy",
+            price: 220000,
+            type: "gift"
+        },
+        {
+            months: 12,
+            title: "12 oy",
+            price: 390000,
+            type: "gift"
+        }
+    ];
+
+
+    // =========================================================
+    // MAXSUS MUROJAAT PAKETLARI
+    // =========================================================
+
+    const contactPlans = [
+        {
             months: 1,
             title: "1 oy",
             price: 40000
         },
         {
-            type: "gift",
-            months: 3,
-            title: "3 oy",
-            price: 165000
-        },
-        {
-            type: "gift",
-            months: 6,
-            title: "6 oy",
-            price: 220000
-        },
-        {
-            type: "gift",
-            months: 12,
-            title: "12 oy",
-            price: 390000
-        },
-        {
-            type: "contact",
             months: 12,
             title: "12 oy",
             price: 280000
@@ -54,11 +61,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================================================
-    // STARS PAKETLARI
+    // STARS
     // =========================================================
 
     const starsPlans = [
-        ["50", 16000],
+        ["50", 11000],
         ["100", 30000],
         ["150", 40000],
         ["250", 64000],
@@ -76,17 +83,34 @@ document.addEventListener("DOMContentLoaded", function () {
     // YORDAMCHI FUNKSIYALAR
     // =========================================================
 
-    function formatPrice(price) {
-        return Number(price).toLocaleString("uz-UZ") + " so'm";
+    function setActiveButton(button) {
+
+        if (premiumButton) {
+            premiumButton.classList.remove("active");
+        }
+
+        if (starsButton) {
+            starsButton.classList.remove("active");
+        }
+
+        if (button) {
+            button.classList.add("active");
+        }
     }
 
 
-    function setProducts(html) {
-        products.innerHTML = html;
-        products.scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-        });
+    function backButtonHTML() {
+
+        return `
+            <button
+                type="button"
+                class="buy-button back-button"
+                id="backButton"
+                style="margin-bottom:15px;"
+            >
+                ← Orqaga
+            </button>
+        `;
     }
 
 
@@ -94,9 +118,10 @@ document.addEventListener("DOMContentLoaded", function () {
     // USERNAME FORM
     // =========================================================
 
-    function showRecipientForm() {
+    function showRecipientForm(category = null) {
 
-        setProducts(`
+        products.innerHTML = `
+
             <div class="gift-form">
 
                 <h2>🎁 Kimga yubormoqchisiz?</h2>
@@ -134,6 +159,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             </div>
 
+
             <div class="product-card">
 
                 <h3>💎 Telegram Premium</h3>
@@ -152,6 +178,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             </div>
 
+
             <div class="product-card">
 
                 <h3>⭐ Telegram Stars</h3>
@@ -169,7 +196,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 </button>
 
             </div>
-        `);
+        `;
 
 
         const input =
@@ -241,12 +268,13 @@ document.addEventListener("DOMContentLoaded", function () {
             status.style.display = "none";
             status.textContent = "";
             input.style.borderColor = "";
+
             verifiedUsername = "";
         }
 
 
         // =====================================================
-        // USERNAME TEKSHIRISH
+        // TELEGRAM USERNAME TEKSHIRISH
         // =====================================================
 
         async function checkUsername(username) {
@@ -261,8 +289,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const response =
                     await fetch(
-                        API_URL +
-                        "/check-username?username=" +
+                        "https://telegram-shop-co3o.onrender.com/check-username?username=" +
                         encodeURIComponent(username)
                     );
 
@@ -289,8 +316,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 verifiedUsername = "";
 
                 showStatus(
-                    data.message ||
-                    "❗ Username mavjud emas",
+                    "❗ Username noto‘g‘ri. Masalan: @qwerty123",
                     "error"
                 );
 
@@ -314,7 +340,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =====================================================
-        // INPUT
+        // USERNAME INPUT
         // =====================================================
 
         input.addEventListener(
@@ -402,7 +428,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =====================================================
-        // GET USERNAME
+        // USERNAME OLISH
         // =====================================================
 
         async function getUsername() {
@@ -502,6 +528,8 @@ document.addEventListener("DOMContentLoaded", function () {
                         return;
                     }
 
+                    setActiveButton(premiumButton);
+
                     showPremium(username);
                 }
             );
@@ -524,48 +552,21 @@ document.addEventListener("DOMContentLoaded", function () {
                         return;
                     }
 
+                    setActiveButton(starsButton);
+
                     showStars(username);
                 }
             );
-    }
 
 
-    // =========================================================
-    // BACK BUTTON
-    // =========================================================
+        // Agar yuqoridan ma'lum kategoriya bilan kirilgan bo'lsa
+        if (category === "premium") {
+            setActiveButton(premiumButton);
+        }
 
-    function createBackButton(callback) {
-
-        const wrapper =
-            document.createElement("div");
-
-        wrapper.style.marginBottom = "12px";
-
-        wrapper.innerHTML = `
-            <button
-                type="button"
-                class="buy-button back-button"
-                style="
-                    width:100%;
-                    margin-bottom:12px;
-                "
-            >
-                ← Orqaga
-            </button>
-        `;
-
-        const button =
-            wrapper.querySelector(".back-button");
-
-        button.addEventListener(
-            "click",
-            function () {
-
-                callback();
-            }
-        );
-
-        return wrapper;
+        if (category === "stars") {
+            setActiveButton(starsButton);
+        }
     }
 
 
@@ -575,7 +576,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function showPremium(username) {
 
-        setProducts(`
+        products.innerHTML = `
+
+            ${backButtonHTML()}
+
             <div class="gift-form">
 
                 <h2>💎 Telegram Premium</h2>
@@ -587,137 +591,239 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
 
             <div id="premiumPlans"></div>
-        `);
+
+            <div class="product-card">
+
+                <h3>📩 Maxsus Premium</h3>
+
+                <p>
+                    Maxsus muddatdagi Premium uchun murojaat qiling
+                </p>
+
+                <button
+                    type="button"
+                    class="buy-button"
+                    id="contactPremium"
+                >
+                    📩 Murojaat orqali
+                </button>
+
+            </div>
+        `;
+
+
+        // =====================================================
+        // ORQAGA
+        // =====================================================
+
+        document
+            .getElementById("backButton")
+            .addEventListener(
+                "click",
+                function () {
+
+                    showRecipientForm("premium");
+                }
+            );
 
 
         const plans =
             document.getElementById("premiumPlans");
 
 
-        // Back
-        plans.appendChild(
-            createBackButton(
-                function () {
-
-                    showRecipientForm();
-
-                }
-            )
-        );
-
-
         premiumPlans.forEach(
             function (plan) {
 
-                const card =
-                    document.createElement("div");
+                plans.innerHTML += `
 
-                card.className =
-                    "product-card";
+                    <div class="product-card">
 
+                        <h3>
+                            💎 Premium — ${plan.title}
+                        </h3>
 
-                let buttonText;
+                        <p>
+                            @${username} ga sovg‘a
+                        </p>
 
-                if (plan.type === "contact") {
+                        <div class="product-price">
 
-                    buttonText =
-                        "📩 Murojaat qilish";
+                            <span class="price">
+                                ${plan.price.toLocaleString("uz-UZ")}
+                                so'm
+                            </span>
 
-                } else {
+                            <button
+                                type="button"
+                                class="buy-button premium-buy"
+                                data-months="${plan.months}"
+                                data-price="${plan.price}"
+                            >
+                                🎁 Davom etish
+                            </button>
 
-                    buttonText =
-                        "🎁 Davom etish";
-                }
-
-
-                let description;
-
-                if (
-                    plan.type === "contact" &&
-                    plan.months === 1
-                ) {
-
-                    description =
-                        "1 oylik Premium obuna";
-
-                } else if (
-                    plan.type === "contact" &&
-                    plan.months === 12
-                ) {
-
-                    description =
-                        "12 oylik Premium obuna";
-
-                } else {
-
-                    description =
-                        `@${username} ga sovg‘a`;
-                }
-
-
-                card.innerHTML = `
-
-                    <h3>
-                        💎 Premium — ${plan.title}
-                    </h3>
-
-                    <p>
-                        ${description}
-                    </p>
-
-                    <div class="product-price">
-
-                        <span class="price">
-                            ${formatPrice(plan.price)}
-                        </span>
-
-                        <button
-                            type="button"
-                            class="buy-button premium-plan-button"
-                        >
-                            ${buttonText}
-                        </button>
+                        </div>
 
                     </div>
                 `;
+            }
+        );
 
 
-                const button =
-                    card.querySelector(
-                        ".premium-plan-button"
-                    );
+        document
+            .querySelectorAll(".premium-buy")
+            .forEach(
+                function (button) {
 
-
-                button.addEventListener(
-                    "click",
-                    function () {
-
-                        if (
-                            plan.type === "contact"
-                        ) {
-
-                            showContactPage(
-                                username,
-                                plan.months,
-                                plan.price
-                            );
-
-                        } else {
+                    button.addEventListener(
+                        "click",
+                        function () {
 
                             createOrder(
                                 "Telegram Premium",
                                 username,
-                                plan.months,
-                                plan.price
+                                Number(button.dataset.months),
+                                Number(button.dataset.price)
                             );
                         }
-                    }
-                );
+                    );
+                }
+            );
 
 
-                plans.appendChild(card);
+        // =====================================================
+        // MAXSUS MUROJAAT
+        // =====================================================
+
+        document
+            .getElementById("contactPremium")
+            .addEventListener(
+                "click",
+                function () {
+
+                    showContactPlans(username);
+                }
+            );
+    }
+
+
+    // =========================================================
+    // 1 OY / 12 OY MUROJAAT PAKETLARI
+    // =========================================================
+
+    function showContactPlans(username) {
+
+        products.innerHTML = `
+
+            ${backButtonHTML()}
+
+            <div class="gift-form">
+
+                <h2>📩 Premium murojaat</h2>
+
+                <p class="gift-description">
+                    🎁 @${username} uchun Premium
+                </p>
+
+            </div>
+
+            <div id="contactPlans"></div>
+        `;
+
+
+        document
+            .getElementById("backButton")
+            .addEventListener(
+                "click",
+                function () {
+
+                    showPremium(username);
+                }
+            );
+
+
+        const container =
+            document.getElementById("contactPlans");
+
+
+        contactPlans.forEach(
+            function (plan) {
+
+                container.innerHTML += `
+
+                    <div class="product-card">
+
+                        <h3>
+                            💎 ${plan.title} Premium
+                        </h3>
+
+                        <p>
+                            @${username} uchun
+                        </p>
+
+                        <div class="product-price">
+
+                            <span class="price">
+                                ${plan.price.toLocaleString("uz-UZ")}
+                                so'm
+                            </span>
+
+                            <button
+                                type="button"
+                                class="buy-button contact-buy"
+                                data-months="${plan.months}"
+                                data-price="${plan.price}"
+                            >
+                                📩 @Amirquiov ga yozish
+                            </button>
+
+                        </div>
+
+                    </div>
+                `;
             }
         );
+
+
+        document
+            .querySelectorAll(".contact-buy")
+            .forEach(
+                function (button) {
+
+                    button.addEventListener(
+                        "click",
+                        function () {
+
+                            const months =
+                                Number(button.dataset.months);
+
+                            const price =
+                                Number(button.dataset.price);
+
+                            const message =
+                                encodeURIComponent(
+                                    "Salom, Telegram Premium olmoqchiman.\n\n" +
+                                    "👤 Qabul qiluvchi: @" +
+                                    username +
+                                    "\n" +
+                                    "📦 Muddat: " +
+                                    months +
+                                    " oy\n" +
+                                    "💰 Narx: " +
+                                    price.toLocaleString("uz-UZ") +
+                                    " so'm"
+                                );
+
+
+                            window.open(
+                                "https://t.me/Amirquiov?text=" +
+                                message,
+                                "_blank"
+                            );
+                        }
+                    );
+                }
+            );
     }
 
 
@@ -727,7 +833,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function showStars(username) {
 
-        setProducts(`
+        products.innerHTML = `
+
+            ${backButtonHTML()}
+
             <div class="gift-form">
 
                 <h2>⭐ Telegram Stars</h2>
@@ -739,23 +848,22 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
 
             <div id="starsPlans"></div>
-        `);
+        `;
+
+
+        document
+            .getElementById("backButton")
+            .addEventListener(
+                "click",
+                function () {
+
+                    showRecipientForm("stars");
+                }
+            );
 
 
         const plans =
             document.getElementById("starsPlans");
-
-
-        // Back
-        plans.appendChild(
-            createBackButton(
-                function () {
-
-                    showRecipientForm();
-
-                }
-            )
-        );
 
 
         starsPlans.forEach(
@@ -765,166 +873,61 @@ document.addEventListener("DOMContentLoaded", function () {
                 const price = item[1];
 
 
-                const card =
-                    document.createElement("div");
+                plans.innerHTML += `
 
-                card.className =
-                    "product-card";
+                    <div class="product-card">
 
+                        <h3>
+                            ⭐ ${count} Telegram Stars
+                        </h3>
 
-                card.innerHTML = `
+                        <p>
+                            @${username} ga sovg‘a
+                        </p>
 
-                    <h3>
-                        ⭐ ${count} Telegram Stars
-                    </h3>
+                        <div class="product-price">
 
-                    <p>
-                        @${username} ga sovg‘a
-                    </p>
+                            <span class="price">
+                                ${price.toLocaleString("uz-UZ")}
+                                so'm
+                            </span>
 
-                    <div class="product-price">
+                            <button
+                                type="button"
+                                class="buy-button stars-buy"
+                                data-count="${count}"
+                                data-price="${price}"
+                            >
+                                🎁 Davom etish
+                            </button>
 
-                        <span class="price">
-                            ${formatPrice(price)}
-                        </span>
-
-                        <button
-                            type="button"
-                            class="buy-button stars-buy"
-                        >
-                            🎁 Davom etish
-                        </button>
+                        </div>
 
                     </div>
                 `;
-
-
-                const button =
-                    card.querySelector(
-                        ".stars-buy"
-                    );
-
-
-                button.addEventListener(
-                    "click",
-                    function () {
-
-                        createOrder(
-                            "Telegram Stars",
-                            username,
-                            Number(count),
-                            price
-                        );
-                    }
-                );
-
-
-                plans.appendChild(card);
             }
         );
-    }
 
 
-    // =========================================================
-    // MUROJAAT OYNASI
-    // =========================================================
+        document
+            .querySelectorAll(".stars-buy")
+            .forEach(
+                function (button) {
 
-    function showContactPage(
-        username,
-        months,
-        price
-    ) {
+                    button.addEventListener(
+                        "click",
+                        function () {
 
-        setProducts(`
-            <div class="gift-form">
-
-                <h2>📩 Premium obuna</h2>
-
-                <p class="gift-description">
-                    👤 @${username}
-                </p>
-
-            </div>
-
-            <div class="product-card">
-
-                <h3>
-                    💎 ${months} oylik Premium
-                </h3>
-
-                <p>
-                    ${formatPrice(price)}
-                </p>
-
-                <p>
-                    1 oylik Premium obuna olish uchun
-                    <strong>@Amirquiov</strong> ga yozing.
-                </p>
-
-                <button
-                    type="button"
-                    class="buy-button"
-                    id="contactButton"
-                >
-                    📩 @Amirquiov ga yozish
-                </button>
-
-            </div>
-
-            <div id="contactBack"></div>
-        `);
-
-
-        // =====================================================
-        // BACK
-        // =====================================================
-
-        const backContainer =
-            document.getElementById("contactBack");
-
-
-        backContainer.appendChild(
-            createBackButton(
-                function () {
-
-                    showPremium(username);
-
-                }
-            )
-        );
-
-
-        // =====================================================
-        // TELEGRAM CONTACT
-        // =====================================================
-
-        const contactButton =
-            document.getElementById("contactButton");
-
-
-        contactButton.addEventListener(
-            "click",
-            function () {
-
-                const telegramUrl =
-                    "https://t.me/Amirquiov";
-
-
-                if (tg && tg.openTelegramLink) {
-
-                    tg.openTelegramLink(
-                        telegramUrl
-                    );
-
-                } else {
-
-                    window.open(
-                        telegramUrl,
-                        "_blank"
+                            createOrder(
+                                "Telegram Stars",
+                                username,
+                                Number(button.dataset.count),
+                                Number(button.dataset.price)
+                            );
+                        }
                     );
                 }
-            }
-        );
+            );
     }
 
 
@@ -961,8 +964,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         if (
-            product ===
-            "Telegram Premium"
+            product === "Telegram Premium"
         ) {
 
             detail =
@@ -993,8 +995,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 "\n" +
 
                 "💰 " +
-                formatPrice(amount) +
-                "\n\n" +
+                amount.toLocaleString("uz-UZ") +
+                " so'm\n\n" +
 
                 "Davom etasizmi?"
             );
@@ -1010,8 +1012,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         if (
-            product ===
-            "Telegram Premium"
+            product === "Telegram Premium"
         ) {
 
             months = option;
@@ -1026,8 +1027,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const response =
                 await fetch(
-                    API_URL +
-                    "/create-order",
+                    "https://telegram-shop-co3o.onrender.com/create-order",
                     {
                         method: "POST",
 
@@ -1086,7 +1086,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     "\n\n" +
 
                     "💰 " +
-                    formatPrice(amount)
+                    amount.toLocaleString("uz-UZ") +
+                    " so'm"
                 );
 
             } else {
@@ -1113,51 +1114,61 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =========================================================
-    // PREMIUM BUTTON
+    // YUQORIDAGI PREMIUM TUGMA
     // =========================================================
 
-    premiumButton.addEventListener(
-        "click",
-        function () {
+    if (premiumButton) {
 
-            premiumButton.classList.add(
-                "active"
-            );
+        premiumButton.addEventListener(
+            "click",
+            function (event) {
 
-            starsButton.classList.remove(
-                "active"
-            );
+                event.preventDefault();
+                event.stopPropagation();
 
-            showRecipientForm();
-        }
-    );
+                setActiveButton(premiumButton);
+
+                showRecipientForm("premium");
+            }
+        );
+    }
 
 
     // =========================================================
-    // STARS BUTTON
+    // YUQORIDAGI STARS TUGMA
     // =========================================================
 
-    starsButton.addEventListener(
-        "click",
-        function () {
+    if (starsButton) {
 
-            starsButton.classList.add(
-                "active"
-            );
+        starsButton.addEventListener(
+            "click",
+            function (event) {
 
-            premiumButton.classList.remove(
-                "active"
-            );
+                event.preventDefault();
+                event.stopPropagation();
 
-            showRecipientForm();
-        }
-    );
+                setActiveButton(starsButton);
+
+                showRecipientForm("stars");
+            }
+        );
+    }
 
 
     // =========================================================
     // BOSHLANG'ICH HOLAT
     // =========================================================
 
-    showRecipientForm();
+    // Mahsulot paketlari boshida ko'rinmaydi.
+    // Foydalanuvchi yuqoridagi Premium yoki Stars tugmasini
+    // bosgandan keyin username oynasi chiqadi.
+
+    products.innerHTML = `
+        <div class="product-card">
+            <p style="text-align:center;">
+                👆 Yuqoridan mahsulotni tanlang
+            </p>
+        </div>
+    `;
 
 });
