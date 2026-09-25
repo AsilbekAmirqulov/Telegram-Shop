@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", function () {
 
     // =====================================================
-    // ELEMENTLAR
+    // ASOSIY ELEMENTLAR
     // =====================================================
 
     const products = document.getElementById("products");
@@ -25,11 +25,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =====================================================
-    // PREMIUM PAKETLARI
+    // ODDIY PREMIUM PAKETLARI
+    //
+    // FAQAT 3 / 6 / 12 OY
+    // 1 OY BU YERDA YO'Q
     // =====================================================
-
-    // Bu yerda 1 oy YO'Q.
-    // 1 oy alohida murojaat orqali.
 
     const premiumPlans = [
         {
@@ -52,6 +52,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // =====================================================
     // MUROJAAT ORQALI PREMIUM
+    //
+    // 1 OY va 12 OY ALOHIDA
     // =====================================================
 
     const contactPlans = [
@@ -69,7 +71,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =====================================================
-    // STARS
+    // TELEGRAM STARS
     // =====================================================
 
     const starsPlans = [
@@ -96,7 +98,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let usernameInput = null;
     let usernameStatus = null;
-
     let searchTimer = null;
 
 
@@ -105,14 +106,11 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================================
 
     function formatPrice(price) {
-
-        return Number(price).toLocaleString("uz-UZ") +
-            " so'm";
+        return Number(price).toLocaleString("uz-UZ") + " so'm";
     }
 
 
     function escapeHtml(text) {
-
         return String(text)
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
@@ -123,15 +121,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     function clearProducts() {
-
-        if (products) {
-            products.innerHTML = "";
-        }
+        products.innerHTML = "";
     }
 
 
     // =====================================================
-    // BACK BUTTON
+    // ORQAGA TUGMASI
     // =====================================================
 
     function createBackButton(text) {
@@ -141,41 +136,38 @@ document.addEventListener("DOMContentLoaded", function () {
 
         wrapper.style.marginBottom = "12px";
 
-        wrapper.innerHTML = `
+        const button =
+            document.createElement("button");
 
-            <button
-                type="button"
-                class="buy-button back-button"
-                style="
-                    width:100%;
-                    background:#17212b;
-                    border:1px solid rgba(255,255,255,0.10);
-                    text-align:left;
-                "
-            >
-                ← ${escapeHtml(text || "Orqaga")}
-            </button>
+        button.type = "button";
+        button.className = "buy-button";
 
-        `;
+        button.style.width = "100%";
+        button.style.background = "#17212b";
+        button.style.border =
+            "1px solid rgba(255,255,255,0.08)";
+        button.style.textAlign = "left";
+
+        button.textContent =
+            "← " + text;
+
+        wrapper.appendChild(button);
 
         products.appendChild(wrapper);
 
-        return wrapper.querySelector(".back-button");
+        return button;
     }
 
 
     // =====================================================
-    // USERNAME STATUS
+    // STATUS
     // =====================================================
 
     function showStatus(message, type) {
 
-        if (!usernameStatus ||
-            !usernameInput) {
-
+        if (!usernameStatus || !usernameInput) {
             return;
         }
-
 
         usernameStatus.textContent =
             message;
@@ -222,12 +214,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function clearStatus() {
 
-        if (!usernameStatus ||
-            !usernameInput) {
-
+        if (!usernameStatus || !usernameInput) {
             return;
         }
-
 
         usernameStatus.style.display =
             "none";
@@ -238,7 +227,8 @@ document.addEventListener("DOMContentLoaded", function () {
         usernameInput.style.borderColor =
             "";
 
-        verifiedUsername = "";
+        verifiedUsername =
+            "";
     }
 
 
@@ -248,12 +238,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     async function checkUsername(username) {
 
-        if (!usernameInput ||
-            !usernameStatus) {
-
+        if (!usernameInput || !usernameStatus) {
             return null;
         }
-
 
         showStatus(
             "🔍 Telegram foydalanuvchisi qidirilmoqda...",
@@ -283,13 +270,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 currentUsername =
                     data.username;
 
-
                 showStatus(
                     "👤 Telegram foydalanuvchisi: @" +
                     data.username,
                     "success"
                 );
-
 
                 return data.username;
             }
@@ -297,13 +282,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
             verifiedUsername = "";
 
-
             showStatus(
                 data.message ||
                 "❗ Username topilmadi.",
                 "error"
             );
-
 
             return null;
 
@@ -315,15 +298,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 error
             );
 
-
             verifiedUsername = "";
 
-
             showStatus(
-                "❗ Username tekshirilmadi. Qaytadan urinib ko‘ring.",
+                "❗ Username tekshirilmayapti. Qaytadan urinib ko‘ring.",
                 "error"
             );
-
 
             return null;
         }
@@ -336,8 +316,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function showRecipientForm() {
 
-        clearTimeout(searchTimer);
-
         clearProducts();
 
         verifiedUsername = "";
@@ -347,9 +325,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             <div class="gift-form">
 
-                <h2>
-                    🎁 Kimga yubormoqchisiz?
-                </h2>
+                <h2>🎁 Kimga yubormoqchisiz?</h2>
 
                 <p class="gift-description">
                     Telegram username'ini kiriting
@@ -387,9 +363,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             <div class="product-card">
 
-                <h3>
-                    💎 Telegram Premium
-                </h3>
+                <h3>💎 Telegram Premium</h3>
 
                 <p>
                     Telegram Premium sovg‘a qiling
@@ -409,9 +383,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             <div class="product-card">
 
-                <h3>
-                    ⭐ Telegram Stars
-                </h3>
+                <h3>⭐ Telegram Stars</h3>
 
                 <p>
                     Telegram Stars sovg‘a qiling
@@ -427,7 +399,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 </button>
 
             </div>
-
         `;
 
 
@@ -436,7 +407,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 "recipientUsername"
             );
 
-
         usernameStatus =
             document.getElementById(
                 "usernameStatus"
@@ -444,7 +414,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =================================================
-        // OLD USERNAME QAYTARISH
+        // OLDINGI USERNAME'NI SAQLASH
         // =================================================
 
         if (currentUsername) {
@@ -465,7 +435,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 clearTimeout(searchTimer);
 
                 verifiedUsername = "";
-
 
                 const raw =
                     usernameInput.value.trim();
@@ -555,7 +524,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =================================================
-        // PREMIUM TANLASH
+        // PREMIUM
         // =================================================
 
         const choosePremium =
@@ -564,30 +533,33 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-        choosePremium.addEventListener(
-            "click",
-            async function (event) {
+        if (choosePremium) {
 
-                event.preventDefault();
-                event.stopPropagation();
+            choosePremium.addEventListener(
+                "click",
+                async function (event) {
 
-
-                const username =
-                    await getUsername();
+                    event.preventDefault();
+                    event.stopPropagation();
 
 
-                if (!username) {
-                    return;
+                    const username =
+                        await getUsername();
+
+
+                    if (!username) {
+                        return;
+                    }
+
+
+                    showPremium(username);
                 }
-
-
-                showPremium(username);
-            }
-        );
+            );
+        }
 
 
         // =================================================
-        // STARS TANLASH
+        // STARS
         // =================================================
 
         const chooseStars =
@@ -596,26 +568,29 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-        chooseStars.addEventListener(
-            "click",
-            async function (event) {
+        if (chooseStars) {
 
-                event.preventDefault();
-                event.stopPropagation();
+            chooseStars.addEventListener(
+                "click",
+                async function (event) {
 
-
-                const username =
-                    await getUsername();
+                    event.preventDefault();
+                    event.stopPropagation();
 
 
-                if (!username) {
-                    return;
+                    const username =
+                        await getUsername();
+
+
+                    if (!username) {
+                        return;
+                    }
+
+
+                    showStars(username);
                 }
-
-
-                showStars(username);
-            }
-        );
+            );
+        }
     }
 
 
@@ -714,13 +689,12 @@ document.addEventListener("DOMContentLoaded", function () {
         currentUsername =
             result;
 
-
         return result;
     }
 
 
     // =====================================================
-    // PREMIUM SAHIFA
+    // PREMIUM PAKETLARI
     // =====================================================
 
     function showPremium(username) {
@@ -728,11 +702,12 @@ document.addEventListener("DOMContentLoaded", function () {
         currentUsername =
             username;
 
-
         clearProducts();
 
 
-        // BACK
+        // -------------------------------------------------
+        // ORQAGA
+        // -------------------------------------------------
 
         const backButton =
             createBackButton(
@@ -752,6 +727,10 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
+        // -------------------------------------------------
+        // PREMIUM HEADER
+        // -------------------------------------------------
+
         products.insertAdjacentHTML(
             "beforeend",
             `
@@ -769,9 +748,38 @@ document.addEventListener("DOMContentLoaded", function () {
 
             </div>
 
+            <div
+                id="premiumPlans"
+                style="
+                    display:flex;
+                    flex-direction:column;
+                    gap:10px;
+                "
+            ></div>
 
-            <div id="premiumPlans"></div>
+            <div
+                style="
+                    margin-top:20px;
+                    margin-bottom:10px;
+                    padding:0 3px;
+                "
+            >
+                <h3 style="
+                    font-size:16px;
+                    font-weight:700;
+                ">
+                    💬 Murojaat orqali
+                </h3>
+            </div>
 
+            <div
+                id="contactPlans"
+                style="
+                    display:flex;
+                    flex-direction:column;
+                    gap:10px;
+                "
+            ></div>
             `
         );
 
@@ -779,6 +787,12 @@ document.addEventListener("DOMContentLoaded", function () {
         const plans =
             document.getElementById(
                 "premiumPlans"
+            );
+
+
+        const contacts =
+            document.getElementById(
+                "contactPlans"
             );
 
 
@@ -807,9 +821,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         <div class="product-price">
 
                             <span class="price">
-                                ${formatPrice(
-                                    plan.price
-                                )}
+                                ${formatPrice(plan.price)}
                             </span>
 
                             <button
@@ -824,7 +836,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         </div>
 
                     </div>
-
                     `
                 );
             }
@@ -832,35 +843,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =================================================
-        // MUROJAAT PAKETLARI
+        // MUROJAAT 1 / 12 OY
         // =================================================
 
         contactPlans.forEach(
             function (plan) {
 
-                plans.insertAdjacentHTML(
+                contacts.insertAdjacentHTML(
                     "beforeend",
                     `
 
                     <div class="product-card">
 
                         <h3>
-                            💬 ${plan.title}
-                            Premium — Murojaat
+                            💬 Premium — ${plan.title}
+                            (murojaat)
                         </h3>
 
                         <p>
-                            ${formatPrice(
-                                plan.price
-                            )}
+                            @${escapeHtml(username)}
+                            uchun
                         </p>
 
                         <div class="product-price">
 
                             <span class="price">
-                                ${formatPrice(
-                                    plan.price
-                                )}
+                                ${formatPrice(plan.price)}
                             </span>
 
                             <button
@@ -875,7 +883,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         </div>
 
                     </div>
-
                     `
                 );
             }
@@ -904,7 +911,6 @@ document.addEventListener("DOMContentLoaded", function () {
                                     button.dataset.months
                                 );
 
-
                             const price =
                                 Number(
                                     button.dataset.price
@@ -927,7 +933,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // MUROJAAT BUTTONLAR
         // =================================================
 
-        plans
+        contacts
             .querySelectorAll(".contact-buy")
             .forEach(
                 function (button) {
@@ -944,7 +950,6 @@ document.addEventListener("DOMContentLoaded", function () {
                                 Number(
                                     button.dataset.months
                                 );
-
 
                             const price =
                                 Number(
@@ -977,11 +982,12 @@ document.addEventListener("DOMContentLoaded", function () {
         currentUsername =
             username;
 
-
         clearProducts();
 
 
-        // BACK
+        // -------------------------------------------------
+        // ORQAGA
+        // -------------------------------------------------
 
         const backButton =
             createBackButton(
@@ -1000,6 +1006,10 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         );
 
+
+        // -------------------------------------------------
+        // SAHIFA
+        // -------------------------------------------------
 
         products.insertAdjacentHTML(
             "beforeend",
@@ -1022,24 +1032,24 @@ document.addEventListener("DOMContentLoaded", function () {
             <div class="product-card">
 
                 <h3>
-                    💎 ${months} oylik Premium
+                    💬 ${months} oylik Premium
                 </h3>
 
                 <p>
-                    Narxi: ${formatPrice(price)}
+                    ${formatPrice(price)}
                 </p>
 
                 <p style="
                     margin-top:12px;
                     color:#ffffff;
                     opacity:0.85;
+                    line-height:1.5;
                 ">
                     ${months === 1
                         ? "1 oylik premium obuna olish uchun @AmirquIov ga yozing."
                         : "12 oylik premium obuna olish uchun @AmirquIov ga yozing."
                     }
                 </p>
-
 
                 <button
                     type="button"
@@ -1054,7 +1064,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 </button>
 
             </div>
-
             `
         );
 
@@ -1065,38 +1074,41 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-        contactButton.addEventListener(
-            "click",
-            function (event) {
+        if (contactButton) {
 
-                event.preventDefault();
-                event.stopPropagation();
+            contactButton.addEventListener(
+                "click",
+                function (event) {
 
-
-                const url =
-                    "https://t.me/AmirquIov";
+                    event.preventDefault();
+                    event.stopPropagation();
 
 
-                if (tg &&
-                    typeof tg.openTelegramLink ===
-                    "function") {
+                    const url =
+                        "https://t.me/AmirquIov";
 
-                    tg.openTelegramLink(url);
 
-                } else {
+                    if (tg) {
 
-                    window.open(
-                        url,
-                        "_blank"
-                    );
+                        tg.openTelegramLink(
+                            url
+                        );
+
+                    } else {
+
+                        window.open(
+                            url,
+                            "_blank"
+                        );
+                    }
                 }
-            }
-        );
+            );
+        }
     }
 
 
     // =====================================================
-    // STARS SAHIFASI
+    // STARS
     // =====================================================
 
     function showStars(username) {
@@ -1104,11 +1116,12 @@ document.addEventListener("DOMContentLoaded", function () {
         currentUsername =
             username;
 
-
         clearProducts();
 
 
-        // BACK
+        // -------------------------------------------------
+        // ORQAGA
+        // -------------------------------------------------
 
         const backButton =
             createBackButton(
@@ -1128,6 +1141,10 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
+        // -------------------------------------------------
+        // HEADER
+        // -------------------------------------------------
+
         products.insertAdjacentHTML(
             "beforeend",
             `
@@ -1145,9 +1162,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             </div>
 
-
             <div id="starsPlans"></div>
-
             `
         );
 
@@ -1157,6 +1172,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 "starsPlans"
             );
 
+
+        // =================================================
+        // STARS PAKETLARI
+        // =================================================
 
         starsPlans.forEach(
             function (item) {
@@ -1187,9 +1206,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         <div class="product-price">
 
                             <span class="price">
-                                ${formatPrice(
-                                    price
-                                )}
+                                ${formatPrice(price)}
                             </span>
 
                             <button
@@ -1204,7 +1221,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         </div>
 
                     </div>
-
                     `
                 );
             }
@@ -1299,7 +1315,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 "👤 @" +
                 username +
-                "\n\n" +
+                "\n" +
 
                 "📦 " +
                 product +
@@ -1331,11 +1347,13 @@ document.addEventListener("DOMContentLoaded", function () {
             "Telegram Premium"
         ) {
 
-            months = option;
+            months =
+                option;
 
         } else {
 
-            stars = option;
+            stars =
+                option;
         }
 
 
@@ -1385,7 +1403,6 @@ document.addEventListener("DOMContentLoaded", function () {
             if (data.ok) {
 
                 alert(
-
                     "✅ Buyurtma yaratildi!\n\n" +
 
                     "📦 Buyurtma №: " +
@@ -1408,13 +1425,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     formatPrice(amount)
                 );
 
-
             } else {
 
                 alert(
-
                     "❌ Buyurtma yaratilmadi.\n\n" +
-
                     (
                         data.message ||
                         "Noma'lum xato"
@@ -1429,7 +1443,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 "Create order error:",
                 error
             );
-
 
             alert(
                 "❌ Server bilan bog‘lanib bo‘lmadi."
