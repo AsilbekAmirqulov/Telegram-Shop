@@ -82,7 +82,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // =========================
 
     const starsPlans = [
-        ["50", 15000],
+        ["50", 11000],
         ["100", 30000],
         ["150", 40000],
         ["250", 64000],
