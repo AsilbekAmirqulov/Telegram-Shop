@@ -34,30 +34,40 @@ document.addEventListener("DOMContentLoaded", function () {
     // =========================
 
     const premiumPlans = [
+
+        // 1 OY - MUROJAAT
         {
             months: 1,
             title: "1 oy",
             price: 40000,
             contact: true
         },
+
+        // 3 OY - SOVGA
         {
             months: 3,
             title: "3 oy",
             price: 165000,
             contact: false
         },
+
+        // 6 OY - SOVGA
         {
             months: 6,
             title: "6 oy",
             price: 220000,
             contact: false
         },
+
+        // 12 OY - SOVGA
         {
             months: 12,
             title: "1 yil",
             price: 390000,
             contact: false
         },
+
+        // 12 OY - MUROJAAT
         {
             months: 12,
             title: "1 yil — Murojaat orqali",
@@ -71,19 +81,19 @@ document.addEventListener("DOMContentLoaded", function () {
     // STARS PLANS
     // =========================
 
-  const starsPlans = [
-    ["50", 11000],
-    ["100", 30000],
-    ["150", 40000],
-    ["250", 64000],
-    ["350", 89000],
-    ["500", 125000],
-    ["750", 185000],
-    ["1000", 244000],
-    ["1500", 365000],
-    ["2500", 605000],
-    ["5000", 1205000]
-];
+    const starsPlans = [
+        ["50", 15000],
+        ["100", 30000],
+        ["150", 40000],
+        ["250", 64000],
+        ["350", 89000],
+        ["500", 125000],
+        ["750", 185000],
+        ["1000", 244000],
+        ["1500", 365000],
+        ["2500", 605000],
+        ["5000", 1205000]
+    ];
 
 
     // =========================
@@ -106,7 +116,9 @@ document.addEventListener("DOMContentLoaded", function () {
     // USERNAME FORM
     // =========================
 
-    function createRecipientForm() {
+    function createRecipientForm(
+        prefillUsername = ""
+    ) {
 
         return `
 
@@ -123,6 +135,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     id="recipientUsername"
                     class="username-input"
                     placeholder="@username"
+                    value="${
+                        prefillUsername
+                            ? "@" + prefillUsername
+                            : ""
+                    }"
                     autocomplete="off"
                     autocorrect="off"
                     autocapitalize="none"
@@ -146,6 +163,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 </p>
 
             </div>
+
         `;
     }
 
@@ -154,7 +172,9 @@ document.addEventListener("DOMContentLoaded", function () {
     // USERNAME CHECKER
     // =========================
 
-    function setupUsernameChecker(onVerified) {
+    function setupUsernameChecker(
+        onVerified
+    ) {
 
         const input =
             document.getElementById(
@@ -177,13 +197,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =========================
-        // SHOW STATUS
+        // STATUS
         // =========================
 
-        function showStatus(message, type) {
+        function showStatus(
+            message,
+            type
+        ) {
 
-            status.textContent = message;
-            status.style.display = "block";
+            status.textContent =
+                message;
+
+            status.style.display =
+                "block";
 
 
             if (type === "success") {
@@ -232,11 +258,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
         function clearStatus() {
 
-            status.style.display = "none";
-            status.textContent = "";
-            input.style.borderColor = "";
+            status.style.display =
+                "none";
 
-            verifiedUsername = "";
+            status.textContent =
+                "";
+
+            input.style.borderColor =
+                "";
+
+            verifiedUsername =
+                "";
         }
 
 
@@ -244,7 +276,9 @@ document.addEventListener("DOMContentLoaded", function () {
         // CHECK USERNAME
         // =========================
 
-        async function checkUsername(username) {
+        async function checkUsername(
+            username
+        ) {
 
             try {
 
@@ -293,7 +327,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
 
-                verifiedUsername = "";
+                verifiedUsername =
+                    "";
 
 
                 showStatus(
@@ -311,7 +346,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 console.error(error);
 
-                verifiedUsername = "";
+                verifiedUsername =
+                    "";
 
 
                 showStatus(
@@ -333,9 +369,13 @@ document.addEventListener("DOMContentLoaded", function () {
             "input",
             function () {
 
-                clearTimeout(searchTimer);
+                clearTimeout(
+                    searchTimer
+                );
 
-                verifiedUsername = "";
+
+                verifiedUsername =
+                    "";
 
 
                 const raw =
@@ -365,7 +405,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
                 const username =
-                    raw.replace(/^@/, "");
+                    raw.replace(
+                        /^@/,
+                        ""
+                    );
 
 
                 if (
@@ -465,7 +508,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
             const username =
-                raw.replace(/^@/, "");
+                raw.replace(
+                    /^@/,
+                    ""
+                );
 
 
             if (
@@ -486,6 +532,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
             if (
+                verifiedUsername &&
                 verifiedUsername.toLowerCase() ===
                 username.toLowerCase()
             ) {
@@ -529,9 +576,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
         products.innerHTML = `
 
+            <button
+                type="button"
+                id="backFromContactButton"
+                style="
+                    display:block;
+                    width:100%;
+                    margin-bottom:12px;
+                    padding:11px 14px;
+                    border:none;
+                    border-radius:12px;
+                    background:rgba(128,128,128,0.12);
+                    color:inherit;
+                    font-size:14px;
+                    font-weight:600;
+                    cursor:pointer;
+                "
+            >
+                ← Orqaga
+            </button>
+
+
             <div class="gift-form">
 
-                <h2>💎 ${title}</h2>
+                <h2>
+                    💎 ${title}
+                </h2>
 
                 <p class="gift-description">
                     🎁 @${username} uchun
@@ -570,6 +640,34 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
         `;
 
+
+        // =========================
+        // BACK
+        // =========================
+
+        const backButton =
+            document.getElementById(
+                "backFromContactButton"
+            );
+
+
+        if (backButton) {
+
+            backButton.addEventListener(
+                "click",
+                function () {
+
+                    showPremium(
+                        username
+                    );
+                }
+            );
+        }
+
+
+        // =========================
+        // TELEGRAM ADMIN
+        // =========================
 
         const contactButton =
             document.getElementById(
@@ -612,7 +710,9 @@ document.addEventListener("DOMContentLoaded", function () {
     // PREMIUM
     // =========================
 
-    function showPremium() {
+    function showPremium(
+        prefillUsername = ""
+    ) {
 
         openProducts(
             "Premium paketlar"
@@ -620,7 +720,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         products.innerHTML =
-            createRecipientForm() +
+            createRecipientForm(
+                prefillUsername
+            ) +
+
             `
                 <div id="premiumPlans"></div>
             `;
@@ -632,7 +735,8 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-        let getUsername = null;
+        let getUsername =
+            null;
 
 
         getUsername =
@@ -647,17 +751,63 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =========================
-        // RENDER PREMIUM PLANS
+        // RENDER PREMIUM
         // =========================
 
-        function renderPremiumPlans(username) {
+        function renderPremiumPlans(
+            username
+        ) {
 
-            if (!premiumPlansContainer) {
+            if (
+                !premiumPlansContainer
+            ) {
+
                 return;
             }
 
 
-            premiumPlansContainer.innerHTML = "";
+            premiumPlansContainer.innerHTML = `
+
+                <button
+                    type="button"
+                    id="backFromPremiumPlans"
+                    style="
+                        display:block;
+                        width:100%;
+                        margin:12px 0;
+                        padding:11px 14px;
+                        border:none;
+                        border-radius:12px;
+                        background:rgba(128,128,128,0.12);
+                        color:inherit;
+                        font-size:14px;
+                        font-weight:600;
+                        cursor:pointer;
+                    "
+                >
+                    ← Orqaga
+                </button>
+            `;
+
+
+            const backButton =
+                document.getElementById(
+                    "backFromPremiumPlans"
+                );
+
+
+            if (backButton) {
+
+                backButton.addEventListener(
+                    "click",
+                    function () {
+
+                        showPremium(
+                            username
+                        );
+                    }
+                );
+            }
 
 
             premiumPlans.forEach(
@@ -702,7 +852,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
                             </div>
                         `;
-
                     }
 
 
@@ -745,6 +894,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             </div>
                         `;
                     }
+
                 }
             );
 
@@ -766,6 +916,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                                 const username =
                                     await getUsername();
+
 
                                 if (!username) {
                                     return;
@@ -801,7 +952,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
             // =========================
-            // NORMAL BUY BUTTONS
+            // NORMAL PREMIUM
             // =========================
 
             document
@@ -817,6 +968,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                                 const username =
                                     await getUsername();
+
 
                                 if (!username) {
                                     return;
@@ -845,7 +997,9 @@ document.addEventListener("DOMContentLoaded", function () {
     // STARS
     // =========================
 
-    function showStars() {
+    function showStars(
+        prefillUsername = ""
+    ) {
 
         openProducts(
             "Telegram Stars"
@@ -853,7 +1007,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         products.innerHTML =
-            createRecipientForm() +
+            createRecipientForm(
+                prefillUsername
+            ) +
+
             `
                 <div id="starsPlans"></div>
             `;
@@ -865,7 +1022,8 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-        let getUsername = null;
+        let getUsername =
+            null;
 
 
         getUsername =
@@ -883,14 +1041,60 @@ document.addEventListener("DOMContentLoaded", function () {
         // RENDER STARS
         // =========================
 
-        function renderStarsPlans(username) {
+        function renderStarsPlans(
+            username
+        ) {
 
-            if (!starsPlansContainer) {
+            if (
+                !starsPlansContainer
+            ) {
+
                 return;
             }
 
 
-            starsPlansContainer.innerHTML = "";
+            starsPlansContainer.innerHTML = `
+
+                <button
+                    type="button"
+                    id="backFromStarsPlans"
+                    style="
+                        display:block;
+                        width:100%;
+                        margin:12px 0;
+                        padding:11px 14px;
+                        border:none;
+                        border-radius:12px;
+                        background:rgba(128,128,128,0.12);
+                        color:inherit;
+                        font-size:14px;
+                        font-weight:600;
+                        cursor:pointer;
+                    "
+                >
+                    ← Orqaga
+                </button>
+            `;
+
+
+            const backButton =
+                document.getElementById(
+                    "backFromStarsPlans"
+                );
+
+
+            if (backButton) {
+
+                backButton.addEventListener(
+                    "click",
+                    function () {
+
+                        showStars(
+                            username
+                        );
+                    }
+                );
+            }
 
 
             starsPlans.forEach(
@@ -939,6 +1143,10 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
+            // =========================
+            // STARS BUY
+            // =========================
+
             document
                 .querySelectorAll(
                     ".stars-buy"
@@ -952,6 +1160,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                                 const username =
                                     await getUsername();
+
 
                                 if (!username) {
                                     return;
@@ -1025,7 +1234,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 "👤 @" +
                 username +
-                "\n" +
+                "\n\n" +
 
                 "📦 " +
                 product +
@@ -1050,8 +1259,11 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        let months = null;
-        let stars = null;
+        let months =
+            null;
+
+        let stars =
+            null;
 
 
         if (
@@ -1059,13 +1271,15 @@ document.addEventListener("DOMContentLoaded", function () {
             "Telegram Premium"
         ) {
 
-            months = option;
+            months =
+                option;
 
         }
 
         else {
 
-            stars = option;
+            stars =
+                option;
         }
 
 
@@ -1082,26 +1296,27 @@ document.addEventListener("DOMContentLoaded", function () {
                                 "application/json"
                         },
 
-                        body: JSON.stringify({
+                        body:
+                            JSON.stringify({
 
-                            user_id:
-                                buyer.id,
+                                user_id:
+                                    buyer.id,
 
-                            product:
-                                product,
+                                product:
+                                    product,
 
-                            amount:
-                                amount,
+                                amount:
+                                    amount,
 
-                            recipient_username:
-                                username,
+                                recipient_username:
+                                    username,
 
-                            months:
-                                months,
+                                months:
+                                    months,
 
-                            stars:
-                                stars
-                        })
+                                stars:
+                                    stars
+                            })
                     }
                 );
 
@@ -1144,13 +1359,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 alert(
                     "❌ Buyurtma yaratilmadi.\n\n" +
+
                     (
                         data.message ||
                         "Noma'lum xato"
                     )
                 );
             }
-
 
         }
 
@@ -1169,77 +1384,94 @@ document.addEventListener("DOMContentLoaded", function () {
     // PREMIUM BUTTON
     // =========================
 
-    premiumButton.addEventListener(
-        "click",
-        function () {
+    if (premiumButton) {
 
-            premiumButton.classList.add(
-                "active"
-            );
+        premiumButton.addEventListener(
+            "click",
+            function () {
 
-            starsButton.classList.remove(
-                "active"
-            );
+                premiumButton.classList.add(
+                    "active"
+                );
 
 
-            showPremium();
+                if (starsButton) {
+
+                    starsButton.classList.remove(
+                        "active"
+                    );
+                }
 
 
-            setTimeout(
-                function () {
+                showPremium();
 
-                    productsSection?.scrollIntoView({
-                        behavior: "smooth",
-                        block: "start"
-                    });
 
-                },
-                100
-            );
-        }
-    );
+                setTimeout(
+                    function () {
+
+                        productsSection?.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start"
+                        });
+
+                    },
+                    100
+                );
+            }
+        );
+    }
 
 
     // =========================
     // STARS BUTTON
     // =========================
 
-    starsButton.addEventListener(
-        "click",
-        function () {
+    if (starsButton) {
 
-            starsButton.classList.add(
-                "active"
-            );
+        starsButton.addEventListener(
+            "click",
+            function () {
 
-            premiumButton.classList.remove(
-                "active"
-            );
+                starsButton.classList.add(
+                    "active"
+                );
 
 
-            showStars();
+                if (premiumButton) {
+
+                    premiumButton.classList.remove(
+                        "active"
+                    );
+                }
 
 
-            setTimeout(
-                function () {
+                showStars();
 
-                    productsSection?.scrollIntoView({
-                        behavior: "smooth",
-                        block: "start"
-                    });
 
-                },
-                100
-            );
-        }
-    );
+                setTimeout(
+                    function () {
+
+                        productsSection?.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start"
+                        });
+
+                    },
+                    100
+                );
+            }
+        );
+    }
 
 
     // =========================
-    // BOSHLANG'ICH HOLAT
+    // BOSHLANG‘ICH HOLAT
     // =========================
 
-    // Premium yoki Stars bosilmaguncha
-    // mahsulotlar ko‘rsatilmaydi.
+    if (productsSection) {
+
+        productsSection.style.display =
+            "none";
+    }
 
 });
