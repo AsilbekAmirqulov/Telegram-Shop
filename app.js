@@ -314,285 +314,235 @@ document.addEventListener("DOMContentLoaded", function () {
     // USERNAME FORM
     // =====================================================
 
-function showRecipientForm() {
+// =====================================================
+// USERNAME FORM
+// =====================================================
+
+function showRecipientForm(type = "premium") {
 
     clearProducts();
+
     productsSection.style.display = "block";
     verifiedUsername = "";
 
+    const isPremium = type === "premium";
 
-        products.innerHTML = `
+    products.innerHTML = `
 
-            <div class="gift-form">
+        <div class="gift-form">
 
-                <h2>🎁 Kimga yubormoqchisiz?</h2>
-
-                <p class="gift-description">
-                    Telegram username'ini kiriting
-                </p>
-
-                <input
-                    type="text"
-                    id="recipientUsername"
-                    class="username-input"
-                    placeholder="@username"
-                    autocomplete="off"
-                    autocorrect="off"
-                    autocapitalize="none"
-                    spellcheck="false"
-                    inputmode="text"
-                >
-
-                <div
-                    id="usernameStatus"
-                    style="
-                        display:none;
-                        margin-top:8px;
-                        padding:8px 10px;
-                        border-radius:10px;
-                        font-size:13px;
-                    "
-                ></div>
-
-                <p class="username-hint">
-                    Masalan: @qwerty123
-                </p>
-
-            </div>
-
-
-            <div class="product-card">
-
-                <h3>💎 Telegram Premium</h3>
-
-                <p>
-                    Telegram Premium sovg‘a qiling
-                </p>
-
-                <button
-                    type="button"
-                    class="buy-button"
-                    id="choosePremium"
-                    style="margin-top:14px;"
-                >
-                    💎 Premium
-                </button>
-
-            </div>
-
-
-            <div class="product-card">
-
-                <h3>⭐ Telegram Stars</h3>
-
-                <p>
-                    Telegram Stars sovg‘a qiling
-                </p>
-
-                <button
-                    type="button"
-                    class="buy-button"
-                    id="chooseStars"
-                    style="margin-top:14px;"
-                >
-                    ⭐ Stars
-                </button>
-
-            </div>
-        `;
-
-
-        usernameInput =
-            document.getElementById(
-                "recipientUsername"
-            );
-
-        usernameStatus =
-            document.getElementById(
-                "usernameStatus"
-            );
-
-
-        // =================================================
-        // OLDINGI USERNAME'NI SAQLASH
-        // =================================================
-
-        if (currentUsername) {
-
-            usernameInput.value =
-                "@" + currentUsername;
-        }
-
-
-        // =================================================
-        // USERNAME INPUT
-        // =================================================
-
-        usernameInput.addEventListener(
-            "input",
-            function () {
-
-                clearTimeout(searchTimer);
-
-                verifiedUsername = "";
-
-                const raw =
-                    usernameInput.value.trim();
-
-
-                if (!raw) {
-
-                    clearStatus();
-
-                    return;
+            <h2>
+                ${isPremium
+                    ? "💎 Telegram Premium"
+                    : "⭐ Telegram Stars"
                 }
+            </h2>
 
+            <p class="gift-description">
+                Kimga yubormoqchisiz?
+            </p>
 
-                if (
-                    raw.includes("@") &&
-                    !raw.startsWith("@")
-                ) {
+            <p class="gift-description">
+                Telegram username'ini kiriting
+            </p>
 
-                    showStatus(
-                        "❗ Username noto‘g‘ri.",
-                        "error"
-                    );
+            <input
+                type="text"
+                id="recipientUsername"
+                class="username-input"
+                placeholder="@username"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="none"
+                spellcheck="false"
+                inputmode="text"
+            >
 
-                    return;
+            <div
+                id="usernameStatus"
+                style="
+                    display:none;
+                    margin-top:8px;
+                    padding:8px 10px;
+                    border-radius:10px;
+                    font-size:13px;
+                "
+            ></div>
+
+            <p class="username-hint">
+                Masalan: @qwerty123
+            </p>
+
+            <button
+                type="button"
+                class="buy-button"
+                id="continueProduct"
+                style="
+                    width:100%;
+                    margin-top:14px;
+                "
+            >
+                ${isPremium
+                    ? "💎 Premium paketlarini ko‘rish"
+                    : "⭐ Stars paketlarini ko‘rish"
                 }
+            </button>
 
+        </div>
+    `;
 
-                const username =
-                    raw.replace(/^@/, "");
-
-
-                if (
-                    !/^[a-zA-Z0-9_]*$/.test(
-                        username
-                    )
-                ) {
-
-                    showStatus(
-                        "❗ Username noto‘g‘ri.",
-                        "error"
-                    );
-
-                    return;
-                }
-
-
-                if (
-                    username.length > 32
-                ) {
-
-                    showStatus(
-                        "❗ Username juda uzun.",
-                        "error"
-                    );
-
-                    return;
-                }
-
-
-                if (
-                    username.length < 5
-                ) {
-
-                    usernameStatus.style.display =
-                        "none";
-
-                    usernameInput.style.borderColor =
-                        "";
-
-                    return;
-                }
-
-
-                searchTimer =
-                    setTimeout(
-                        function () {
-
-                            checkUsername(
-                                username
-                            );
-
-                        },
-                        600
-                    );
-            }
+    usernameInput =
+        document.getElementById(
+            "recipientUsername"
         );
 
+    usernameStatus =
+        document.getElementById(
+            "usernameStatus"
+        );
 
-        // =================================================
-        // PREMIUM
-        // =================================================
+    // =================================================
+    // OLDINGI USERNAME'NI SAQLASH
+    // =================================================
 
-        const choosePremium =
-            document.getElementById(
-                "choosePremium"
-            );
+    if (currentUsername) {
 
-
-        if (choosePremium) {
-
-            choosePremium.addEventListener(
-                "click",
-                async function (event) {
-
-                    event.preventDefault();
-                    event.stopPropagation();
-
-
-                    const username =
-                        await getUsername();
-
-
-                    if (!username) {
-                        return;
-                    }
-
-
-                    showPremium(username);
-                }
-            );
-        }
-
-
-        // =================================================
-        // STARS
-        // =================================================
-
-        const chooseStars =
-            document.getElementById(
-                "chooseStars"
-            );
-
-
-        if (chooseStars) {
-
-            chooseStars.addEventListener(
-                "click",
-                async function (event) {
-
-                    event.preventDefault();
-                    event.stopPropagation();
-
-
-                    const username =
-                        await getUsername();
-
-
-                    if (!username) {
-                        return;
-                    }
-
-
-                    showStars(username);
-                }
-            );
-        }
+        usernameInput.value =
+            "@" + currentUsername;
     }
 
+    // =================================================
+    // USERNAME INPUT
+    // =================================================
+
+    usernameInput.addEventListener(
+        "input",
+        function () {
+
+            clearTimeout(searchTimer);
+
+            verifiedUsername = "";
+
+            const raw =
+                usernameInput.value.trim();
+
+            if (!raw) {
+
+                clearStatus();
+
+                return;
+            }
+
+            if (
+                raw.includes("@") &&
+                !raw.startsWith("@")
+            ) {
+
+                showStatus(
+                    "❗ Username noto‘g‘ri.",
+                    "error"
+                );
+
+                return;
+            }
+
+            const username =
+                raw.replace(/^@/, "");
+
+            if (
+                !/^[a-zA-Z0-9_]*$/.test(
+                    username
+                )
+            ) {
+
+                showStatus(
+                    "❗ Username noto‘g‘ri.",
+                    "error"
+                );
+
+                return;
+            }
+
+            if (
+                username.length > 32
+            ) {
+
+                showStatus(
+                    "❗ Username juda uzun.",
+                    "error"
+                );
+
+                return;
+            }
+
+            if (
+                username.length < 5
+            ) {
+
+                usernameStatus.style.display =
+                    "none";
+
+                usernameInput.style.borderColor =
+                    "";
+
+                return;
+            }
+
+            searchTimer =
+                setTimeout(
+                    function () {
+
+                        checkUsername(
+                            username
+                        );
+
+                    },
+                    600
+                );
+        }
+    );
+
+    // =================================================
+    // DAVOM ETISH
+    // =================================================
+
+    const continueProduct =
+        document.getElementById(
+            "continueProduct"
+        );
+
+    if (continueProduct) {
+
+        continueProduct.addEventListener(
+            "click",
+            async function (event) {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                const username =
+                    await getUsername();
+
+                if (!username) {
+                    return;
+                }
+
+                if (isPremium) {
+
+                    showPremium(
+                        username
+                    );
+
+                } else {
+
+                    showStars(
+                        username
+                    );
+                }
+            }
+        );
+    }
+}
 
     // =====================================================
     // USERNAME OLISH
