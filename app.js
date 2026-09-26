@@ -4,13 +4,23 @@ document.addEventListener("DOMContentLoaded", function () {
     // ASOSIY ELEMENTLAR
     // =====================================================
 
-    const products = document.getElementById("products");
-    const premiumButton = document.getElementById("premiumButton");
-    const starsButton = document.getElementById("starsButton");
+    const products =
+        document.getElementById("products");
 
-    const tg = window.Telegram?.WebApp;
+    const productsSection =
+        document.getElementById("productsSection");
+
+    const premiumButton =
+        document.getElementById("premiumButton");
+
+    const starsButton =
+        document.getElementById("starsButton");
+
+    const tg =
+        window.Telegram?.WebApp;
 
     if (tg) {
+
         tg.ready();
         tg.expand();
     }
@@ -25,48 +35,50 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =====================================================
-    // ODDIY PREMIUM PAKETLARI
-    //
-    // FAQAT 3 / 6 / 12 OY
-    // 1 OY BU YERDA YO'Q
+    // PREMIUM PAKETLARI
     // =====================================================
 
     const premiumPlans = [
+
         {
             months: 3,
             title: "3 oy",
             price: 165000
         },
+
         {
             months: 6,
             title: "6 oy",
             price: 220000
         },
+
         {
             months: 12,
             title: "12 oy",
             price: 390000
         }
+
     ];
 
 
     // =====================================================
     // MUROJAAT ORQALI PREMIUM
-    //
-    // 1 OY va 12 OY ALOHIDA
     // =====================================================
 
     const contactPlans = [
+
         {
             months: 1,
             title: "1 oy",
             price: 40000
         },
+
         {
             months: 12,
             title: "12 oy",
             price: 280000
         }
+
     ];
 
 
@@ -75,7 +87,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================================
 
     const starsPlans = [
-        ["50", 16000],
+
+        ["50", 11000],
         ["100", 30000],
         ["150", 40000],
         ["250", 64000],
@@ -86,6 +99,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ["1500", 365000],
         ["2500", 605000],
         ["5000", 1205000]
+
     ];
 
 
@@ -106,11 +120,14 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================================
 
     function formatPrice(price) {
-        return Number(price).toLocaleString("uz-UZ") + " so'm";
+
+        return Number(price).toLocaleString("uz-UZ")
+            + " so'm";
     }
 
 
     function escapeHtml(text) {
+
         return String(text)
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
@@ -121,6 +138,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     function clearProducts() {
+
         products.innerHTML = "";
     }
 
@@ -136,20 +154,30 @@ document.addEventListener("DOMContentLoaded", function () {
 
         wrapper.style.marginBottom = "12px";
 
+
         const button =
             document.createElement("button");
 
         button.type = "button";
-        button.className = "buy-button";
 
-        button.style.width = "100%";
-        button.style.background = "#17212b";
+        button.className =
+            "buy-button";
+
+        button.style.width =
+            "100%";
+
+        button.style.background =
+            "#17212b";
+
         button.style.border =
             "1px solid rgba(255,255,255,0.08)";
-        button.style.textAlign = "left";
+
+        button.style.textAlign =
+            "left";
 
         button.textContent =
             "← " + text;
+
 
         wrapper.appendChild(button);
 
@@ -169,6 +197,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
+
         usernameStatus.textContent =
             message;
 
@@ -187,6 +216,7 @@ document.addEventListener("DOMContentLoaded", function () {
             usernameInput.style.borderColor =
                 "#35c759";
 
+
         } else if (type === "loading") {
 
             usernameStatus.style.background =
@@ -197,6 +227,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             usernameInput.style.borderColor =
                 "#4d9cff";
+
 
         } else {
 
@@ -217,6 +248,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!usernameStatus || !usernameInput) {
             return;
         }
+
 
         usernameStatus.style.display =
             "none";
@@ -241,6 +273,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!usernameInput || !usernameStatus) {
             return null;
         }
+
 
         showStatus(
             "🔍 Telegram foydalanuvchisi qidirilmoqda...",
@@ -270,11 +303,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 currentUsername =
                     data.username;
 
+
                 showStatus(
                     "👤 Telegram foydalanuvchisi: @" +
                     data.username,
                     "success"
                 );
+
 
                 return data.username;
             }
@@ -282,11 +317,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
             verifiedUsername = "";
 
+
             showStatus(
                 data.message ||
                 "❗ Username topilmadi.",
                 "error"
             );
+
 
             return null;
 
@@ -298,12 +335,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 error
             );
 
+
             verifiedUsername = "";
+
 
             showStatus(
                 "❗ Username tekshirilmayapti. Qaytadan urinib ko‘ring.",
                 "error"
             );
+
 
             return null;
         }
@@ -314,235 +354,262 @@ document.addEventListener("DOMContentLoaded", function () {
     // USERNAME FORM
     // =====================================================
 
-// =====================================================
-// USERNAME FORM
-// =====================================================
+    function showRecipientForm(type = "premium") {
 
-function showRecipientForm(type = "premium") {
+        clearProducts();
 
-    clearProducts();
+        productsSection.style.display =
+            "block";
 
-    productsSection.style.display = "block";
-    verifiedUsername = "";
+        verifiedUsername = "";
 
-    const isPremium = type === "premium";
 
-    products.innerHTML = `
+        const isPremium =
+            type === "premium";
 
-        <div class="gift-form">
 
-            <h2>
-                ${isPremium
-                    ? "💎 Telegram Premium"
-                    : "⭐ Telegram Stars"
-                }
-            </h2>
+        products.innerHTML = `
 
-            <p class="gift-description">
-                Kimga yubormoqchisiz?
-            </p>
+            <div class="gift-form">
 
-            <p class="gift-description">
-                Telegram username'ini kiriting
-            </p>
+                <h2>
+                    ${
+                        isPremium
+                            ? "💎 Telegram Premium"
+                            : "⭐ Telegram Stars"
+                    }
+                </h2>
 
-            <input
-                type="text"
-                id="recipientUsername"
-                class="username-input"
-                placeholder="@username"
-                autocomplete="off"
-                autocorrect="off"
-                autocapitalize="none"
-                spellcheck="false"
-                inputmode="text"
-            >
 
-            <div
-                id="usernameStatus"
-                style="
-                    display:none;
-                    margin-top:8px;
-                    padding:8px 10px;
-                    border-radius:10px;
-                    font-size:13px;
-                "
-            ></div>
+                <p class="gift-description">
+                    Kimga yubormoqchisiz?
+                </p>
 
-            <p class="username-hint">
-                Masalan: @qwerty123
-            </p>
 
-            <button
-                type="button"
-                class="buy-button"
-                id="continueProduct"
-                style="
-                    width:100%;
-                    margin-top:14px;
-                "
-            >
-                ${isPremium
-                    ? "💎 Premium paketlarini ko‘rish"
-                    : "⭐ Stars paketlarini ko‘rish"
-                }
-            </button>
+                <p class="gift-description">
+                    Telegram username'ini kiriting
+                </p>
 
-        </div>
-    `;
 
-    usernameInput =
-        document.getElementById(
-            "recipientUsername"
-        );
+                <input
+                    type="text"
+                    id="recipientUsername"
+                    class="username-input"
+                    placeholder="@username"
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="none"
+                    spellcheck="false"
+                    inputmode="text"
+                >
 
-    usernameStatus =
-        document.getElementById(
-            "usernameStatus"
-        );
 
-    // =================================================
-    // OLDINGI USERNAME'NI SAQLASH
-    // =================================================
+                <div
+                    id="usernameStatus"
+                    style="
+                        display:none;
+                        margin-top:8px;
+                        padding:8px 10px;
+                        border-radius:10px;
+                        font-size:13px;
+                    "
+                ></div>
 
-    if (currentUsername) {
 
-        usernameInput.value =
-            "@" + currentUsername;
-    }
+                <p class="username-hint">
+                    Masalan: @qwerty123
+                </p>
 
-    // =================================================
-    // USERNAME INPUT
-    // =================================================
 
-    usernameInput.addEventListener(
-        "input",
-        function () {
+                <button
+                    type="button"
+                    class="buy-button"
+                    id="continueProduct"
+                    style="
+                        width:100%;
+                        margin-top:14px;
+                    "
+                >
+                    ${
+                        isPremium
+                            ? "💎 Premium paketlarini ko‘rish"
+                            : "⭐ Stars paketlarini ko‘rish"
+                    }
+                </button>
 
-            clearTimeout(searchTimer);
+            </div>
+        `;
 
-            verifiedUsername = "";
 
-            const raw =
-                usernameInput.value.trim();
+        usernameInput =
+            document.getElementById(
+                "recipientUsername"
+            );
 
-            if (!raw) {
 
-                clearStatus();
+        usernameStatus =
+            document.getElementById(
+                "usernameStatus"
+            );
 
-                return;
-            }
 
-            if (
-                raw.includes("@") &&
-                !raw.startsWith("@")
-            ) {
+        // =================================================
+        // OLDINGI USERNAME
+        // =================================================
 
-                showStatus(
-                    "❗ Username noto‘g‘ri.",
-                    "error"
-                );
+        if (currentUsername) {
 
-                return;
-            }
-
-            const username =
-                raw.replace(/^@/, "");
-
-            if (
-                !/^[a-zA-Z0-9_]*$/.test(
-                    username
-                )
-            ) {
-
-                showStatus(
-                    "❗ Username noto‘g‘ri.",
-                    "error"
-                );
-
-                return;
-            }
-
-            if (
-                username.length > 32
-            ) {
-
-                showStatus(
-                    "❗ Username juda uzun.",
-                    "error"
-                );
-
-                return;
-            }
-
-            if (
-                username.length < 5
-            ) {
-
-                usernameStatus.style.display =
-                    "none";
-
-                usernameInput.style.borderColor =
-                    "";
-
-                return;
-            }
-
-            searchTimer =
-                setTimeout(
-                    function () {
-
-                        checkUsername(
-                            username
-                        );
-
-                    },
-                    600
-                );
+            usernameInput.value =
+                "@" + currentUsername;
         }
-    );
 
-    // =================================================
-    // DAVOM ETISH
-    // =================================================
 
-    const continueProduct =
-        document.getElementById(
-            "continueProduct"
-        );
+        // =================================================
+        // USERNAME INPUT
+        // =================================================
 
-    if (continueProduct) {
+        usernameInput.addEventListener(
+            "input",
+            function () {
 
-        continueProduct.addEventListener(
-            "click",
-            async function (event) {
+                clearTimeout(searchTimer);
 
-                event.preventDefault();
-                event.stopPropagation();
+                verifiedUsername = "";
 
-                const username =
-                    await getUsername();
 
-                if (!username) {
+                const raw =
+                    usernameInput.value.trim();
+
+
+                if (!raw) {
+
+                    clearStatus();
+
                     return;
                 }
 
-                if (isPremium) {
 
-                    showPremium(
-                        username
+                if (
+                    raw.includes("@") &&
+                    !raw.startsWith("@")
+                ) {
+
+                    showStatus(
+                        "❗ Username noto‘g‘ri.",
+                        "error"
                     );
 
-                } else {
-
-                    showStars(
-                        username
-                    );
+                    return;
                 }
+
+
+                const username =
+                    raw.replace(/^@/, "");
+
+
+                if (
+                    !/^[a-zA-Z0-9_]*$/.test(
+                        username
+                    )
+                ) {
+
+                    showStatus(
+                        "❗ Username noto‘g‘ri.",
+                        "error"
+                    );
+
+                    return;
+                }
+
+
+                if (
+                    username.length > 32
+                ) {
+
+                    showStatus(
+                        "❗ Username juda uzun.",
+                        "error"
+                    );
+
+                    return;
+                }
+
+
+                if (
+                    username.length < 5
+                ) {
+
+                    usernameStatus.style.display =
+                        "none";
+
+                    usernameInput.style.borderColor =
+                        "";
+
+                    return;
+                }
+
+
+                searchTimer =
+                    setTimeout(
+                        function () {
+
+                            checkUsername(
+                                username
+                            );
+
+                        },
+                        600
+                    );
             }
         );
+
+
+        // =================================================
+        // DAVOM ETISH
+        // =================================================
+
+        const continueProduct =
+            document.getElementById(
+                "continueProduct"
+            );
+
+
+        if (continueProduct) {
+
+            continueProduct.addEventListener(
+                "click",
+                async function (event) {
+
+                    event.preventDefault();
+                    event.stopPropagation();
+
+
+                    const username =
+                        await getUsername();
+
+
+                    if (!username) {
+                        return;
+                    }
+
+
+                    if (isPremium) {
+
+                        showPremium(
+                            username
+                        );
+
+                    } else {
+
+                        showStars(
+                            username
+                        );
+                    }
+                }
+            );
+        }
     }
-}
+
 
     // =====================================================
     // USERNAME OLISH
@@ -672,7 +739,9 @@ function showRecipientForm(type = "premium") {
                 event.preventDefault();
                 event.stopPropagation();
 
-                showRecipientForm();
+
+                // MUHIM: PREMIUM username oynasiga qaytadi
+                showRecipientForm("premium");
             }
         );
 
@@ -698,6 +767,7 @@ function showRecipientForm(type = "premium") {
 
             </div>
 
+
             <div
                 id="premiumPlans"
                 style="
@@ -706,6 +776,7 @@ function showRecipientForm(type = "premium") {
                     gap:10px;
                 "
             ></div>
+
 
             <div
                 style="
@@ -721,6 +792,7 @@ function showRecipientForm(type = "premium") {
                     💬 Murojaat orqali
                 </h3>
             </div>
+
 
             <div
                 id="contactPlans"
@@ -861,6 +933,7 @@ function showRecipientForm(type = "premium") {
                                     button.dataset.months
                                 );
 
+
                             const price =
                                 Number(
                                     button.dataset.price
@@ -901,6 +974,7 @@ function showRecipientForm(type = "premium") {
                                     button.dataset.months
                                 );
 
+
                             const price =
                                 Number(
                                     button.dataset.price
@@ -935,10 +1009,6 @@ function showRecipientForm(type = "premium") {
         clearProducts();
 
 
-        // -------------------------------------------------
-        // ORQAGA
-        // -------------------------------------------------
-
         const backButton =
             createBackButton(
                 "Premium paketlari"
@@ -952,14 +1022,11 @@ function showRecipientForm(type = "premium") {
                 event.preventDefault();
                 event.stopPropagation();
 
+
                 showPremium(username);
             }
         );
 
-
-        // -------------------------------------------------
-        // SAHIFA
-        // -------------------------------------------------
 
         products.insertAdjacentHTML(
             "beforeend",
@@ -995,11 +1062,13 @@ function showRecipientForm(type = "premium") {
                     opacity:0.85;
                     line-height:1.5;
                 ">
-                    ${months === 1
-                        ? "1 oylik premium obuna olish uchun @AmirquIov ga yozing."
-                        : "12 oylik premium obuna olish uchun @AmirquIov ga yozing."
+                    ${
+                        months === 1
+                            ? "1 oylik premium obuna olish uchun @AmirquIov ga yozing."
+                            : "12 oylik premium obuna olish uchun @AmirquIov ga yozing."
                     }
                 </p>
+
 
                 <button
                     type="button"
@@ -1086,7 +1155,9 @@ function showRecipientForm(type = "premium") {
                 event.preventDefault();
                 event.stopPropagation();
 
-                showRecipientForm();
+
+                // MUHIM: STARS username oynasiga qaytadi
+                showRecipientForm("stars");
             }
         );
 
@@ -1111,6 +1182,7 @@ function showRecipientForm(type = "premium") {
                 </p>
 
             </div>
+
 
             <div id="starsPlans"></div>
             `
@@ -1158,6 +1230,7 @@ function showRecipientForm(type = "premium") {
                             <span class="price">
                                 ${formatPrice(price)}
                             </span>
+
 
                             <button
                                 type="button"
@@ -1375,6 +1448,7 @@ function showRecipientForm(type = "premium") {
                     formatPrice(amount)
                 );
 
+
             } else {
 
                 alert(
@@ -1393,6 +1467,7 @@ function showRecipientForm(type = "premium") {
                 "Create order error:",
                 error
             );
+
 
             alert(
                 "❌ Server bilan bog‘lanib bo‘lmadi."
@@ -1428,7 +1503,9 @@ function showRecipientForm(type = "premium") {
                 }
 
 
-                showRecipientForm();
+                // MUHIM:
+                // PREMIUM TANLANGANDA PREMIUM OQIMI
+                showRecipientForm("premium");
             }
         );
     }
@@ -1461,14 +1538,16 @@ function showRecipientForm(type = "premium") {
                 }
 
 
-                showRecipientForm();
+                // MUHIM:
+                // STARS TANLANGANDA STARS OQIMI
+                showRecipientForm("stars");
             }
         );
     }
 
 
     // =====================================================
-    // BOSHLANG'ICH HOLAT
+    // BOSHLANG‘ICH HOLAT
     // =====================================================
 
     clearProducts();
