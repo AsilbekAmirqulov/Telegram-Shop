@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =====================================================
-    // PREMIUM PACKAGES
+    // PREMIUM SOVG'A PAKETLARI
     // =====================================================
 
     const premiumPlans = [
@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =====================================================
-    // PREMIUM CONTACT PLANS
+    // PREMIUM MUROJAAT ORQALI
     // =====================================================
 
     const contactPlans = [
@@ -268,6 +268,16 @@ document.addEventListener("DOMContentLoaded", function () {
             "click",
             function () {
 
+                if (searchTimer) {
+                    clearTimeout(searchTimer);
+                    searchTimer = null;
+                }
+
+                usernameInput = null;
+                usernameStatus = null;
+                verifiedUsername = "";
+                currentUsername = "";
+
                 clearProducts();
 
                 productsSection.style.display =
@@ -393,6 +403,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 data.username;
 
 
+            currentUsername =
+                data.username;
+
+
             showUsernameStatus(
                 data.message ||
                 "👤 Telegram foydalanuvchisi: @" +
@@ -429,15 +443,25 @@ document.addEventListener("DOMContentLoaded", function () {
         type = "premium"
     ) {
 
+        // Eski timerlarni to'xtatish
+        if (searchTimer) {
+            clearTimeout(searchTimer);
+            searchTimer = null;
+        }
+
+        // Eski state'ni to'liq tozalash
+        currentUsername = "";
+        verifiedUsername = "";
+        usernameInput = null;
+        usernameStatus = null;
+
+
         clearProducts();
 
         productsSection.style.display =
             "block";
 
         createBackButton();
-
-        currentUsername = "";
-        verifiedUsername = "";
 
 
         products.innerHTML = `
@@ -453,8 +477,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 </div>
 
                 <div class="form-description">
-                    Premium yoki Stars yubormoqchi bo'lgan
-                    Telegram foydalanuvchisining username'ini kiriting.
+                    ${
+                        type === "premium"
+                            ? "Premium yubormoqchi bo'lgan Telegram foydalanuvchisining username'ini kiriting."
+                            : "Stars yubormoqchi bo'lgan Telegram foydalanuvchisining username'ini kiriting."
+                    }
                 </div>
 
                 <input
@@ -463,6 +490,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     class="username-input"
                     placeholder="@qwerty123"
                     autocomplete="off"
+                    autocapitalize="none"
+                    spellcheck="false"
                 >
 
                 <div
@@ -474,8 +503,23 @@ document.addEventListener("DOMContentLoaded", function () {
                     type="button"
                     id="continueUsernameButton"
                     class="continue-button"
+                    style="
+                        display: block;
+                        width: 100%;
+                        margin-top: 12px;
+                        padding: 13px 16px;
+                        border: none;
+                        border-radius: 13px;
+                        background: #2aabee;
+                        color: #ffffff;
+                        font-size: 15px;
+                        font-weight: 700;
+                        cursor: pointer;
+                        opacity: 1;
+                        visibility: visible;
+                    "
                 >
-                    Davom etish
+                    Davom etish →
                 </button>
 
             </div>
@@ -483,6 +527,7 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
 
 
+        // YANGI DOM elementlarni olish
         usernameInput =
             document.getElementById(
                 "usernameInput"
@@ -500,16 +545,28 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
+        // Inputni to'liq tozalash
+        usernameInput.value = "";
+
         usernameInput.focus();
 
+
+        // =================================================
+        // USERNAME INPUT
+        // =================================================
 
         usernameInput.addEventListener(
             "input",
             function () {
 
-                clearTimeout(searchTimer);
+                if (searchTimer) {
+                    clearTimeout(searchTimer);
+                    searchTimer = null;
+                }
 
                 verifiedUsername = "";
+                currentUsername = "";
+
 
                 const value =
                     usernameInput.value.trim();
@@ -543,6 +600,10 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
+        // =================================================
+        // DAVOM ETISH
+        // =================================================
+
         continueButton.addEventListener(
             "click",
             async function () {
@@ -551,9 +612,52 @@ document.addEventListener("DOMContentLoaded", function () {
                     usernameInput.value.trim();
 
 
+                if (!username) {
+
+                    showUsernameStatus(
+                        "❗ Username kiriting",
+                        "error"
+                    );
+
+                    usernameInput.focus();
+
+                    return;
+
+                }
+
+
+                // Inputdagi eski tekshiruvni to'xtatish
+                if (searchTimer) {
+                    clearTimeout(searchTimer);
+                    searchTimer = null;
+                }
+
+
+                // Har safar tugma bosilganda yangi tekshiruv
+                verifiedUsername = "";
+
+
+                continueButton.disabled = true;
+
+                continueButton.style.opacity =
+                    "0.6";
+
+                continueButton.textContent =
+                    "⏳ Tekshirilmoqda...";
+
+
                 await checkUsername(
                     username
                 );
+
+
+                continueButton.disabled = false;
+
+                continueButton.style.opacity =
+                    "1";
+
+                continueButton.textContent =
+                    "Davom etish →";
 
 
                 if (!verifiedUsername) {
@@ -561,10 +665,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
 
+                const finalUsername =
+                    verifiedUsername;
+
+
+                // Formani yopib, keyingi bosqichga o'tamiz
+                usernameInput = null;
+                usernameStatus = null;
+
+
                 if (type === "premium") {
 
                     showPremium(
-                        verifiedUsername
+                        finalUsername
                     );
 
                 }
@@ -572,7 +685,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 else {
 
                     showStars(
-                        verifiedUsername
+                        finalUsername
                     );
 
                 }
@@ -605,6 +718,16 @@ document.addEventListener("DOMContentLoaded", function () {
         username
     ) {
 
+        // Eski input state'larini tozalash
+        if (searchTimer) {
+            clearTimeout(searchTimer);
+            searchTimer = null;
+        }
+
+        usernameInput = null;
+        usernameStatus = null;
+
+
         clearProducts();
 
         productsSection.style.display =
@@ -620,11 +743,20 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
 
             <div class="section-subtitle">
-                @${escapeHtml(username)}
+                👤 @${escapeHtml(username)}
+            </div>
+
+            <div class="form-description"
+                 style="margin-bottom: 12px;">
+                🎁 Premium sovg'a paketlari
             </div>
 
         `;
 
+
+        // =================================================
+        // 3 / 6 / 12 OY SOVG'A
+        // =================================================
 
         premiumPlans.forEach(
             function (plan) {
@@ -643,7 +775,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div class="product-info">
 
                         <strong>
-                            Premium ${plan.title}
+                            🎁 Premium ${plan.title}
                         </strong>
 
                         <span>
@@ -693,6 +825,10 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
+        // =================================================
+        // MUROJAAT ORQALI
+        // =================================================
+
         const contactTitle =
             document.createElement("div");
 
@@ -700,16 +836,34 @@ document.addEventListener("DOMContentLoaded", function () {
             "section-title";
 
         contactTitle.style.marginTop =
-            "18px";
+            "22px";
 
         contactTitle.textContent =
-            "📞 Aloqa orqali Premium";
+            "📞 Murojaat orqali Premium";
 
         products.appendChild(
             contactTitle
         );
 
 
+        const contactDescription =
+            document.createElement("div");
+
+        contactDescription.className =
+            "form-description";
+
+        contactDescription.style.marginBottom =
+            "12px";
+
+        contactDescription.textContent =
+            "Ushbu paketlar bo'yicha @AmirquIov ga murojaat qiling.";
+
+        products.appendChild(
+            contactDescription
+        );
+
+
+        // 1 OY va 12 OY — ALOHIDA
         contactPlans.forEach(
             function (plan) {
 
@@ -727,11 +881,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div class="product-info">
 
                         <strong>
-                            Premium ${plan.title}
+                            📞 Premium ${plan.title}
                         </strong>
 
                         <span>
-                            Aloqa orqali
+                            Murojaat orqali
                         </span>
 
                     </div>
@@ -744,7 +898,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         type="button"
                         class="buy-button"
                     >
-                        Tanlash
+                        @AmirquIov ga murojaat qilish
                     </button>
 
                 `;
@@ -760,11 +914,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     "click",
                     function () {
 
-                        showContactPage(
-                            username,
-                            plan.months,
-                            plan.price
-                        );
+                        openContactTelegram();
 
                     }
                 );
@@ -779,52 +929,35 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =====================================================
-    // CONTACT PAGE
+    // TELEGRAM CONTACT
     // =====================================================
 
-    function showContactPage(
-        username,
-        months,
-        price
-    ) {
+    function openContactTelegram() {
 
-        clearProducts();
-
-        productsSection.style.display =
-            "block";
-
-        createBackButton();
+        const username =
+            "AmirquIov";
 
 
-        products.innerHTML = `
+        const telegramUrl =
+            "https://t.me/" + username;
 
-            <div class="product-card">
 
-                <div class="product-info">
+        if (tg && typeof tg.openTelegramLink === "function") {
 
-                    <strong>
-                        📞 Premium ${months} oy
-                    </strong>
+            tg.openTelegramLink(
+                telegramUrl
+            );
 
-                    <span>
-                        Qabul qiluvchi:
-                        @${escapeHtml(username)}
-                    </span>
+        }
 
-                </div>
+        else {
 
-                <div class="product-price">
-                    ${formatPrice(price)}
-                </div>
+            window.open(
+                telegramUrl,
+                "_blank"
+            );
 
-                <div class="form-description">
-                    Ushbu paket bo'yicha buyurtma
-                    aloqa orqali rasmiylashtiriladi.
-                </div>
-
-            </div>
-
-        `;
+        }
 
     }
 
@@ -836,6 +969,16 @@ document.addEventListener("DOMContentLoaded", function () {
     function showStars(
         username
     ) {
+
+        // Eski input state'larini tozalash
+        if (searchTimer) {
+            clearTimeout(searchTimer);
+            searchTimer = null;
+        }
+
+        usernameInput = null;
+        usernameStatus = null;
+
 
         clearProducts();
 
@@ -852,7 +995,7 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
 
             <div class="section-subtitle">
-                @${escapeHtml(username)}
+                👤 @${escapeHtml(username)}
             </div>
 
         `;
@@ -875,7 +1018,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div class="product-info">
 
                         <strong>
-                            ${plan.title}
+                            ⭐ ${plan.title}
                         </strong>
 
                         <span>
