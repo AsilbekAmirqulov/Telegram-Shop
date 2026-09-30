@@ -1,3 +1,4 @@
+```python
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -9,6 +10,7 @@ import psycopg2
 import base64
 import tempfile
 import re
+
 from google import genai
 
 from telethon import TelegramClient
@@ -40,26 +42,20 @@ telegram_session_path = None
 app = FastAPI()
 
 ADMIN_KEY = os.getenv("ADMIN_KEY")
-# ============================================================
-# FASTAPI
-# ============================================================
 
-app = FastAPI()
 
-ADMIN_KEY = os.getenv("ADMIN_KEY")
+# ============================================================
+# GEMINI AI
+# ============================================================
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 gemini_client = None
 
 if GEMINI_API_KEY:
-    gemini_client = genai.Client(api_key=GEMINI_API_KEY)
-
-
-# ============================================================
-# CORS
-# ============================================================
-
+    gemini_client = genai.Client(
+        api_key=GEMINI_API_KEY
+    )
 
 
 # ============================================================
@@ -314,9 +310,6 @@ def init_db():
     conn = get_db()
     cursor = conn.cursor()
 
-    # Eski orders jadvali mavjud bo'lsa saqlanadi.
-    # Yangi ustunlar alohida qo'shiladi.
-
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS orders (
             id SERIAL PRIMARY KEY,
@@ -331,7 +324,6 @@ def init_db():
         )
     """)
 
-    # Stars uchun yangi ustun
     cursor.execute("""
         ALTER TABLE orders
         ADD COLUMN IF NOT EXISTS stars INTEGER
@@ -357,10 +349,8 @@ class OrderRequest(BaseModel):
     amount: int
     recipient_username: str
 
-    # Premium uchun
     months: int | None = None
 
-    # Stars uchun
     stars: int | None = None
 
 
@@ -374,6 +364,12 @@ class PremiumTestRequest(BaseModel):
     telegram_username: str
     months: int
     admin_key: str
+
+
+class AIChatRequest(BaseModel):
+
+    message: str
+    user_id: int
 
 
 # ============================================================
@@ -448,10 +444,6 @@ async def check_username(username: str):
 
 @app.post("/create-order")
 async def create_order(order: OrderRequest):
-
-    # --------------------------------------------------------
-    # PRODUCT TEKSHIRISH
-    # --------------------------------------------------------
 
     allowed_products = [
         "Telegram Premium",
@@ -614,10 +606,6 @@ async def create_order(order: OrderRequest):
     conn.close()
 
 
-    # --------------------------------------------------------
-    # RESPONSE
-    # --------------------------------------------------------
-
     return {
 
         "ok": True,
@@ -718,6 +706,184 @@ def get_my_orders(user_id: int):
 
         "orders": orders
     }
+
+
+# ============================================================
+# AI ASSISTANT
+# ============================================================
+
+@app.post("/ai-chat")
+def ai_chat(data: AIChatRequest):
+
+    if not gemini_client:
+
+        return {
+            "ok": False,
+            "message": "AI hozircha sozlanmagan."
+        }
+
+
+    if not data.message.strip():
+
+        return {
+            "ok": False,
+            "message": "Savol yuboring."
+        }
+
+
+    try:
+
+        # ----------------------------------------------------
+        # USERNING BUYURTMALARINI OLISH
+        # ----------------------------------------------------
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT
+                id,
+                product,
+                amount,
+                status,
+                telegram_username,
+                months,
+                stars
+            FROM orders
+            WHERE user_id = %s
+            ORDER BY id DESC
+            LIMIT 10
+            """,
+            (data.user_id,)
+        )
+
+        rows = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+
+        user_orders = []
+
+        for row in rows:
+
+            user_orders.append({
+                "id": row[0],
+                "product": row[1],
+                "amount": row[2],
+                "status": row[3],
+                "recipient_username": row[4],
+                "months": row[5],
+                "stars": row[6]
+            })
+
+
+        orders_text = json.dumps(
+            user_orders,
+            ensure_ascii=False
+        )
+
+
+        # ----------------------------------------------------
+        # GEMINI PROMPT
+        # ----------------------------------------------------
+
+        prompt = f"""
+Siz Telegram Shop ichidagi AI Assistant'siz.
+
+Siz foydalanuvchiga Telegram Shop haqida
+oddiy, tushunarli va o'zbek tilida yordam berasiz.
+
+Sizning vazifangiz:
+- Telegram Premium haqida tushuntirish
+- Telegram Stars paketlari haqida tushuntirish
+- Narxlarni aytish
+- Buyurtma berish jarayonini tushuntirish
+- Foydalanuvchining buyurtmalari haqida ma'lumot berish
+- Telegram Shop bo'yicha oddiy savollarga javob berish
+
+MUHIM:
+- To'lov amalga oshgan deb yolg'on aytmang.
+- Buyurtma completed bo'lmasa, tugallangan deb aytmang.
+- Foydalanuvchining buyurtmasi haqidagi ma'lumotni faqat berilgan
+  buyurtmalar ro'yxatidan foydalanib ayting.
+- API, database yoki ichki maxfiy ma'lumotlarni oshkor qilmang.
+- Javoblarni qisqa va tushunarli yozing.
+- Asosan o'zbek tilida javob bering.
+
+TELEGRAM PREMIUM NARXLARI:
+
+3 oy — 165 000 so'm
+6 oy — 220 000 so'm
+12 oy — 390 000 so'm
+
+TELEGRAM STARS NARXLARI:
+
+50 — 11 000 so'm
+100 — 30 000 so'm
+150 — 40 000 so'm
+250 — 64 000 so'm
+350 — 89 000 so'm
+500 — 125 000 so'm
+750 — 185 000 so'm
+1000 — 244 000 so'm
+1500 — 365 000 so'm
+2500 — 605 000 so'm
+5000 — 1 205 000 so'm
+
+FOYDALANUVCHINING OXIRGI BUYURTMALARI:
+
+{orders_text}
+
+FOYDALANUVCHI SAVOLI:
+
+{data.message}
+
+Endi foydalanuvchiga javob bering.
+"""
+
+
+        # ----------------------------------------------------
+        # GEMINI REQUEST
+        # ----------------------------------------------------
+
+        response = gemini_client.models.generate_content(
+
+            model="gemini-2.5-flash",
+
+            contents=prompt
+        )
+
+
+        reply = response.text
+
+        if not reply:
+
+            reply = "Kechirasiz, hozircha javob bera olmadim."
+
+
+        return {
+
+            "ok": True,
+
+            "reply": reply
+        }
+
+
+    except Exception as e:
+
+        print(
+            f"Gemini error: {type(e).__name__}: {e}"
+        )
+
+        return {
+
+            "ok": False,
+
+            "message":
+            "AI bilan bog'lanishda xatolik yuz berdi."
+        }
 
 
 # ============================================================
@@ -1104,3 +1270,4 @@ async def test_premium_buy(
             "message":
             str(e)
         }
+```
