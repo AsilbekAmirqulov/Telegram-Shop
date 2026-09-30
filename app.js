@@ -16,8 +16,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const starsButton =
         document.getElementById("starsButton");
 
+    const myOrdersButton =
+        document.getElementById("myOrdersButton");
+
     const tg =
         window.Telegram?.WebApp;
+
 
     if (tg) {
 
@@ -112,11 +116,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let usernameInput = null;
     let usernameStatus = null;
+
     let searchTimer = null;
 
 
     // =====================================================
-    // YORDAMCHI
+    // YORDAMCHI FUNKSIYALAR
     // =====================================================
 
     function formatPrice(price) {
@@ -188,7 +193,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =====================================================
-    // STATUS
+    // USERNAME STATUS
     // =====================================================
 
     function showStatus(message, type) {
@@ -380,11 +385,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                 </h2>
 
-
                 <p class="gift-description">
                     Kimga yubormoqchisiz?
                 </p>
-
 
                 <p class="gift-description">
                     Telegram username'ini kiriting
@@ -438,6 +441,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 </button>
 
             </div>
+
         `;
 
 
@@ -739,15 +743,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 event.preventDefault();
                 event.stopPropagation();
 
-
-                // MUHIM: PREMIUM username oynasiga qaytadi
-                showRecipientForm("premium");
+                showRecipientForm(
+                    "premium"
+                );
             }
         );
 
 
         // -------------------------------------------------
-        // PREMIUM HEADER
+        // HEADER
         // -------------------------------------------------
 
         products.insertAdjacentHTML(
@@ -802,6 +806,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     gap:10px;
                 "
             ></div>
+
             `
         );
 
@@ -811,7 +816,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 "premiumPlans"
             );
 
-
         const contacts =
             document.getElementById(
                 "contactPlans"
@@ -819,7 +823,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =================================================
-        // ODDIY 3 / 6 / 12 OY
+        // ODDIY PREMIUM
         // =================================================
 
         premiumPlans.forEach(
@@ -858,6 +862,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         </div>
 
                     </div>
+
                     `
                 );
             }
@@ -865,7 +870,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =================================================
-        // MUROJAAT 1 / 12 OY
+        // MUROJAAT PREMIUM
         // =================================================
 
         contactPlans.forEach(
@@ -905,6 +910,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         </div>
 
                     </div>
+
                     `
                 );
             }
@@ -912,7 +918,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =================================================
-        // ODDIY PREMIUM BUTTONLAR
+        // PREMIUM BUTTONLAR
         // =================================================
 
         plans
@@ -933,7 +939,6 @@ document.addEventListener("DOMContentLoaded", function () {
                                     button.dataset.months
                                 );
 
-
                             const price =
                                 Number(
                                     button.dataset.price
@@ -953,7 +958,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // =================================================
-        // MUROJAAT BUTTONLAR
+        // CONTACT BUTTONLAR
         // =================================================
 
         contacts
@@ -973,7 +978,6 @@ document.addEventListener("DOMContentLoaded", function () {
                                 Number(
                                     button.dataset.months
                                 );
-
 
                             const price =
                                 Number(
@@ -1022,8 +1026,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 event.preventDefault();
                 event.stopPropagation();
 
-
-                showPremium(username);
+                showPremium(
+                    username
+                );
             }
         );
 
@@ -1062,11 +1067,13 @@ document.addEventListener("DOMContentLoaded", function () {
                     opacity:0.85;
                     line-height:1.5;
                 ">
+
                     ${
                         months === 1
                             ? "1 oylik premium obuna olish uchun @AmirquIov ga yozing."
                             : "12 oylik premium obuna olish uchun @AmirquIov ga yozing."
                     }
+
                 </p>
 
 
@@ -1083,6 +1090,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 </button>
 
             </div>
+
             `
         );
 
@@ -1127,7 +1135,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =====================================================
-    // STARS
+    // TELEGRAM STARS
     // =====================================================
 
     function showStars(username) {
@@ -1155,9 +1163,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 event.preventDefault();
                 event.stopPropagation();
 
-
-                // MUHIM: STARS username oynasiga qaytadi
-                showRecipientForm("stars");
+                showRecipientForm(
+                    "stars"
+                );
             }
         );
 
@@ -1185,6 +1193,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
             <div id="starsPlans"></div>
+
             `
         );
 
@@ -1231,7 +1240,6 @@ document.addEventListener("DOMContentLoaded", function () {
                                 ${formatPrice(price)}
                             </span>
 
-
                             <button
                                 type="button"
                                 class="buy-button stars-buy"
@@ -1244,6 +1252,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         </div>
 
                     </div>
+
                     `
                 );
             }
@@ -1285,7 +1294,446 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // =====================================================
-    // BUYURTMA
+    // MENING BUYURTMALARIM
+    // =====================================================
+
+    async function showMyOrders() {
+
+        clearProducts();
+
+        productsSection.style.display =
+            "block";
+
+
+        // -------------------------------------------------
+        // ORQAGA
+        // -------------------------------------------------
+
+        const backButton =
+            createBackButton(
+                "Mahsulotlar"
+            );
+
+
+        backButton.addEventListener(
+            "click",
+            function (event) {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+
+                clearProducts();
+
+                productsSection.style.display =
+                    "none";
+
+
+                premiumButton?.classList.remove(
+                    "active"
+                );
+
+                starsButton?.classList.remove(
+                    "active"
+                );
+
+                myOrdersButton?.classList.remove(
+                    "active"
+                );
+            }
+        );
+
+
+        // -------------------------------------------------
+        // HEADER
+        // -------------------------------------------------
+
+        products.insertAdjacentHTML(
+            "beforeend",
+            `
+
+            <div class="gift-form">
+
+                <h2>
+                    📦 Mening buyurtmalarim
+                </h2>
+
+                <p class="gift-description">
+                    Siz yaratgan barcha buyurtmalar shu yerda.
+                </p>
+
+            </div>
+
+
+            <div
+                id="ordersContainer"
+                class="orders-container"
+            >
+
+                <div class="orders-loading">
+                    🔄 Buyurtmalar yuklanmoqda...
+                </div>
+
+            </div>
+
+            `
+        );
+
+
+        const ordersContainer =
+            document.getElementById(
+                "ordersContainer"
+            );
+
+
+        // -------------------------------------------------
+        // TELEGRAM USER
+        // -------------------------------------------------
+
+        if (
+            !tg ||
+            !tg.initDataUnsafe ||
+            !tg.initDataUnsafe.user
+        ) {
+
+            ordersContainer.innerHTML = `
+
+                <div class="orders-empty">
+
+                    <div class="orders-empty-icon">
+                        ⚠️
+                    </div>
+
+                    <h3>
+                        Telegram foydalanuvchisi aniqlanmadi
+                    </h3>
+
+                    <p>
+                        Buyurtmalarni ko‘rish uchun
+                        Mini App'ni Telegram ichida oching.
+                    </p>
+
+                </div>
+
+            `;
+
+            return;
+        }
+
+
+        const buyer =
+            tg.initDataUnsafe.user;
+
+
+        // -------------------------------------------------
+        // SERVER
+        // -------------------------------------------------
+
+        try {
+
+            const response =
+                await fetch(
+                    SERVER_URL +
+                    "/my-orders?user_id=" +
+                    encodeURIComponent(
+                        buyer.id
+                    )
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!data.ok) {
+
+                ordersContainer.innerHTML = `
+
+                    <div class="orders-empty">
+
+                        <div class="orders-empty-icon">
+                            ❌
+                        </div>
+
+                        <h3>
+                            Xatolik yuz berdi
+                        </h3>
+
+                        <p>
+                            ${
+                                escapeHtml(
+                                    data.message ||
+                                    "Buyurtmalarni olishning imkoni bo‘lmadi."
+                                )
+                            }
+                        </p>
+
+                    </div>
+
+                `;
+
+                return;
+            }
+
+
+            const orders =
+                data.orders || [];
+
+
+            // -------------------------------------------------
+            // BUYURTMA YO‘Q
+            // -------------------------------------------------
+
+            if (orders.length === 0) {
+
+                ordersContainer.innerHTML = `
+
+                    <div class="orders-empty">
+
+                        <div class="orders-empty-icon">
+                            📦
+                        </div>
+
+                        <h3>
+                            Hali buyurtmalar yo‘q
+                        </h3>
+
+                        <p>
+                            Siz hali hech qanday mahsulot
+                            buyurtma qilmagansiz.
+                        </p>
+
+                    </div>
+
+                `;
+
+                return;
+            }
+
+
+            // -------------------------------------------------
+            // BUYURTMALAR
+            // -------------------------------------------------
+
+            ordersContainer.innerHTML = "";
+
+
+            orders.forEach(
+                function (order) {
+
+                    const product =
+                        order.product ||
+                        "Noma'lum mahsulot";
+
+
+                    const username =
+                        order.telegram_username ||
+                        "";
+
+
+                    let detail =
+                        "";
+
+
+                    if (
+                        product ===
+                        "Telegram Premium"
+                    ) {
+
+                        detail =
+                            order.months
+                                ? order.months + " oy"
+                                : "Premium";
+
+
+                    } else if (
+                        product ===
+                        "Telegram Stars"
+                    ) {
+
+                        detail =
+                            order.stars
+                                ? order.stars + " Stars"
+                                : "Stars";
+                    }
+
+
+                    // -------------------------------------------------
+                    // STATUS
+                    // -------------------------------------------------
+
+                    let statusText =
+                        "Kutilmoqda";
+
+                    let statusClass =
+                        "status-pending";
+
+
+                    if (
+                        order.status ===
+                        "paid"
+                    ) {
+
+                        statusText =
+                            "To‘langan";
+
+                        statusClass =
+                            "status-paid";
+
+
+                    } else if (
+                        order.status ===
+                        "processing"
+                    ) {
+
+                        statusText =
+                            "Jarayonda";
+
+                        statusClass =
+                            "status-processing";
+
+
+                    } else if (
+                        order.status ===
+                        "completed"
+                    ) {
+
+                        statusText =
+                            "Yakunlangan";
+
+                        statusClass =
+                            "status-completed";
+
+
+                    } else if (
+                        order.status ===
+                        "cancelled"
+                    ) {
+
+                        statusText =
+                            "Bekor qilingan";
+
+                        statusClass =
+                            "status-cancelled";
+                    }
+
+
+                    ordersContainer.insertAdjacentHTML(
+                        "beforeend",
+                        `
+
+                        <div class="order-card">
+
+                            <div class="order-header">
+
+                                <div class="order-title">
+
+                                    ${
+                                        product ===
+                                        "Telegram Premium"
+                                            ? "💎 Telegram Premium"
+                                            : "⭐ Telegram Stars"
+                                    }
+
+                                </div>
+
+
+                                <div
+                                    class="order-status ${statusClass}"
+                                >
+                                    ${statusText}
+                                </div>
+
+                            </div>
+
+
+                            <div class="order-recipient">
+
+                                👤 @${escapeHtml(username)}
+
+                            </div>
+
+
+                            <div class="order-info">
+
+                                <div class="order-row">
+
+                                    <span class="order-row-label">
+                                        Buyurtma:
+                                    </span>
+
+                                    <span class="order-row-value">
+                                        #${order.id}
+                                    </span>
+
+                                </div>
+
+
+                                <div class="order-row">
+
+                                    <span class="order-row-label">
+                                        Paket:
+                                    </span>
+
+                                    <span class="order-row-value">
+                                        ${escapeHtml(detail)}
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="order-price">
+
+                                <strong>
+                                    ${formatPrice(order.amount)}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+                        `
+                    );
+                }
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "My orders error:",
+                error
+            );
+
+
+            ordersContainer.innerHTML = `
+
+                <div class="orders-empty">
+
+                    <div class="orders-empty-icon">
+                        ❌
+                    </div>
+
+                    <h3>
+                        Server bilan bog‘lanib bo‘lmadi
+                    </h3>
+
+                    <p>
+                        Internet aloqasini tekshirib,
+                        qaytadan urinib ko‘ring.
+                    </p>
+
+                </div>
+
+            `;
+        }
+    }
+
+
+    // =====================================================
+    // BUYURTMA YARATISH
     // =====================================================
 
     async function createOrder(
@@ -1313,7 +1761,8 @@ document.addEventListener("DOMContentLoaded", function () {
             tg.initDataUnsafe.user;
 
 
-        let detail = "";
+        let detail =
+            "";
 
 
         if (
@@ -1361,8 +1810,11 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        let months = null;
-        let stars = null;
+        let months =
+            null;
+
+        let stars =
+            null;
 
 
         if (
@@ -1387,7 +1839,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     SERVER_URL +
                     "/create-order",
                     {
-                        method: "POST",
+
+                        method:
+                            "POST",
 
                         headers: {
                             "Content-Type":
@@ -1449,10 +1903,33 @@ document.addEventListener("DOMContentLoaded", function () {
                 );
 
 
+                // Buyurtma yaratilgandan keyin
+                // "Mening buyurtmalarim" oynasiga o'tish
+
+                if (myOrdersButton) {
+
+                    premiumButton?.classList.remove(
+                        "active"
+                    );
+
+                    starsButton?.classList.remove(
+                        "active"
+                    );
+
+                    myOrdersButton.classList.add(
+                        "active"
+                    );
+                }
+
+
+                showMyOrders();
+
+
             } else {
 
                 alert(
                     "❌ Buyurtma yaratilmadi.\n\n" +
+
                     (
                         data.message ||
                         "Noma'lum xato"
@@ -1503,9 +1980,58 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
 
-                // MUHIM:
-                // PREMIUM TANLANGANDA PREMIUM OQIMI
-                showRecipientForm("premium");
+                if (myOrdersButton) {
+
+                    myOrdersButton.classList.remove(
+                        "active"
+                    );
+                }
+
+
+                showRecipientForm(
+                    "premium"
+                );
+            }
+        );
+    }
+
+
+    // =====================================================
+    // MY ORDERS CATEGORY
+    // =====================================================
+
+    if (myOrdersButton) {
+
+        myOrdersButton.addEventListener(
+            "click",
+            function (event) {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+
+                myOrdersButton.classList.add(
+                    "active"
+                );
+
+
+                if (premiumButton) {
+
+                    premiumButton.classList.remove(
+                        "active"
+                    );
+                }
+
+
+                if (starsButton) {
+
+                    starsButton.classList.remove(
+                        "active"
+                    );
+                }
+
+
+                showMyOrders();
             }
         );
     }
@@ -1538,9 +2064,17 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
 
-                // MUHIM:
-                // STARS TANLANGANDA STARS OQIMI
-                showRecipientForm("stars");
+                if (myOrdersButton) {
+
+                    myOrdersButton.classList.remove(
+                        "active"
+                    );
+                }
+
+
+                showRecipientForm(
+                    "stars"
+                );
             }
         );
     }
@@ -1551,5 +2085,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================================
 
     clearProducts();
+
+    productsSection.style.display =
+        "none";
 
 });
