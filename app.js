@@ -31,10 +31,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================================
 
     if (tg) {
-
         tg.ready();
         tg.expand();
-
     }
 
 
@@ -51,25 +49,21 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================================
 
     const premiumPlans = [
-
         {
             months: 3,
             title: "3 oy",
             price: 165000
         },
-
         {
             months: 6,
             title: "6 oy",
             price: 220000
         },
-
         {
             months: 12,
             title: "12 oy",
             price: 390000
         }
-
     ];
 
 
@@ -78,19 +72,16 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================================
 
     const contactPlans = [
-
         {
             months: 1,
             title: "1 oy",
             price: 40000
         },
-
         {
             months: 12,
             title: "12 oy",
             price: 280000
         }
-
     ];
 
 
@@ -99,73 +90,61 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================================
 
     const starsPlans = [
-
         {
             stars: 50,
             title: "50 Stars",
             price: 11000
         },
-
         {
             stars: 100,
             title: "100 Stars",
             price: 30000
         },
-
         {
             stars: 150,
             title: "150 Stars",
             price: 40000
         },
-
         {
             stars: 250,
             title: "250 Stars",
             price: 64000
         },
-
         {
             stars: 350,
             title: "350 Stars",
             price: 89000
         },
-
         {
             stars: 500,
             title: "500 Stars",
             price: 125000
         },
-
         {
             stars: 750,
             title: "750 Stars",
             price: 185000
         },
-
         {
             stars: 1000,
             title: "1000 Stars",
             price: 244000
         },
-
         {
             stars: 1500,
             title: "1500 Stars",
             price: 365000
         },
-
         {
             stars: 2500,
             title: "2500 Stars",
             price: 605000
         },
-
         {
             stars: 5000,
             title: "5000 Stars",
             price: 1205000
         }
-
     ];
 
 
@@ -203,7 +182,7 @@ document.addEventListener("DOMContentLoaded", function () {
             document.createElement("div");
 
         div.textContent =
-            text;
+            String(text ?? "");
 
         return div.innerHTML;
 
@@ -216,9 +195,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function clearProducts() {
 
-        if (!products) return;
+        if (!products) {
+            return;
+        }
 
         products.innerHTML = "";
+
+    }
+
+
+    // =====================================================
+    // ACTIVE BUTTONS
+    // =====================================================
+
+    function clearCategoryActive() {
+
+        document
+            .querySelectorAll(".category")
+            .forEach(function (item) {
+
+                item.classList.remove("active");
+
+            });
 
     }
 
@@ -230,12 +228,12 @@ document.addEventListener("DOMContentLoaded", function () {
     function createBackButton() {
 
         const oldButton =
-            document.getElementById("shopBackButton");
+            document.getElementById(
+                "shopBackButton"
+            );
 
         if (oldButton) {
-
             oldButton.remove();
-
         }
 
 
@@ -275,36 +273,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 productsSection.style.display =
                     "none";
 
+                clearCategoryActive();
 
-                document
-                    .querySelectorAll(".category")
-                    .forEach(item => {
-
-                        item.classList.remove(
-                            "active"
-                        );
-
-                    });
-
-
-                const old =
-                    document.getElementById(
-                        "shopBackButton"
-                    );
-
-                if (old) {
-
-                    old.remove();
-
-                }
+                button.remove();
 
             }
         );
 
 
-        productsSection.prepend(
-            button
-        );
+        productsSection.prepend(button);
 
     }
 
@@ -318,12 +295,12 @@ document.addEventListener("DOMContentLoaded", function () {
         type
     ) {
 
-        if (!usernameStatus) return;
-
+        if (!usernameStatus) {
+            return;
+        }
 
         usernameStatus.textContent =
             message;
-
 
         usernameStatus.className =
             "username-status " + type;
@@ -432,9 +409,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 error
             );
 
-
             verifiedUsername = "";
-
 
             showUsernameStatus(
                 "❌ Username tekshirib bo'lmadi",
@@ -459,9 +434,7 @@ document.addEventListener("DOMContentLoaded", function () {
         productsSection.style.display =
             "block";
 
-
         createBackButton();
-
 
         currentUsername = "";
         verifiedUsername = "";
@@ -479,12 +452,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                 </div>
 
-
                 <div class="form-description">
                     Premium yoki Stars yubormoqchi bo'lgan
                     Telegram foydalanuvchisining username'ini kiriting.
                 </div>
-
 
                 <input
                     type="text"
@@ -494,13 +465,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     autocomplete="off"
                 >
 
-
                 <div
                     id="usernameStatus"
                     class="username-status"
-                >
-                </div>
-
+                ></div>
 
                 <button
                     type="button"
@@ -519,7 +487,6 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById(
                 "usernameInput"
             );
-
 
         usernameStatus =
             document.getElementById(
@@ -540,13 +507,9 @@ document.addEventListener("DOMContentLoaded", function () {
             "input",
             function () {
 
-                clearTimeout(
-                    searchTimer
-                );
-
+                clearTimeout(searchTimer);
 
                 verifiedUsername = "";
-
 
                 const value =
                     usernameInput.value.trim();
@@ -594,9 +557,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
                 if (!verifiedUsername) {
-
                     return;
-
                 }
 
 
@@ -649,7 +610,6 @@ document.addEventListener("DOMContentLoaded", function () {
         productsSection.style.display =
             "block";
 
-
         createBackButton();
 
 
@@ -674,7 +634,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         "div"
                     );
 
-
                 card.className =
                     "product-card";
 
@@ -693,11 +652,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     </div>
 
-
                     <div class="product-price">
                         ${formatPrice(plan.price)}
                     </div>
-
 
                     <button
                         type="button"
@@ -730,31 +687,23 @@ document.addEventListener("DOMContentLoaded", function () {
                 );
 
 
-                products.appendChild(
-                    card
-                );
+                products.appendChild(card);
 
             }
         );
 
 
         const contactTitle =
-            document.createElement(
-                "div"
-            );
-
+            document.createElement("div");
 
         contactTitle.className =
             "section-title";
 
-
         contactTitle.style.marginTop =
             "18px";
 
-
         contactTitle.textContent =
             "📞 Aloqa orqali Premium";
-
 
         products.appendChild(
             contactTitle
@@ -768,7 +717,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     document.createElement(
                         "div"
                     );
-
 
                 card.className =
                     "product-card";
@@ -788,11 +736,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     </div>
 
-
                     <div class="product-price">
                         ${formatPrice(plan.price)}
                     </div>
-
 
                     <button
                         type="button"
@@ -824,9 +770,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 );
 
 
-                products.appendChild(
-                    card
-                );
+                products.appendChild(card);
 
             }
         );
@@ -849,7 +793,6 @@ document.addEventListener("DOMContentLoaded", function () {
         productsSection.style.display =
             "block";
 
-
         createBackButton();
 
 
@@ -870,11 +813,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 </div>
 
-
                 <div class="product-price">
                     ${formatPrice(price)}
                 </div>
-
 
                 <div class="form-description">
                     Ushbu paket bo'yicha buyurtma
@@ -901,7 +842,6 @@ document.addEventListener("DOMContentLoaded", function () {
         productsSection.style.display =
             "block";
 
-
         createBackButton();
 
 
@@ -926,7 +866,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         "div"
                     );
 
-
                 card.className =
                     "product-card";
 
@@ -945,11 +884,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
                     </div>
 
-
                     <div class="product-price">
                         ${formatPrice(plan.price)}
                     </div>
-
 
                     <button
                         type="button"
@@ -982,9 +919,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 );
 
 
-                products.appendChild(
-                    card
-                );
+                products.appendChild(card);
 
             }
         );
@@ -1003,7 +938,8 @@ document.addEventListener("DOMContentLoaded", function () {
         amount
     ) {
 
-        if (!tg ||
+        if (
+            !tg ||
             !tg.initDataUnsafe ||
             !tg.initDataUnsafe.user
         ) {
@@ -1028,9 +964,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         if (!confirmed) {
-
             return;
-
         }
 
 
@@ -1077,9 +1011,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         },
 
                         body:
-                            JSON.stringify(
-                                payload
-                            )
+                            JSON.stringify(payload)
 
                     }
                 );
@@ -1108,42 +1040,6 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-            if (myOrdersButton) {
-
-                myOrdersButton.classList.add(
-                    "active"
-                );
-
-            }
-
-
-            if (premiumButton) {
-
-                premiumButton.classList.remove(
-                    "active"
-                );
-
-            }
-
-
-            if (starsButton) {
-
-                starsButton.classList.remove(
-                    "active"
-                );
-
-            }
-
-
-            if (aiAssistantButton) {
-
-                aiAssistantButton.classList.remove(
-                    "active"
-                );
-
-            }
-
-
             showMyOrders();
 
         }
@@ -1154,7 +1050,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 "Create order error:",
                 error
             );
-
 
             alert(
                 "❌ Server bilan bog'lanib bo'lmadi."
@@ -1176,7 +1071,6 @@ document.addEventListener("DOMContentLoaded", function () {
         productsSection.style.display =
             "block";
 
-
         createBackButton();
 
 
@@ -1187,12 +1081,14 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
 
 
-        if (!tg ||
+        if (
+            !tg ||
             !tg.initDataUnsafe ||
             !tg.initDataUnsafe.user
         ) {
 
             products.innerHTML = `
+
                 <div class="orders-empty">
 
                     <div class="orders-empty-icon">
@@ -1209,6 +1105,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     </p>
 
                 </div>
+
             `;
 
             return;
@@ -1239,6 +1136,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!data.ok) {
 
                 products.innerHTML = `
+
                     <div class="orders-empty">
 
                         <div class="orders-empty-icon">
@@ -1259,6 +1157,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         </p>
 
                     </div>
+
                 `;
 
                 return;
@@ -1272,6 +1171,7 @@ document.addEventListener("DOMContentLoaded", function () {
             ) {
 
                 products.innerHTML = `
+
                     <div class="orders-empty">
 
                         <div class="orders-empty-icon">
@@ -1288,6 +1188,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         </p>
 
                     </div>
+
                 `;
 
                 return;
@@ -1301,8 +1202,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     📦 Mening buyurtmalarim
                 </div>
 
-                <div class="orders-container">
-                </div>
+                <div class="orders-container"></div>
 
             `;
 
@@ -1324,8 +1224,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
                     if (
-                        order.status ===
-                        "pending"
+                        order.status === "pending"
                     ) {
 
                         statusText =
@@ -1337,8 +1236,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
 
                     else if (
-                        order.status ===
-                        "paid"
+                        order.status === "paid"
                     ) {
 
                         statusText =
@@ -1350,8 +1248,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
 
                     else if (
-                        order.status ===
-                        "processing"
+                        order.status === "processing"
                     ) {
 
                         statusText =
@@ -1363,8 +1260,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
 
                     else if (
-                        order.status ===
-                        "completed"
+                        order.status === "completed"
                     ) {
 
                         statusText =
@@ -1376,8 +1272,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
 
                     else if (
-                        order.status ===
-                        "cancelled"
+                        order.status === "cancelled"
                     ) {
 
                         statusText =
@@ -1400,8 +1295,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                         packageText =
                             order.months
-                                ? order.months +
-                                  " oy"
+                                ? order.months + " oy"
                                 : "Premium";
 
                     }
@@ -1413,8 +1307,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                         packageText =
                             order.stars
-                                ? order.stars +
-                                  " Stars"
+                                ? order.stars + " Stars"
                                 : "Stars";
 
                     }
@@ -1435,11 +1328,9 @@ document.addEventListener("DOMContentLoaded", function () {
                         <div class="order-header">
 
                             <div class="order-title">
-                                ${
-                                    escapeHtml(
-                                        order.product
-                                    )
-                                }
+                                ${escapeHtml(
+                                    order.product
+                                )}
                             </div>
 
                             <div class="order-id">
@@ -1448,14 +1339,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
                         </div>
 
-
                         <div class="order-recipient">
                             👤 @${escapeHtml(
                                 order.telegram_username ||
                                 "Noma'lum"
                             )}
                         </div>
-
 
                         <div class="order-info">
 
@@ -1473,7 +1362,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
                             </div>
 
-
                             <div class="order-row">
 
                                 <span class="order-row-label">
@@ -1489,7 +1377,6 @@ document.addEventListener("DOMContentLoaded", function () {
                             </div>
 
                         </div>
-
 
                         <div class="order-price">
 
@@ -1526,6 +1413,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
             products.innerHTML = `
+
                 <div class="orders-empty">
 
                     <div class="orders-empty-icon">
@@ -1542,6 +1430,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     </p>
 
                 </div>
+
             `;
 
         }
@@ -1553,381 +1442,291 @@ document.addEventListener("DOMContentLoaded", function () {
     // AI ASSISTANT
     // =====================================================
 
-    if (aiAssistantButton) {
+    function showAIAssistant() {
 
-        aiAssistantButton.addEventListener(
-            "click",
-            function (event) {
+        clearProducts();
 
-                event.preventDefault();
-                event.stopPropagation();
+        productsSection.style.display =
+            "block";
 
-
-                aiAssistantButton.classList.add(
-                    "active"
-                );
+        createBackButton();
 
 
-                if (premiumButton) {
+        products.innerHTML = `
 
-                    premiumButton.classList.remove(
-                        "active"
-                    );
+            <div class="ai-assistant-container">
 
-                }
+                <div class="ai-chat-header">
 
+                    <div class="ai-chat-avatar">
+                        🤖
+                    </div>
 
-                if (starsButton) {
+                    <div class="ai-chat-info">
 
-                    starsButton.classList.remove(
-                        "active"
-                    );
+                        <strong>
+                            AI Assistant
+                        </strong>
 
-                }
+                        <span>
+                            ● Online
+                        </span>
 
+                    </div>
 
-                if (myOrdersButton) {
-
-                    myOrdersButton.classList.remove(
-                        "active"
-                    );
-
-                }
-
-
-                showAIAssistant();
-
-            }
-        );
-
-    }
-
-
-    // =====================================================
-    // SHOW AI ASSISTANT
-    // =====================================================
-
-function showAIAssistant() {
-
-    clearProducts();
-
-    productsSection.style.display = "block";
-
-    createBackButton();
-
-    products.innerHTML = `
-        <div class="ai-assistant-container">
-
-            <div class="ai-chat-header">
-
-                <div class="ai-chat-avatar">
-                    🤖
                 </div>
 
-                <div class="ai-chat-info">
+
+                <div class="ai-welcome">
+
                     <strong>
-                        AI Assistant
+                        👋 Assalomu alaykum!
                     </strong>
 
-                    <span>
-                        ● Online
-                    </span>
+                    Men Premium Shop bo'yicha
+                    savollaringizga yordam beraman.
+
+                </div>
+
+
+                <div class="ai-quick-questions">
+
+                    <button
+                        class="ai-quick-button"
+                        type="button"
+                        data-question="Premium narxlari qancha?"
+                    >
+                        💎 Premium narxlari
+                    </button>
+
+                    <button
+                        class="ai-quick-button"
+                        type="button"
+                        data-question="Stars narxlari qanday?"
+                    >
+                        ⭐ Stars narxlari
+                    </button>
+
+                    <button
+                        class="ai-quick-button"
+                        type="button"
+                        data-question="Buyurtmam haqida ma'lumot ber"
+                    >
+                        📦 Buyurtmam haqida
+                    </button>
+
+                    <button
+                        class="ai-quick-button"
+                        type="button"
+                        data-question="Qanday qilib sotib olaman?"
+                    >
+                        ❓ Qanday sotib olaman?
+                    </button>
+
+                </div>
+
+
+                <div
+                    class="ai-messages"
+                    id="aiMessages"
+                ></div>
+
+
+                <div class="ai-input-area">
+
+                    <input
+                        type="text"
+                        class="ai-input"
+                        id="aiInput"
+                        placeholder="Savolingizni yozing..."
+                        autocomplete="off"
+                    >
+
+                    <button
+                        type="button"
+                        class="ai-send-button"
+                        id="aiSendButton"
+                    >
+                        ➤
+                    </button>
+
                 </div>
 
             </div>
 
-            <div class="ai-welcome">
-
-                <strong>
-                    👋 Assalomu alaykum!
-                </strong>
-
-                Men Premium Shop bo'yicha
-                savollaringizga yordam beraman.
-
-            </div>
-
-            <div class="ai-quick-questions">
-
-                <button
-                    class="ai-quick-button"
-                    type="button"
-                    data-question="Premium narxlari qancha?"
-                >
-                    💎 Premium narxlari
-                </button>
-
-                <button
-                    class="ai-quick-button"
-                    type="button"
-                    data-question="Stars narxlari qanday?"
-                >
-                    ⭐ Stars narxlari
-                </button>
-
-                <button
-                    class="ai-quick-button"
-                    type="button"
-                    data-question="Buyurtmam haqida ma'lumot ber"
-                >
-                    📦 Buyurtmam haqida
-                </button>
-
-                <button
-                    class="ai-quick-button"
-                    type="button"
-                    data-question="Qanday qilib sotib olaman?"
-                >
-                    ❓ Qanday sotib olaman?
-                </button>
-
-            </div>
-
-            <div
-                class="ai-messages"
-                id="aiMessages"
-            ></div>
-
-            <div class="ai-input-area">
-
-                <input
-                    type="text"
-                    class="ai-input"
-                    id="aiInput"
-                    placeholder="Savolingizni yozing..."
-                    autocomplete="off"
-                >
-
-                <button
-                    type="button"
-                    class="ai-send-button"
-                    id="aiSendButton"
-                >
-                    ➤
-                </button>
-
-            </div>
-
-        </div>
-    `;
+        `;
 
 
-    const aiInput =
-        document.getElementById("aiInput");
+        const aiInput =
+            document.getElementById(
+                "aiInput"
+            );
 
+        const aiSendButton =
+            document.getElementById(
+                "aiSendButton"
+            );
 
-    const aiSendButton =
-        document.getElementById("aiSendButton");
-
-
-    const aiMessages =
-        document.getElementById("aiMessages");
-
-
-    const userId =
-        tg?.initDataUnsafe?.user?.id || 0;
-
-
-    function addAIMessage(
-        text,
-        type
-    ) {
-
-        aiMessages.insertAdjacentHTML(
-            "beforeend",
-            `
-                <div class="ai-message ${type}">
-                    ${escapeHtml(text)}
-                </div>
-            `
-        );
-
-        aiMessages.scrollTop =
-            aiMessages.scrollHeight;
-    }
-
-
-    async function sendAIMessage(
-        text
-    ) {
-
-        text = text.trim();
-
-        if (!text) {
-            return;
-        }
-
-
-        // User xabari
-        addAIMessage(
-            text,
-            "user"
-        );
-
-
-        aiInput.value = "";
-
-        aiInput.disabled = true;
-        aiSendButton.disabled = true;
-
-
-        // Loading
-        const loadingMessage =
-            document.createElement("div");
-
-        loadingMessage.className =
-            "ai-message bot";
-
-        loadingMessage.textContent =
-            "🤔 O‘ylayapman...";
-
-        aiMessages.appendChild(
-            loadingMessage
-        );
-
-
-        aiMessages.scrollTop =
-            aiMessages.scrollHeight;
-
-
-        try {
-
-            const response =
-                await fetch(
-                    `${SERVER_URL}/ai-chat`,
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body: JSON.stringify({
-                            message: text,
-                            user_id: userId
-                        })
-                    }
-                );
-
-
-            const data =
-                await response.json();
-
-
-            loadingMessage.remove();
-
-
-            if (
-                data.ok &&
-                data.reply
-            ) {
-
-                addAIMessage(
-                    data.reply,
-                    "bot"
-                );
-
-            } else {
-
-                addAIMessage(
-                    "❌ AI javob bera olmadi. Iltimos, qaytadan urinib ko‘ring.",
-                    "bot"
-                );
-
-            }
-
-
-        } catch (error) {
-
-            console.error(
-                "AI Chat Error:",
-                error
+        const aiMessages =
+            document.getElementById(
+                "aiMessages"
             );
 
 
-            loadingMessage.remove();
+        const userId =
+            tg?.initDataUnsafe?.user?.id || 0;
+
+
+        function addAIMessage(
+            text,
+            type
+        ) {
+
+            const message =
+                document.createElement(
+                    "div"
+                );
+
+            message.className =
+                "ai-message " + type;
+
+            message.textContent =
+                text;
+
+            aiMessages.appendChild(
+                message
+            );
+
+            aiMessages.scrollTop =
+                aiMessages.scrollHeight;
+
+        }
+
+
+        async function sendAIMessage(
+            text
+        ) {
+
+            text =
+                text.trim();
+
+
+            if (!text) {
+                return;
+            }
 
 
             addAIMessage(
-                "❌ Server bilan bog‘lanishda xatolik yuz berdi.",
-                "bot"
+                text,
+                "user"
             );
 
-        }
+
+            aiInput.value = "";
+
+            aiInput.disabled = true;
+            aiSendButton.disabled = true;
 
 
-        aiInput.disabled = false;
-        aiSendButton.disabled = false;
-
-        aiInput.focus();
-
-    }
-
-
-    aiSendButton.addEventListener(
-        "click",
-        function () {
-
-            sendAIMessage(
-                aiInput.value
-            );
-
-        }
-    );
-
-
-    aiInput.addEventListener(
-        "keydown",
-        function (event) {
-
-            if (
-                event.key === "Enter"
-            ) {
-
-                event.preventDefault();
-
-                sendAIMessage(
-                    aiInput.value
+            const loadingMessage =
+                document.createElement(
+                    "div"
                 );
 
-            }
+            loadingMessage.className =
+                "ai-message bot";
 
-        }
-    );
-
-
-    const quickButtons =
-        document.querySelectorAll(
-            ".ai-quick-button"
-        );
+            loadingMessage.textContent =
+                "🤔 O‘ylayapman...";
 
 
-    quickButtons.forEach(
-        function (button) {
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    const question =
-                        button.dataset.question;
-
-                    sendAIMessage(
-                        question
-                    );
-
-                }
+            aiMessages.appendChild(
+                loadingMessage
             );
-
-        }
-    );
-
-}
 
 
             aiMessages.scrollTop =
                 aiMessages.scrollHeight;
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        SERVER_URL +
+                        "/ai-chat",
+                        {
+
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify({
+                                    message: text,
+                                    user_id: userId
+                                })
+
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                loadingMessage.remove();
+
+
+                if (
+                    data.ok &&
+                    data.reply
+                ) {
+
+                    addAIMessage(
+                        data.reply,
+                        "bot"
+                    );
+
+                }
+
+                else {
+
+                    addAIMessage(
+                        "❌ AI javob bera olmadi. Iltimos, qaytadan urinib ko‘ring.",
+                        "bot"
+                    );
+
+                }
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "AI Chat Error:",
+                    error
+                );
+
+
+                loadingMessage.remove();
+
+
+                addAIMessage(
+                    "❌ Server bilan bog‘lanishda xatolik yuz berdi.",
+                    "bot"
+                );
+
+            }
+
+
+            aiInput.disabled = false;
+            aiSendButton.disabled = false;
+
+            aiInput.focus();
 
         }
 
@@ -1949,12 +1748,10 @@ function showAIAssistant() {
             function (event) {
 
                 if (
-                    event.key ===
-                    "Enter"
+                    event.key === "Enter"
                 ) {
 
                     event.preventDefault();
-
 
                     sendAIMessage(
                         aiInput.value
@@ -1966,28 +1763,28 @@ function showAIAssistant() {
         );
 
 
-        document
-            .querySelectorAll(
+        const quickButtons =
+            document.querySelectorAll(
                 ".ai-quick-button"
-            )
-            .forEach(
-                function (button) {
-
-                    button.addEventListener(
-                        "click",
-                        function () {
-
-                            sendAIMessage(
-                                button
-                                    .textContent
-                                    .trim()
-                            );
-
-                        }
-                    );
-
-                }
             );
+
+
+        quickButtons.forEach(
+            function (button) {
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        sendAIMessage(
+                            button.dataset.question
+                        );
+
+                    }
+                );
+
+            }
+        );
 
     }
 
@@ -2006,36 +1803,11 @@ function showAIAssistant() {
                 event.stopPropagation();
 
 
+                clearCategoryActive();
+
                 premiumButton.classList.add(
                     "active"
                 );
-
-
-                if (starsButton) {
-
-                    starsButton.classList.remove(
-                        "active"
-                    );
-
-                }
-
-
-                if (myOrdersButton) {
-
-                    myOrdersButton.classList.remove(
-                        "active"
-                    );
-
-                }
-
-
-                if (aiAssistantButton) {
-
-                    aiAssistantButton.classList.remove(
-                        "active"
-                    );
-
-                }
 
 
                 showRecipientForm(
@@ -2062,36 +1834,11 @@ function showAIAssistant() {
                 event.stopPropagation();
 
 
+                clearCategoryActive();
+
                 myOrdersButton.classList.add(
                     "active"
                 );
-
-
-                if (premiumButton) {
-
-                    premiumButton.classList.remove(
-                        "active"
-                    );
-
-                }
-
-
-                if (starsButton) {
-
-                    starsButton.classList.remove(
-                        "active"
-                    );
-
-                }
-
-
-                if (aiAssistantButton) {
-
-                    aiAssistantButton.classList.remove(
-                        "active"
-                    );
-
-                }
 
 
                 showMyOrders();
@@ -2116,41 +1863,45 @@ function showAIAssistant() {
                 event.stopPropagation();
 
 
+                clearCategoryActive();
+
                 starsButton.classList.add(
                     "active"
                 );
 
 
-                if (premiumButton) {
-
-                    premiumButton.classList.remove(
-                        "active"
-                    );
-
-                }
-
-
-                if (myOrdersButton) {
-
-                    myOrdersButton.classList.remove(
-                        "active"
-                    );
-
-                }
-
-
-                if (aiAssistantButton) {
-
-                    aiAssistantButton.classList.remove(
-                        "active"
-                    );
-
-                }
-
-
                 showRecipientForm(
                     "stars"
                 );
+
+            }
+        );
+
+    }
+
+
+    // =====================================================
+    // AI ASSISTANT CATEGORY
+    // =====================================================
+
+    if (aiAssistantButton) {
+
+        aiAssistantButton.addEventListener(
+            "click",
+            function (event) {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+
+                clearCategoryActive();
+
+                aiAssistantButton.classList.add(
+                    "active"
+                );
+
+
+                showAIAssistant();
 
             }
         );
