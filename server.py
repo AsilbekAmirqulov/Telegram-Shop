@@ -10,6 +10,7 @@ import psycopg2
 import base64
 import tempfile
 import re
+import time
 
 from google import genai
 
@@ -848,19 +849,63 @@ Endi foydalanuvchiga javob bering.
         # GEMINI REQUEST
         # ----------------------------------------------------
 
-        response = gemini_client.models.generate_content(
+        response = None
 
-            model="gemini-3.8-flash",
+        for attempt in range(3):
 
-            contents=prompt
-        )
+            try:
+
+                response = gemini_client.models.generate_content(
+                    model="gemini-3.8-flash",
+                    contents=prompt
+                )
+
+                break
+
+            except Exception as e:
+
+                error_text = str(e)
+
+                print(
+                    f"Gemini attempt {attempt + 1}/3 error: "
+                    f"{type(e).__name__}: {error_text}"
+                )
+
+                if "503" in error_text or "UNAVAILABLE" in error_text:
+
+                    if attempt < 2:
+
+                        wait_time = 2 ** attempt
+
+                        print(
+                            f"Gemini 503. "
+                            f"{wait_time} soniya kutib qayta uriniladi..."
+                        )
+
+                        time.sleep(wait_time)
+
+                        continue
+
+                raise
+
+
+        if response is None:
+
+            return {
+                "ok": False,
+                "message":
+                "AI serveri hozircha band. "
+                "Iltimos, birozdan keyin qayta urinib ko‘ring."
+            }
 
 
         reply = response.text
 
         if not reply:
 
-            reply = "Kechirasiz, hozircha javob bera olmadim."
+            reply = (
+                "Kechirasiz, hozircha javob bera olmadim."
+            )
 
 
         return {
