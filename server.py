@@ -76,7 +76,6 @@ async def startup_telegram():
 
     try:
 
-        # Base64 session faylni ochamiz
         session_bytes = base64.b64decode(TG_SESSION)
 
         session_file = tempfile.NamedTemporaryFile(
@@ -90,14 +89,12 @@ async def startup_telegram():
 
         telegram_session_path = session_file.name
 
-        # ASYNC TELETHON CLIENT
         telegram_client = TelegramClient(
             telegram_session_path,
             int(TG_API_ID),
             TG_API_HASH
         )
 
-        # FastAPI startup event loop ichida ulanadi
         await telegram_client.connect()
 
         if not await telegram_client.is_user_authorized():
@@ -161,18 +158,6 @@ async def shutdown_telegram():
 
 async def check_telegram_username(username: str):
 
-    """
-    Telegram username'ni Telegram serveri orqali tekshiradi.
-
-    Natija:
-
-    (True, real_username, None)
-
-    yoki
-
-    (False, None, error_message)
-    """
-
     if telegram_client is None:
 
         print(
@@ -197,19 +182,15 @@ async def check_telegram_username(username: str):
             f"USERNAME_CHECK: @{username}"
         )
 
-        # Telegram serveriga async so'rov
         result = await telegram_client(
             ResolveUsernameRequest(username)
         )
 
-        # Telegram qaytargan userlarni tekshiramiz
         for entity in result.users:
 
             if not isinstance(entity, User):
-
                 continue
 
-            # Botlarni qabul qilmaymiz
             if getattr(entity, "bot", False):
 
                 print(
@@ -240,10 +221,6 @@ async def check_telegram_username(username: str):
                     None
                 )
 
-        print(
-            f"USERNAME_CHECK NOT_FOUND: @{username}"
-        )
-
         return (
             False,
             None,
@@ -252,10 +229,6 @@ async def check_telegram_username(username: str):
 
     except UsernameNotOccupiedError:
 
-        print(
-            f"USERNAME_CHECK NOT_FOUND: @{username}"
-        )
-
         return (
             False,
             None,
@@ -263,10 +236,6 @@ async def check_telegram_username(username: str):
         )
 
     except UsernameInvalidError:
-
-        print(
-            f"USERNAME_CHECK INVALID: @{username}"
-        )
 
         return (
             False,
@@ -324,6 +293,9 @@ def init_db():
     conn = get_db()
     cursor = conn.cursor()
 
+    # Eski orders jadvali mavjud bo'lsa saqlanadi.
+    # Yangi ustunlar alohida qo'shiladi.
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS orders (
             id SERIAL PRIMARY KEY,
@@ -336,6 +308,12 @@ def init_db():
             price_usd TEXT,
             supplier_order_id TEXT
         )
+    """)
+
+    # Stars uchun yangi ustun
+    cursor.execute("""
+        ALTER TABLE orders
+        ADD COLUMN IF NOT EXISTS stars INTEGER
     """)
 
     conn.commit()
@@ -357,7 +335,12 @@ class OrderRequest(BaseModel):
     product: str
     amount: int
     recipient_username: str
-    months: int
+
+    # Premium uchun
+    months: int | None = None
+
+    # Stars uchun
+    stars: int | None = None
 
 
 class StatusRequest(BaseModel):
@@ -405,7 +388,6 @@ async def check_username(username: str):
             "message": "❗ Username kiriting"
         }
 
-    # Telegram username format
     if not re.fullmatch(
         r"[A-Za-z0-9_]{5,32}",
         username
@@ -417,7 +399,6 @@ async def check_username(username: str):
             "❗ Username noto'g'ri. Masalan: @qwerty123"
         }
 
-    # Telegram serverida mavjudligini tekshirish
     valid, real_username, error = (
         await check_telegram_username(username)
     )
@@ -448,28 +429,21 @@ async def check_username(username: str):
 async def create_order(order: OrderRequest):
 
     # --------------------------------------------------------
-    # PRODUCT
+    # PRODUCT TEKSHIRISH
     # --------------------------------------------------------
 
-    if order.product != "Telegram Premium":
+    allowed_products = [
+        "Telegram Premium",
+        "Telegram Stars"
+    ]
+
+    if order.product not in allowed_products:
 
         return {
             "ok": False,
-            "message":
-            "Hozircha faqat Telegram Premium mavjud"
+            "message": "Noma'lum mahsulot"
         }
 
-    # --------------------------------------------------------
-    # MONTHS
-    # --------------------------------------------------------
-
-    if order.months not in [3, 6, 12]:
-
-        return {
-            "ok": False,
-            "message":
-            "Premium muddati 3, 6 yoki 12 oy bo'lishi kerak"
-        }
 
     # --------------------------------------------------------
     # AMOUNT
@@ -479,9 +453,9 @@ async def create_order(order: OrderRequest):
 
         return {
             "ok": False,
-            "message":
-            "Narx noto'g'ri"
+            "message": "Narx noto'g'ri"
         }
+
 
     # --------------------------------------------------------
     # USERNAME
@@ -501,14 +475,6 @@ async def create_order(order: OrderRequest):
             "Qabul qiluvchi username kiritilmagan"
         }
 
-    if len(username) < 5 or len(username) > 32:
-
-        return {
-            "ok": False,
-            "message":
-            "Telegram username noto'g'ri"
-        }
-
     if not re.fullmatch(
         r"[A-Za-z0-9_]{5,32}",
         username
@@ -519,6 +485,7 @@ async def create_order(order: OrderRequest):
             "message":
             "Telegram username noto'g'ri"
         }
+
 
     # --------------------------------------------------------
     # TELEGRAM USERNAME CHECK
@@ -537,6 +504,55 @@ async def create_order(order: OrderRequest):
 
     username = real_username
 
+
+    # --------------------------------------------------------
+    # PREMIUM
+    # --------------------------------------------------------
+
+    if order.product == "Telegram Premium":
+
+        if order.months not in [3, 6, 12]:
+
+            return {
+                "ok": False,
+                "message":
+                "Premium muddati 3, 6 yoki 12 oy bo'lishi kerak"
+            }
+
+        stars = None
+
+
+    # --------------------------------------------------------
+    # STARS
+    # --------------------------------------------------------
+
+    elif order.product == "Telegram Stars":
+
+        allowed_stars = [
+            50,
+            100,
+            150,
+            250,
+            350,
+            500,
+            750,
+            1000,
+            1500,
+            2500,
+            5000
+        ]
+
+        if order.stars not in allowed_stars:
+
+            return {
+                "ok": False,
+                "message":
+                "Stars paketi noto'g'ri"
+            }
+
+        stars = order.stars
+
+
     # --------------------------------------------------------
     # DATABASE
     # --------------------------------------------------------
@@ -552,9 +568,10 @@ async def create_order(order: OrderRequest):
             amount,
             status,
             telegram_username,
-            months
+            months,
+            stars
         )
-        VALUES (%s, %s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """,
         (
@@ -563,7 +580,8 @@ async def create_order(order: OrderRequest):
             order.amount,
             "pending",
             username,
-            order.months
+            order.months,
+            stars
         )
     )
 
@@ -573,6 +591,11 @@ async def create_order(order: OrderRequest):
 
     cursor.close()
     conn.close()
+
+
+    # --------------------------------------------------------
+    # RESPONSE
+    # --------------------------------------------------------
 
     return {
 
@@ -590,12 +613,94 @@ async def create_order(order: OrderRequest):
 
         "months": order.months,
 
+        "stars": stars,
+
         "amount": order.amount
     }
 
 
 # ============================================================
-# GET ORDERS
+# MY ORDERS
+# ============================================================
+
+@app.get("/my-orders")
+def get_my_orders(user_id: int):
+
+    if not user_id:
+
+        return {
+            "ok": False,
+            "message": "Telegram foydalanuvchisi aniqlanmadi"
+        }
+
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT
+            id,
+            user_id,
+            product,
+            amount,
+            status,
+            telegram_username,
+            months,
+            stars,
+            price_usd,
+            supplier_order_id
+        FROM orders
+        WHERE user_id = %s
+        ORDER BY id DESC
+        """,
+        (user_id,)
+    )
+
+    rows = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+
+    orders = []
+
+    for row in rows:
+
+        orders.append({
+
+            "id": row[0],
+
+            "user_id": row[1],
+
+            "product": row[2],
+
+            "amount": row[3],
+
+            "status": row[4],
+
+            "telegram_username": row[5],
+
+            "months": row[6],
+
+            "stars": row[7],
+
+            "price_usd": row[8],
+
+            "supplier_order_id": row[9]
+        })
+
+
+    return {
+
+        "ok": True,
+
+        "orders": orders
+    }
+
+
+# ============================================================
+# ADMIN — ALL ORDERS
 # ============================================================
 
 @app.get("/orders")
@@ -620,6 +725,7 @@ def get_orders(admin_key: str):
             status,
             telegram_username,
             months,
+            stars,
             price_usd,
             supplier_order_id
         FROM orders
@@ -645,8 +751,9 @@ def get_orders(admin_key: str):
                 "status": order[4],
                 "telegram_username": order[5],
                 "months": order[6],
-                "price_usd": order[7],
-                "supplier_order_id": order[8]
+                "stars": order[7],
+                "price_usd": order[8],
+                "supplier_order_id": order[9]
             }
 
             for order in orders
@@ -676,8 +783,7 @@ def update_order_status(
 
         return {
             "ok": False,
-            "message":
-            "Noto'g'ri status"
+            "message": "Noto'g'ri status"
         }
 
     conn = get_db()
@@ -702,8 +808,7 @@ def update_order_status(
 
         return {
             "ok": False,
-            "message":
-            "Buyurtma topilmadi"
+            "message": "Buyurtma topilmadi"
         }
 
     conn.commit()
@@ -848,11 +953,6 @@ def supplier_premium_prices():
 # ============================================================
 # REAL PREMIUM BUY
 # ============================================================
-#
-# Hozircha admin/test endpoint.
-# To'lov API tayyor bo'lgach,
-# shu jarayonni paid order bilan bog'laymiz.
-# ============================================================
 
 @app.post("/test-premium-buy")
 async def test_premium_buy(
@@ -863,8 +963,7 @@ async def test_premium_buy(
 
         return {
             "ok": False,
-            "message":
-            "Ruxsat yo'q"
+            "message": "Ruxsat yo'q"
         }
 
     if request.months not in [3, 6, 12]:
@@ -900,7 +999,6 @@ async def test_premium_buy(
             "Telegram username noto'g'ri"
         }
 
-    # Premium berishdan oldin username mavjudligini tekshirish
     valid_username, real_username, username_error = (
         await check_telegram_username(username)
     )
@@ -913,10 +1011,6 @@ async def test_premium_buy(
         }
 
     username = real_username
-
-    # --------------------------------------------------------
-    # RESELLCODES API KEY
-    # --------------------------------------------------------
 
     api_key = os.getenv(
         "RESELLCODES_API_KEY"
