@@ -1607,180 +1607,323 @@ document.addEventListener("DOMContentLoaded", function () {
     // SHOW AI ASSISTANT
     // =====================================================
 
-    function showAIAssistant() {
+function showAIAssistant() {
 
-        clearProducts();
+    clearProducts();
 
-        productsSection.style.display =
-            "block";
+    productsSection.style.display = "block";
 
+    createBackButton();
 
-        createBackButton();
+    products.innerHTML = `
+        <div class="ai-assistant-container">
 
+            <div class="ai-chat-header">
 
-        products.innerHTML = `
-
-            <div class="ai-assistant-container">
-
-                <div class="ai-chat-header">
-
-                    <div class="ai-chat-avatar">
-                        🤖
-                    </div>
-
-
-                    <div class="ai-chat-info">
-
-                        <strong>
-                            AI Assistant
-                        </strong>
-
-                        <span>
-                            ● Online
-                        </span>
-
-                    </div>
-
+                <div class="ai-chat-avatar">
+                    🤖
                 </div>
 
-
-                <div class="ai-welcome">
-
+                <div class="ai-chat-info">
                     <strong>
-                        👋 Assalomu alaykum!
+                        AI Assistant
                     </strong>
 
-                    Men Premium Shop bo'yicha
-                    savollaringizga yordam beraman.
-
-                </div>
-
-
-                <div class="ai-quick-questions">
-
-                    <button
-                        class="ai-quick-button"
-                        type="button"
-                    >
-                        💎 Premium narxlari
-                    </button>
-
-
-                    <button
-                        class="ai-quick-button"
-                        type="button"
-                    >
-                        ⭐ Stars narxlari
-                    </button>
-
-
-                    <button
-                        class="ai-quick-button"
-                        type="button"
-                    >
-                        📦 Buyurtmam haqida
-                    </button>
-
-
-                    <button
-                        class="ai-quick-button"
-                        type="button"
-                    >
-                        ❓ Qanday sotib olaman?
-                    </button>
-
-                </div>
-
-
-                <div
-                    class="ai-messages"
-                    id="aiMessages"
-                >
-                </div>
-
-
-                <div class="ai-input-area">
-
-                    <input
-                        type="text"
-                        class="ai-input"
-                        id="aiInput"
-                        placeholder="Savolingizni yozing..."
-                        autocomplete="off"
-                    >
-
-
-                    <button
-                        type="button"
-                        class="ai-send-button"
-                        id="aiSendButton"
-                    >
-                        ➤
-                    </button>
-
+                    <span>
+                        ● Online
+                    </span>
                 </div>
 
             </div>
 
-        `;
+            <div class="ai-welcome">
+
+                <strong>
+                    👋 Assalomu alaykum!
+                </strong>
+
+                Men Premium Shop bo'yicha
+                savollaringizga yordam beraman.
+
+            </div>
+
+            <div class="ai-quick-questions">
+
+                <button
+                    class="ai-quick-button"
+                    type="button"
+                    data-question="Premium narxlari qancha?"
+                >
+                    💎 Premium narxlari
+                </button>
+
+                <button
+                    class="ai-quick-button"
+                    type="button"
+                    data-question="Stars narxlari qanday?"
+                >
+                    ⭐ Stars narxlari
+                </button>
+
+                <button
+                    class="ai-quick-button"
+                    type="button"
+                    data-question="Buyurtmam haqida ma'lumot ber"
+                >
+                    📦 Buyurtmam haqida
+                </button>
+
+                <button
+                    class="ai-quick-button"
+                    type="button"
+                    data-question="Qanday qilib sotib olaman?"
+                >
+                    ❓ Qanday sotib olaman?
+                </button>
+
+            </div>
+
+            <div
+                class="ai-messages"
+                id="aiMessages"
+            ></div>
+
+            <div class="ai-input-area">
+
+                <input
+                    type="text"
+                    class="ai-input"
+                    id="aiInput"
+                    placeholder="Savolingizni yozing..."
+                    autocomplete="off"
+                >
+
+                <button
+                    type="button"
+                    class="ai-send-button"
+                    id="aiSendButton"
+                >
+                    ➤
+                </button>
+
+            </div>
+
+        </div>
+    `;
 
 
-        const aiInput =
-            document.getElementById(
-                "aiInput"
-            );
+    const aiInput =
+        document.getElementById("aiInput");
 
 
-        const aiSendButton =
-            document.getElementById(
-                "aiSendButton"
-            );
+    const aiSendButton =
+        document.getElementById("aiSendButton");
 
 
-        const aiMessages =
-            document.getElementById(
-                "aiMessages"
-            );
+    const aiMessages =
+        document.getElementById("aiMessages");
 
 
-        function sendAIMessage(
-            text
-        ) {
-
-            text =
-                text.trim();
+    const userId =
+        tg?.initDataUnsafe?.user?.id || 0;
 
 
-            if (!text) {
+    function addAIMessage(
+        text,
+        type
+    ) {
 
-                return;
+        aiMessages.insertAdjacentHTML(
+            "beforeend",
+            `
+                <div class="ai-message ${type}">
+                    ${escapeHtml(text)}
+                </div>
+            `
+        );
+
+        aiMessages.scrollTop =
+            aiMessages.scrollHeight;
+    }
+
+
+    async function sendAIMessage(
+        text
+    ) {
+
+        text = text.trim();
+
+        if (!text) {
+            return;
+        }
+
+
+        // User xabari
+        addAIMessage(
+            text,
+            "user"
+        );
+
+
+        aiInput.value = "";
+
+        aiInput.disabled = true;
+        aiSendButton.disabled = true;
+
+
+        // Loading
+        const loadingMessage =
+            document.createElement("div");
+
+        loadingMessage.className =
+            "ai-message bot";
+
+        loadingMessage.textContent =
+            "🤔 O‘ylayapman...";
+
+        aiMessages.appendChild(
+            loadingMessage
+        );
+
+
+        aiMessages.scrollTop =
+            aiMessages.scrollHeight;
+
+
+        try {
+
+            const response =
+                await fetch(
+                    `${SERVER_URL}/ai-chat`,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body: JSON.stringify({
+                            message: text,
+                            user_id: userId
+                        })
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            loadingMessage.remove();
+
+
+            if (
+                data.ok &&
+                data.reply
+            ) {
+
+                addAIMessage(
+                    data.reply,
+                    "bot"
+                );
+
+            } else {
+
+                addAIMessage(
+                    "❌ AI javob bera olmadi. Iltimos, qaytadan urinib ko‘ring.",
+                    "bot"
+                );
 
             }
 
 
-            aiMessages.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <div class="ai-message user">
-                        ${escapeHtml(text)}
-                    </div>
-                `
+        } catch (error) {
+
+            console.error(
+                "AI Chat Error:",
+                error
             );
 
 
-            aiInput.value = "";
+            loadingMessage.remove();
 
 
-            aiMessages.insertAdjacentHTML(
-                "beforeend",
-                `
-                    <div class="ai-message bot">
-                        🤖 Hozircha AI Assistant
-                        demo rejimida.
-                        Tez orada sizga javob bera olaman.
-                    </div>
-                `
+            addAIMessage(
+                "❌ Server bilan bog‘lanishda xatolik yuz berdi.",
+                "bot"
             );
+
+        }
+
+
+        aiInput.disabled = false;
+        aiSendButton.disabled = false;
+
+        aiInput.focus();
+
+    }
+
+
+    aiSendButton.addEventListener(
+        "click",
+        function () {
+
+            sendAIMessage(
+                aiInput.value
+            );
+
+        }
+    );
+
+
+    aiInput.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (
+                event.key === "Enter"
+            ) {
+
+                event.preventDefault();
+
+                sendAIMessage(
+                    aiInput.value
+                );
+
+            }
+
+        }
+    );
+
+
+    const quickButtons =
+        document.querySelectorAll(
+            ".ai-quick-button"
+        );
+
+
+    quickButtons.forEach(
+        function (button) {
+
+            button.addEventListener(
+                "click",
+                function () {
+
+                    const question =
+                        button.dataset.question;
+
+                    sendAIMessage(
+                        question
+                    );
+
+                }
+            );
+
+        }
+    );
+
+}
 
 
             aiMessages.scrollTop =
