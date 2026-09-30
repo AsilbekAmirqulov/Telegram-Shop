@@ -1,4 +1,4 @@
-```python
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -1270,4 +1270,3 @@ async def test_premium_buy(
             "message":
             str(e)
         }
-```
