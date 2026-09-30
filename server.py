@@ -9,6 +9,7 @@ import psycopg2
 import base64
 import tempfile
 import re
+from google import genai
 
 from telethon import TelegramClient
 from telethon.tl.types import User
@@ -39,6 +40,26 @@ telegram_session_path = None
 app = FastAPI()
 
 ADMIN_KEY = os.getenv("ADMIN_KEY")
+# ============================================================
+# FASTAPI
+# ============================================================
+
+app = FastAPI()
+
+ADMIN_KEY = os.getenv("ADMIN_KEY")
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+gemini_client = None
+
+if GEMINI_API_KEY:
+    gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+
+
+# ============================================================
+# CORS
+# ============================================================
+
 
 
 # ============================================================
