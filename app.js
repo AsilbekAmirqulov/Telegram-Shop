@@ -18,225 +18,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const myOrdersButton =
         document.getElementById("myOrdersButton");
+
     const aiAssistantButton =
         document.getElementById("aiAssistantButton");
 
     const tg =
         window.Telegram?.WebApp;
-    // ============================================================
-// AI ASSISTANT
-// ============================================================
 
-aiAssistantButton?.addEventListener("click", function () {
 
-    clearProducts();
-
-    productsSection.style.display = "block";
-
-    document
-        .querySelectorAll(".category")
-        .forEach(button => {
-            button.classList.remove("active");
-        });
-
-    aiAssistantButton.classList.add("active");
-
-    createBackButton();
-
-    products.innerHTML = `
-        <div class="ai-assistant-container">
-
-            <div class="ai-chat-header">
-
-                <div class="ai-chat-avatar">
-                    🤖
-                </div>
-
-                <div class="ai-chat-info">
-
-                    <strong>
-                        AI Assistant
-                    </strong>
-
-                    <span>
-                        ● Online
-                    </span>
-
-                </div>
-
-            </div>
-
-
-            <div class="ai-welcome">
-
-                <strong>
-                    👋 Assalomu alaykum!
-                </strong>
-
-                Men Premium Shop bo‘yicha
-                savollaringizga yordam beraman.
-
-            </div>
-
-
-            <div class="ai-quick-questions">
-
-                <button
-                    class="ai-quick-button"
-                    type="button"
-                >
-                    💎 Premium narxlari
-                </button>
-
-                <button
-                    class="ai-quick-button"
-                    type="button"
-                >
-                    ⭐ Stars narxlari
-                </button>
-
-                <button
-                    class="ai-quick-button"
-                    type="button"
-                >
-                    📦 Buyurtmam haqida
-                </button>
-
-                <button
-                    class="ai-quick-button"
-                    type="button"
-                >
-                    ❓ Qanday sotib olaman?
-                </button>
-
-            </div>
-
-
-            <div
-                class="ai-messages"
-                id="aiMessages"
-            >
-            </div>
-
-
-            <div class="ai-input-area">
-
-                <input
-                    type="text"
-                    class="ai-input"
-                    id="aiInput"
-                    placeholder="Savolingizni yozing..."
-                    autocomplete="off"
-                >
-
-                <button
-                    type="button"
-                    class="ai-send-button"
-                    id="aiSendButton"
-                >
-                    ➤
-                </button>
-
-            </div>
-
-        </div>
-    `;
-
-
-    const aiInput =
-        document.getElementById("aiInput");
-
-    const aiSendButton =
-        document.getElementById("aiSendButton");
-
-    const aiMessages =
-        document.getElementById("aiMessages");
-
-
-    function sendAIMessage(text) {
-
-        text = text.trim();
-
-        if (!text) return;
-
-
-        aiMessages.insertAdjacentHTML(
-            "beforeend",
-            `
-            <div class="ai-message user">
-                ${escapeHtml(text)}
-            </div>
-            `
-        );
-
-
-        aiInput.value = "";
-
-        aiMessages.insertAdjacentHTML(
-            "beforeend",
-            `
-            <div class="ai-message bot">
-                🤖 Hozircha AI Assistant demo rejimida.
-                Tez orada sizga javob bera olaman.
-            </div>
-            `
-        );
-
-
-        aiMessages.scrollTop =
-            aiMessages.scrollHeight;
-    }
-
-
-    aiSendButton.addEventListener(
-        "click",
-        function () {
-            sendAIMessage(aiInput.value);
-        }
-    );
-
-
-    aiInput.addEventListener(
-        "keydown",
-        function (event) {
-
-            if (event.key === "Enter") {
-
-                event.preventDefault();
-
-                sendAIMessage(aiInput.value);
-            }
-        }
-    );
-
-
-    document
-        .querySelectorAll(".ai-quick-button")
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    sendAIMessage(
-                        button.textContent.trim()
-                    );
-
-                }
-            );
-
-        });
-
-});
-
-    const tg =
-        window.Telegram?.WebApp;
-
+    // =====================================================
+    // TELEGRAM WEB APP
+    // =====================================================
 
     if (tg) {
 
         tg.ready();
         tg.expand();
+
     }
 
 
@@ -249,7 +47,7 @@ aiAssistantButton?.addEventListener("click", function () {
 
 
     // =====================================================
-    // PREMIUM PAKETLARI
+    // PREMIUM PACKAGES
     // =====================================================
 
     const premiumPlans = [
@@ -276,7 +74,7 @@ aiAssistantButton?.addEventListener("click", function () {
 
 
     // =====================================================
-    // MUROJAAT ORQALI PREMIUM
+    // PREMIUM CONTACT PLANS
     // =====================================================
 
     const contactPlans = [
@@ -297,108 +95,217 @@ aiAssistantButton?.addEventListener("click", function () {
 
 
     // =====================================================
-    // TELEGRAM STARS
+    // STARS PACKAGES
     // =====================================================
 
     const starsPlans = [
 
-        ["50", 11000],
-        ["100", 30000],
-        ["150", 40000],
-        ["250", 64000],
-        ["350", 89000],
-        ["500", 125000],
-        ["750", 185000],
-        ["1000", 244000],
-        ["1500", 365000],
-        ["2500", 605000],
-        ["5000", 1205000]
+        {
+            stars: 50,
+            title: "50 Stars",
+            price: 11000
+        },
+
+        {
+            stars: 100,
+            title: "100 Stars",
+            price: 30000
+        },
+
+        {
+            stars: 150,
+            title: "150 Stars",
+            price: 40000
+        },
+
+        {
+            stars: 250,
+            title: "250 Stars",
+            price: 64000
+        },
+
+        {
+            stars: 350,
+            title: "350 Stars",
+            price: 89000
+        },
+
+        {
+            stars: 500,
+            title: "500 Stars",
+            price: 125000
+        },
+
+        {
+            stars: 750,
+            title: "750 Stars",
+            price: 185000
+        },
+
+        {
+            stars: 1000,
+            title: "1000 Stars",
+            price: 244000
+        },
+
+        {
+            stars: 1500,
+            title: "1500 Stars",
+            price: 365000
+        },
+
+        {
+            stars: 2500,
+            title: "2500 Stars",
+            price: 605000
+        },
+
+        {
+            stars: 5000,
+            title: "5000 Stars",
+            price: 1205000
+        }
 
     ];
 
 
     // =====================================================
-    // HOLAT
+    // STATE
     // =====================================================
 
     let currentUsername = "";
     let verifiedUsername = "";
-
     let usernameInput = null;
     let usernameStatus = null;
-
     let searchTimer = null;
 
 
     // =====================================================
-    // YORDAMCHI FUNKSIYALAR
+    // PRICE FORMAT
     // =====================================================
 
     function formatPrice(price) {
 
-        return Number(price).toLocaleString("uz-UZ")
-            + " so'm";
+        return new Intl.NumberFormat(
+            "uz-UZ"
+        ).format(price) + " so'm";
+
     }
 
+
+    // =====================================================
+    // HTML ESCAPE
+    // =====================================================
 
     function escapeHtml(text) {
 
-        return String(text)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+        const div =
+            document.createElement("div");
+
+        div.textContent =
+            text;
+
+        return div.innerHTML;
+
     }
 
+
+    // =====================================================
+    // PRODUCTS CLEAR
+    // =====================================================
 
     function clearProducts() {
 
+        if (!products) return;
+
         products.innerHTML = "";
+
     }
 
 
     // =====================================================
-    // ORQAGA TUGMASI
+    // BACK BUTTON
     // =====================================================
 
-    function createBackButton(text) {
+    function createBackButton() {
 
-        const wrapper =
-            document.createElement("div");
+        const oldButton =
+            document.getElementById("shopBackButton");
 
-        wrapper.style.marginBottom = "12px";
+        if (oldButton) {
+
+            oldButton.remove();
+
+        }
 
 
         const button =
             document.createElement("button");
 
-        button.type = "button";
+        button.id =
+            "shopBackButton";
 
-        button.className =
-            "buy-button";
+        button.type =
+            "button";
 
-        button.style.width =
-            "100%";
-
-        button.style.background =
-            "#17212b";
-
-        button.style.border =
-            "1px solid rgba(255,255,255,0.08)";
-
-        button.style.textAlign =
-            "left";
-
-        button.textContent =
-            "← " + text;
+        button.innerHTML =
+            "‹ Orqaga";
 
 
-        wrapper.appendChild(button);
+        button.style.cssText = `
+            width: 100%;
+            margin-bottom: 12px;
+            padding: 11px 14px;
+            border: none;
+            border-radius: 13px;
+            background: #17212b;
+            color: #d8e1e8;
+            font-size: 14px;
+            text-align: left;
+            cursor: pointer;
+        `;
 
-        products.appendChild(wrapper);
 
-        return button;
+        button.addEventListener(
+            "click",
+            function () {
+
+                clearProducts();
+
+                productsSection.style.display =
+                    "none";
+
+
+                document
+                    .querySelectorAll(".category")
+                    .forEach(item => {
+
+                        item.classList.remove(
+                            "active"
+                        );
+
+                    });
+
+
+                const old =
+                    document.getElementById(
+                        "shopBackButton"
+                    );
+
+                if (old) {
+
+                    old.remove();
+
+                }
+
+            }
+        );
+
+
+        productsSection.prepend(
+            button
+        );
+
     }
 
 
@@ -406,92 +313,72 @@ aiAssistantButton?.addEventListener("click", function () {
     // USERNAME STATUS
     // =====================================================
 
-    function showStatus(message, type) {
+    function showUsernameStatus(
+        message,
+        type
+    ) {
 
-        if (!usernameStatus || !usernameInput) {
-            return;
-        }
+        if (!usernameStatus) return;
 
 
         usernameStatus.textContent =
             message;
 
-        usernameStatus.style.display =
-            "block";
 
+        usernameStatus.className =
+            "username-status " + type;
 
-        if (type === "success") {
-
-            usernameStatus.style.background =
-                "rgba(50,200,100,0.12)";
-
-            usernameStatus.style.color =
-                "#35c759";
-
-            usernameInput.style.borderColor =
-                "#35c759";
-
-
-        } else if (type === "loading") {
-
-            usernameStatus.style.background =
-                "rgba(80,150,255,0.12)";
-
-            usernameStatus.style.color =
-                "#4d9cff";
-
-            usernameInput.style.borderColor =
-                "#4d9cff";
-
-
-        } else {
-
-            usernameStatus.style.background =
-                "rgba(255,70,70,0.12)";
-
-            usernameStatus.style.color =
-                "#ff5c5c";
-
-            usernameInput.style.borderColor =
-                "#ff5c5c";
-        }
     }
 
 
-    function clearStatus() {
+    // =====================================================
+    // CHECK USERNAME
+    // =====================================================
 
-        if (!usernameStatus || !usernameInput) {
+    async function checkUsername(
+        username
+    ) {
+
+        username =
+            username
+                .trim()
+                .replace(/^@/, "");
+
+
+        if (!username) {
+
+            showUsernameStatus(
+                "❗ Username kiriting",
+                "error"
+            );
+
+            verifiedUsername = "";
+
             return;
+
         }
 
 
-        usernameStatus.style.display =
-            "none";
+        if (
+            !/^[A-Za-z0-9_]{5,32}$/.test(
+                username
+            )
+        ) {
 
-        usernameStatus.textContent =
-            "";
+            showUsernameStatus(
+                "❗ Username noto'g'ri. Masalan: @qwerty123",
+                "error"
+            );
 
-        usernameInput.style.borderColor =
-            "";
+            verifiedUsername = "";
 
-        verifiedUsername =
-            "";
-    }
+            return;
 
-
-    // =====================================================
-    // USERNAME TEKSHIRISH
-    // =====================================================
-
-    async function checkUsername(username) {
-
-        if (!usernameInput || !usernameStatus) {
-            return null;
         }
 
 
-        showStatus(
-            "🔍 Telegram foydalanuvchisi qidirilmoqda...",
+        showUsernameStatus(
+            "⏳ Tekshirilmoqda...",
             "loading"
         );
 
@@ -510,40 +397,35 @@ aiAssistantButton?.addEventListener("click", function () {
                 await response.json();
 
 
-            if (data.ok) {
+            if (!data.ok) {
 
-                verifiedUsername =
-                    data.username;
+                verifiedUsername = "";
 
-                currentUsername =
-                    data.username;
-
-
-                showStatus(
-                    "👤 Telegram foydalanuvchisi: @" +
-                    data.username,
-                    "success"
+                showUsernameStatus(
+                    data.message ||
+                    "❌ Username topilmadi",
+                    "error"
                 );
 
+                return;
 
-                return data.username;
             }
 
 
-            verifiedUsername = "";
+            verifiedUsername =
+                data.username;
 
 
-            showStatus(
+            showUsernameStatus(
                 data.message ||
-                "❗ Username topilmadi.",
-                "error"
+                "👤 Telegram foydalanuvchisi: @" +
+                verifiedUsername,
+                "success"
             );
 
+        }
 
-            return null;
-
-
-        } catch (error) {
+        catch (error) {
 
             console.error(
                 "Username check error:",
@@ -554,100 +436,78 @@ aiAssistantButton?.addEventListener("click", function () {
             verifiedUsername = "";
 
 
-            showStatus(
-                "❗ Username tekshirilmayapti. Qaytadan urinib ko‘ring.",
+            showUsernameStatus(
+                "❌ Username tekshirib bo'lmadi",
                 "error"
             );
 
-
-            return null;
         }
+
     }
 
 
     // =====================================================
-    // USERNAME FORM
+    // RECIPIENT FORM
     // =====================================================
 
-    function showRecipientForm(type = "premium") {
+    function showRecipientForm(
+        type = "premium"
+    ) {
 
         clearProducts();
 
         productsSection.style.display =
             "block";
 
+
+        createBackButton();
+
+
+        currentUsername = "";
         verifiedUsername = "";
-
-
-        const isPremium =
-            type === "premium";
 
 
         products.innerHTML = `
 
             <div class="gift-form">
 
-                <h2>
+                <div class="form-title">
                     ${
-                        isPremium
-                            ? "💎 Telegram Premium"
-                            : "⭐ Telegram Stars"
+                        type === "premium"
+                            ? "💎 Premium oluvchi"
+                            : "⭐ Stars oluvchi"
                     }
-                </h2>
+                </div>
 
-                <p class="gift-description">
-                    Kimga yubormoqchisiz?
-                </p>
 
-                <p class="gift-description">
-                    Telegram username'ini kiriting
-                </p>
+                <div class="form-description">
+                    Premium yoki Stars yubormoqchi bo'lgan
+                    Telegram foydalanuvchisining username'ini kiriting.
+                </div>
 
 
                 <input
                     type="text"
-                    id="recipientUsername"
+                    id="usernameInput"
                     class="username-input"
-                    placeholder="@username"
+                    placeholder="@qwerty123"
                     autocomplete="off"
-                    autocorrect="off"
-                    autocapitalize="none"
-                    spellcheck="false"
-                    inputmode="text"
                 >
 
 
                 <div
                     id="usernameStatus"
-                    style="
-                        display:none;
-                        margin-top:8px;
-                        padding:8px 10px;
-                        border-radius:10px;
-                        font-size:13px;
-                    "
-                ></div>
-
-
-                <p class="username-hint">
-                    Masalan: @qwerty123
-                </p>
+                    class="username-status"
+                >
+                </div>
 
 
                 <button
                     type="button"
-                    class="buy-button"
-                    id="continueProduct"
-                    style="
-                        width:100%;
-                        margin-top:14px;
-                    "
+                    id="continueUsernameButton"
+                    class="continue-button"
                 >
-                    ${
-                        isPremium
-                            ? "💎 Premium paketlarini ko‘rish"
-                            : "⭐ Stars paketlarini ko‘rish"
-                    }
+                    Davom etish
                 </button>
 
             </div>
@@ -657,7 +517,7 @@ aiAssistantButton?.addEventListener("click", function () {
 
         usernameInput =
             document.getElementById(
-                "recipientUsername"
+                "usernameInput"
             );
 
 
@@ -667,99 +527,40 @@ aiAssistantButton?.addEventListener("click", function () {
             );
 
 
-        // =================================================
-        // OLDINGI USERNAME
-        // =================================================
-
-        if (currentUsername) {
-
-            usernameInput.value =
-                "@" + currentUsername;
-        }
+        const continueButton =
+            document.getElementById(
+                "continueUsernameButton"
+            );
 
 
-        // =================================================
-        // USERNAME INPUT
-        // =================================================
+        usernameInput.focus();
+
 
         usernameInput.addEventListener(
             "input",
             function () {
 
-                clearTimeout(searchTimer);
+                clearTimeout(
+                    searchTimer
+                );
+
 
                 verifiedUsername = "";
 
 
-                const raw =
+                const value =
                     usernameInput.value.trim();
 
 
-                if (!raw) {
+                if (!value) {
 
-                    clearStatus();
-
-                    return;
-                }
-
-
-                if (
-                    raw.includes("@") &&
-                    !raw.startsWith("@")
-                ) {
-
-                    showStatus(
-                        "❗ Username noto‘g‘ri.",
-                        "error"
+                    showUsernameStatus(
+                        "",
+                        ""
                     );
 
                     return;
-                }
 
-
-                const username =
-                    raw.replace(/^@/, "");
-
-
-                if (
-                    !/^[a-zA-Z0-9_]*$/.test(
-                        username
-                    )
-                ) {
-
-                    showStatus(
-                        "❗ Username noto‘g‘ri.",
-                        "error"
-                    );
-
-                    return;
-                }
-
-
-                if (
-                    username.length > 32
-                ) {
-
-                    showStatus(
-                        "❗ Username juda uzun.",
-                        "error"
-                    );
-
-                    return;
-                }
-
-
-                if (
-                    username.length < 5
-                ) {
-
-                    usernameStatus.style.display =
-                        "none";
-
-                    usernameInput.style.borderColor =
-                        "";
-
-                    return;
                 }
 
 
@@ -768,447 +569,273 @@ aiAssistantButton?.addEventListener("click", function () {
                         function () {
 
                             checkUsername(
-                                username
+                                value
                             );
 
                         },
-                        600
+                        500
                     );
+
             }
         );
 
 
-        // =================================================
-        // DAVOM ETISH
-        // =================================================
+        continueButton.addEventListener(
+            "click",
+            async function () {
 
-        const continueProduct =
-            document.getElementById(
-                "continueProduct"
-            );
+                const username =
+                    usernameInput.value.trim();
 
 
-        if (continueProduct) {
-
-            continueProduct.addEventListener(
-                "click",
-                async function (event) {
-
-                    event.preventDefault();
-                    event.stopPropagation();
+                await checkUsername(
+                    username
+                );
 
 
-                    const username =
-                        await getUsername();
+                if (!verifiedUsername) {
 
+                    return;
 
-                    if (!username) {
-                        return;
-                    }
-
-
-                    if (isPremium) {
-
-                        showPremium(
-                            username
-                        );
-
-                    } else {
-
-                        showStars(
-                            username
-                        );
-                    }
                 }
-            );
-        }
+
+
+                if (type === "premium") {
+
+                    showPremium(
+                        verifiedUsername
+                    );
+
+                }
+
+                else {
+
+                    showStars(
+                        verifiedUsername
+                    );
+
+                }
+
+            }
+        );
+
     }
 
 
     // =====================================================
-    // USERNAME OLISH
+    // GET USERNAME
     // =====================================================
 
-    async function getUsername() {
+    function getUsername() {
 
-        if (!usernameInput) {
-            return null;
-        }
+        return (
+            verifiedUsername ||
+            currentUsername
+        );
 
-
-        const raw =
-            usernameInput.value.trim();
-
-
-        if (!raw) {
-
-            showStatus(
-                "❗ Avval Telegram username kiriting.",
-                "error"
-            );
-
-            usernameInput.focus();
-
-            return null;
-        }
-
-
-        if (
-            raw.includes("@") &&
-            !raw.startsWith("@")
-        ) {
-
-            showStatus(
-                "❗ Username noto‘g‘ri.",
-                "error"
-            );
-
-            usernameInput.focus();
-
-            return null;
-        }
-
-
-        const username =
-            raw.replace(/^@/, "");
-
-
-        if (
-            !/^[a-zA-Z0-9_]{5,32}$/.test(
-                username
-            )
-        ) {
-
-            showStatus(
-                "❗ Username noto‘g‘ri.",
-                "error"
-            );
-
-            usernameInput.focus();
-
-            return null;
-        }
-
-
-        if (
-            verifiedUsername &&
-            verifiedUsername.toLowerCase() ===
-            username.toLowerCase()
-        ) {
-
-            currentUsername =
-                verifiedUsername;
-
-            return verifiedUsername;
-        }
-
-
-        const result =
-            await checkUsername(
-                username
-            );
-
-
-        if (!result) {
-
-            usernameInput.focus();
-
-            return null;
-        }
-
-
-        currentUsername =
-            result;
-
-        return result;
     }
 
 
     // =====================================================
-    // PREMIUM PAKETLARI
+    // PREMIUM PACKAGES
     // =====================================================
 
-    function showPremium(username) {
-
-        currentUsername =
-            username;
+    function showPremium(
+        username
+    ) {
 
         clearProducts();
 
-
-        // -------------------------------------------------
-        // ORQAGA
-        // -------------------------------------------------
-
-        const backButton =
-            createBackButton(
-                "Username kiritish"
-            );
+        productsSection.style.display =
+            "block";
 
 
-        backButton.addEventListener(
-            "click",
-            function (event) {
-
-                event.preventDefault();
-                event.stopPropagation();
-
-                showRecipientForm(
-                    "premium"
-                );
-            }
-        );
+        createBackButton();
 
 
-        // -------------------------------------------------
-        // HEADER
-        // -------------------------------------------------
+        products.innerHTML = `
 
-        products.insertAdjacentHTML(
-            "beforeend",
-            `
-
-            <div class="gift-form">
-
-                <h2>
-                    💎 Telegram Premium
-                </h2>
-
-                <p class="gift-description">
-                    🎁 @${escapeHtml(username)}
-                    uchun Premium
-                </p>
-
+            <div class="section-title">
+                💎 Telegram Premium
             </div>
 
-
-            <div
-                id="premiumPlans"
-                style="
-                    display:flex;
-                    flex-direction:column;
-                    gap:10px;
-                "
-            ></div>
-
-
-            <div
-                style="
-                    margin-top:20px;
-                    margin-bottom:10px;
-                    padding:0 3px;
-                "
-            >
-                <h3 style="
-                    font-size:16px;
-                    font-weight:700;
-                ">
-                    💬 Murojaat orqali
-                </h3>
+            <div class="section-subtitle">
+                @${escapeHtml(username)}
             </div>
 
+        `;
 
-            <div
-                id="contactPlans"
-                style="
-                    display:flex;
-                    flex-direction:column;
-                    gap:10px;
-                "
-            ></div>
-
-            `
-        );
-
-
-        const plans =
-            document.getElementById(
-                "premiumPlans"
-            );
-
-        const contacts =
-            document.getElementById(
-                "contactPlans"
-            );
-
-
-        // =================================================
-        // ODDIY PREMIUM
-        // =================================================
 
         premiumPlans.forEach(
             function (plan) {
 
-                plans.insertAdjacentHTML(
-                    "beforeend",
-                    `
+                const card =
+                    document.createElement(
+                        "div"
+                    );
 
-                    <div class="product-card">
 
-                        <h3>
-                            💎 Premium — ${plan.title}
-                        </h3>
+                card.className =
+                    "product-card";
 
-                        <p>
-                            @${escapeHtml(username)}
-                            ga sovg‘a
-                        </p>
 
-                        <div class="product-price">
+                card.innerHTML = `
 
-                            <span class="price">
-                                ${formatPrice(plan.price)}
-                            </span>
+                    <div class="product-info">
 
-                            <button
-                                type="button"
-                                class="buy-button premium-buy"
-                                data-months="${plan.months}"
-                                data-price="${plan.price}"
-                            >
-                                🎁 Davom etish
-                            </button>
+                        <strong>
+                            Premium ${plan.title}
+                        </strong>
 
-                        </div>
+                        <span>
+                            Telegram Premium sovg'a
+                        </span>
 
                     </div>
 
-                    `
+
+                    <div class="product-price">
+                        ${formatPrice(plan.price)}
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="buy-button"
+                    >
+                        Sotib olish
+                    </button>
+
+                `;
+
+
+                const button =
+                    card.querySelector(
+                        ".buy-button"
+                    );
+
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        createOrder(
+                            "Telegram Premium",
+                            username,
+                            plan,
+                            plan.price
+                        );
+
+                    }
                 );
+
+
+                products.appendChild(
+                    card
+                );
+
             }
         );
 
 
-        // =================================================
-        // MUROJAAT PREMIUM
-        // =================================================
+        const contactTitle =
+            document.createElement(
+                "div"
+            );
+
+
+        contactTitle.className =
+            "section-title";
+
+
+        contactTitle.style.marginTop =
+            "18px";
+
+
+        contactTitle.textContent =
+            "📞 Aloqa orqali Premium";
+
+
+        products.appendChild(
+            contactTitle
+        );
+
 
         contactPlans.forEach(
             function (plan) {
 
-                contacts.insertAdjacentHTML(
-                    "beforeend",
-                    `
+                const card =
+                    document.createElement(
+                        "div"
+                    );
 
-                    <div class="product-card">
 
-                        <h3>
-                            💬 Premium — ${plan.title}
-                            (murojaat)
-                        </h3>
+                card.className =
+                    "product-card";
 
-                        <p>
-                            @${escapeHtml(username)}
-                            uchun
-                        </p>
 
-                        <div class="product-price">
+                card.innerHTML = `
 
-                            <span class="price">
-                                ${formatPrice(plan.price)}
-                            </span>
+                    <div class="product-info">
 
-                            <button
-                                type="button"
-                                class="buy-button contact-buy"
-                                data-months="${plan.months}"
-                                data-price="${plan.price}"
-                            >
-                                💬 Murojaat
-                            </button>
+                        <strong>
+                            Premium ${plan.title}
+                        </strong>
 
-                        </div>
+                        <span>
+                            Aloqa orqali
+                        </span>
 
                     </div>
 
-                    `
+
+                    <div class="product-price">
+                        ${formatPrice(plan.price)}
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="buy-button"
+                    >
+                        Tanlash
+                    </button>
+
+                `;
+
+
+                const button =
+                    card.querySelector(
+                        ".buy-button"
+                    );
+
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        showContactPage(
+                            username,
+                            plan.months,
+                            plan.price
+                        );
+
+                    }
                 );
+
+
+                products.appendChild(
+                    card
+                );
+
             }
         );
 
-
-        // =================================================
-        // PREMIUM BUTTONLAR
-        // =================================================
-
-        plans
-            .querySelectorAll(".premium-buy")
-            .forEach(
-                function (button) {
-
-                    button.addEventListener(
-                        "click",
-                        function (event) {
-
-                            event.preventDefault();
-                            event.stopPropagation();
-
-
-                            const months =
-                                Number(
-                                    button.dataset.months
-                                );
-
-                            const price =
-                                Number(
-                                    button.dataset.price
-                                );
-
-
-                            createOrder(
-                                "Telegram Premium",
-                                username,
-                                months,
-                                price
-                            );
-                        }
-                    );
-                }
-            );
-
-
-        // =================================================
-        // CONTACT BUTTONLAR
-        // =================================================
-
-        contacts
-            .querySelectorAll(".contact-buy")
-            .forEach(
-                function (button) {
-
-                    button.addEventListener(
-                        "click",
-                        function (event) {
-
-                            event.preventDefault();
-                            event.stopPropagation();
-
-
-                            const months =
-                                Number(
-                                    button.dataset.months
-                                );
-
-                            const price =
-                                Number(
-                                    button.dataset.price
-                                );
-
-
-                            showContactPage(
-                                username,
-                                months,
-                                price
-                            );
-                        }
-                    );
-                }
-            );
     }
 
 
     // =====================================================
-    // MUROJAAT SAHIFASI
+    // CONTACT PAGE
     // =====================================================
 
     function showContactPage(
@@ -1217,294 +844,329 @@ aiAssistantButton?.addEventListener("click", function () {
         price
     ) {
 
-        currentUsername =
-            username;
-
         clearProducts();
 
-
-        const backButton =
-            createBackButton(
-                "Premium paketlari"
-            );
+        productsSection.style.display =
+            "block";
 
 
-        backButton.addEventListener(
-            "click",
-            function (event) {
-
-                event.preventDefault();
-                event.stopPropagation();
-
-                showPremium(
-                    username
-                );
-            }
-        );
+        createBackButton();
 
 
-        products.insertAdjacentHTML(
-            "beforeend",
-            `
-
-            <div class="gift-form">
-
-                <h2>
-                    💎 ${months} oylik Premium
-                </h2>
-
-                <p class="gift-description">
-                    🎁 @${escapeHtml(username)}
-                    uchun
-                </p>
-
-            </div>
-
+        products.innerHTML = `
 
             <div class="product-card">
 
-                <h3>
-                    💬 ${months} oylik Premium
-                </h3>
+                <div class="product-info">
 
-                <p>
+                    <strong>
+                        📞 Premium ${months} oy
+                    </strong>
+
+                    <span>
+                        Qabul qiluvchi:
+                        @${escapeHtml(username)}
+                    </span>
+
+                </div>
+
+
+                <div class="product-price">
                     ${formatPrice(price)}
-                </p>
-
-                <p style="
-                    margin-top:12px;
-                    color:#ffffff;
-                    opacity:0.85;
-                    line-height:1.5;
-                ">
-
-                    ${
-                        months === 1
-                            ? "1 oylik premium obuna olish uchun @AmirquIov ga yozing."
-                            : "12 oylik premium obuna olish uchun @AmirquIov ga yozing."
-                    }
-
-                </p>
+                </div>
 
 
-                <button
-                    type="button"
-                    class="buy-button"
-                    id="contactTelegramButton"
-                    style="
-                        margin-top:14px;
-                        width:100%;
-                    "
-                >
-                    💬 @AmirquIov ga murojaat qilish
-                </button>
+                <div class="form-description">
+                    Ushbu paket bo'yicha buyurtma
+                    aloqa orqali rasmiylashtiriladi.
+                </div>
 
             </div>
 
-            `
-        );
+        `;
 
-
-        const contactButton =
-            document.getElementById(
-                "contactTelegramButton"
-            );
-
-
-        if (contactButton) {
-
-            contactButton.addEventListener(
-                "click",
-                function (event) {
-
-                    event.preventDefault();
-                    event.stopPropagation();
-
-
-                    const url =
-                        "https://t.me/AmirquIov";
-
-
-                    if (tg) {
-
-                        tg.openTelegramLink(
-                            url
-                        );
-
-                    } else {
-
-                        window.open(
-                            url,
-                            "_blank"
-                        );
-                    }
-                }
-            );
-        }
     }
 
 
     // =====================================================
-    // TELEGRAM STARS
+    // STARS PACKAGES
     // =====================================================
 
-    function showStars(username) {
-
-        currentUsername =
-            username;
+    function showStars(
+        username
+    ) {
 
         clearProducts();
 
-
-        // -------------------------------------------------
-        // ORQAGA
-        // -------------------------------------------------
-
-        const backButton =
-            createBackButton(
-                "Username kiritish"
-            );
+        productsSection.style.display =
+            "block";
 
 
-        backButton.addEventListener(
-            "click",
-            function (event) {
-
-                event.preventDefault();
-                event.stopPropagation();
-
-                showRecipientForm(
-                    "stars"
-                );
-            }
-        );
+        createBackButton();
 
 
-        // -------------------------------------------------
-        // HEADER
-        // -------------------------------------------------
+        products.innerHTML = `
 
-        products.insertAdjacentHTML(
-            "beforeend",
-            `
-
-            <div class="gift-form">
-
-                <h2>
-                    ⭐ Telegram Stars
-                </h2>
-
-                <p class="gift-description">
-                    🎁 @${escapeHtml(username)}
-                    uchun Stars
-                </p>
-
+            <div class="section-title">
+                ⭐ Telegram Stars
             </div>
 
+            <div class="section-subtitle">
+                @${escapeHtml(username)}
+            </div>
 
-            <div id="starsPlans"></div>
+        `;
 
-            `
-        );
-
-
-        const plans =
-            document.getElementById(
-                "starsPlans"
-            );
-
-
-        // =================================================
-        // STARS PAKETLARI
-        // =================================================
 
         starsPlans.forEach(
-            function (item) {
+            function (plan) {
 
-                const count =
-                    item[0];
+                const card =
+                    document.createElement(
+                        "div"
+                    );
 
-                const price =
-                    item[1];
+
+                card.className =
+                    "product-card";
 
 
-                plans.insertAdjacentHTML(
-                    "beforeend",
-                    `
+                card.innerHTML = `
 
-                    <div class="product-card">
+                    <div class="product-info">
 
-                        <h3>
-                            ⭐ ${count}
+                        <strong>
+                            ${plan.title}
+                        </strong>
+
+                        <span>
                             Telegram Stars
-                        </h3>
-
-                        <p>
-                            @${escapeHtml(username)}
-                            ga sovg‘a
-                        </p>
-
-                        <div class="product-price">
-
-                            <span class="price">
-                                ${formatPrice(price)}
-                            </span>
-
-                            <button
-                                type="button"
-                                class="buy-button stars-buy"
-                                data-count="${count}"
-                                data-price="${price}"
-                            >
-                                🎁 Davom etish
-                            </button>
-
-                        </div>
+                        </span>
 
                     </div>
 
-                    `
+
+                    <div class="product-price">
+                        ${formatPrice(plan.price)}
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="buy-button"
+                    >
+                        Sotib olish
+                    </button>
+
+                `;
+
+
+                const button =
+                    card.querySelector(
+                        ".buy-button"
+                    );
+
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        createOrder(
+                            "Telegram Stars",
+                            username,
+                            plan,
+                            plan.price
+                        );
+
+                    }
                 );
+
+
+                products.appendChild(
+                    card
+                );
+
             }
         );
 
-
-        // =================================================
-        // STARS BUTTONLARI
-        // =================================================
-
-        plans
-            .querySelectorAll(".stars-buy")
-            .forEach(
-                function (button) {
-
-                    button.addEventListener(
-                        "click",
-                        function (event) {
-
-                            event.preventDefault();
-                            event.stopPropagation();
-
-
-                            createOrder(
-                                "Telegram Stars",
-                                username,
-                                Number(
-                                    button.dataset.count
-                                ),
-                                Number(
-                                    button.dataset.price
-                                )
-                            );
-                        }
-                    );
-                }
-            );
     }
 
 
     // =====================================================
-    // MENING BUYURTMALARIM
+    // CREATE ORDER
+    // =====================================================
+
+    async function createOrder(
+        product,
+        username,
+        option,
+        amount
+    ) {
+
+        if (!tg ||
+            !tg.initDataUnsafe ||
+            !tg.initDataUnsafe.user
+        ) {
+
+            alert(
+                "Telegram foydalanuvchisi aniqlanmadi."
+            );
+
+            return;
+
+        }
+
+
+        const buyer =
+            tg.initDataUnsafe.user;
+
+
+        const confirmed =
+            confirm(
+                "Buyurtmani yaratmoqchimisiz?"
+            );
+
+
+        if (!confirmed) {
+
+            return;
+
+        }
+
+
+        const payload = {
+
+            user_id:
+                buyer.id,
+
+            product:
+                product,
+
+            amount:
+                amount,
+
+            recipient_username:
+                username,
+
+            months:
+                product === "Telegram Premium"
+                    ? option.months
+                    : null,
+
+            stars:
+                product === "Telegram Stars"
+                    ? option.stars
+                    : null
+
+        };
+
+
+        try {
+
+            const response =
+                await fetch(
+                    SERVER_URL +
+                    "/create-order",
+                    {
+
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify(
+                                payload
+                            )
+
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!data.ok) {
+
+                alert(
+                    data.message ||
+                    "Buyurtma yaratilmadi."
+                );
+
+                return;
+
+            }
+
+
+            alert(
+                "✅ Buyurtma yaratildi!\n\n" +
+                "Buyurtma #" +
+                data.order_id
+            );
+
+
+            if (myOrdersButton) {
+
+                myOrdersButton.classList.add(
+                    "active"
+                );
+
+            }
+
+
+            if (premiumButton) {
+
+                premiumButton.classList.remove(
+                    "active"
+                );
+
+            }
+
+
+            if (starsButton) {
+
+                starsButton.classList.remove(
+                    "active"
+                );
+
+            }
+
+
+            if (aiAssistantButton) {
+
+                aiAssistantButton.classList.remove(
+                    "active"
+                );
+
+            }
+
+
+            showMyOrders();
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "Create order error:",
+                error
+            );
+
+
+            alert(
+                "❌ Server bilan bog'lanib bo'lmadi."
+            );
+
+        }
+
+    }
+
+
+    // =====================================================
+    // MY ORDERS
     // =====================================================
 
     async function showMyOrders() {
@@ -1515,99 +1177,22 @@ aiAssistantButton?.addEventListener("click", function () {
             "block";
 
 
-        // -------------------------------------------------
-        // ORQAGA
-        // -------------------------------------------------
-
-        const backButton =
-            createBackButton(
-                "Mahsulotlar"
-            );
+        createBackButton();
 
 
-        backButton.addEventListener(
-            "click",
-            function (event) {
-
-                event.preventDefault();
-                event.stopPropagation();
-
-
-                clearProducts();
-
-                productsSection.style.display =
-                    "none";
-
-
-                premiumButton?.classList.remove(
-                    "active"
-                );
-
-                starsButton?.classList.remove(
-                    "active"
-                );
-
-                myOrdersButton?.classList.remove(
-                    "active"
-                );
-            }
-        );
-
-
-        // -------------------------------------------------
-        // HEADER
-        // -------------------------------------------------
-
-        products.insertAdjacentHTML(
-            "beforeend",
-            `
-
-            <div class="gift-form">
-
-                <h2>
-                    📦 Mening buyurtmalarim
-                </h2>
-
-                <p class="gift-description">
-                    Siz yaratgan barcha buyurtmalar shu yerda.
-                </p>
-
+        products.innerHTML = `
+            <div class="orders-loading">
+                ⏳ Buyurtmalar yuklanmoqda...
             </div>
+        `;
 
 
-            <div
-                id="ordersContainer"
-                class="orders-container"
-            >
-
-                <div class="orders-loading">
-                    🔄 Buyurtmalar yuklanmoqda...
-                </div>
-
-            </div>
-
-            `
-        );
-
-
-        const ordersContainer =
-            document.getElementById(
-                "ordersContainer"
-            );
-
-
-        // -------------------------------------------------
-        // TELEGRAM USER
-        // -------------------------------------------------
-
-        if (
-            !tg ||
+        if (!tg ||
             !tg.initDataUnsafe ||
             !tg.initDataUnsafe.user
         ) {
 
-            ordersContainer.innerHTML = `
-
+            products.innerHTML = `
                 <div class="orders-empty">
 
                     <div class="orders-empty-icon">
@@ -1615,29 +1200,25 @@ aiAssistantButton?.addEventListener("click", function () {
                     </div>
 
                     <h3>
-                        Telegram foydalanuvchisi aniqlanmadi
+                        Foydalanuvchi aniqlanmadi
                     </h3>
 
                     <p>
-                        Buyurtmalarni ko‘rish uchun
-                        Mini App'ni Telegram ichida oching.
+                        Buyurtmalarni ko'rish uchun
+                        Telegram orqali oching.
                     </p>
 
                 </div>
-
             `;
 
             return;
+
         }
 
 
         const buyer =
             tg.initDataUnsafe.user;
 
-
-        // -------------------------------------------------
-        // SERVER
-        // -------------------------------------------------
 
         try {
 
@@ -1657,47 +1238,40 @@ aiAssistantButton?.addEventListener("click", function () {
 
             if (!data.ok) {
 
-                ordersContainer.innerHTML = `
-
+                products.innerHTML = `
                     <div class="orders-empty">
 
                         <div class="orders-empty-icon">
-                            ❌
+                            ⚠️
                         </div>
 
                         <h3>
-                            Xatolik yuz berdi
+                            Xatolik
                         </h3>
 
                         <p>
                             ${
                                 escapeHtml(
                                     data.message ||
-                                    "Buyurtmalarni olishning imkoni bo‘lmadi."
+                                    "Buyurtmalarni yuklab bo'lmadi."
                                 )
                             }
                         </p>
 
                     </div>
-
                 `;
 
                 return;
+
             }
 
 
-            const orders =
-                data.orders || [];
+            if (
+                !data.orders ||
+                data.orders.length === 0
+            ) {
 
-
-            // -------------------------------------------------
-            // BUYURTMA YO‘Q
-            // -------------------------------------------------
-
-            if (orders.length === 0) {
-
-                ordersContainer.innerHTML = `
-
+                products.innerHTML = `
                     <div class="orders-empty">
 
                         <div class="orders-empty-icon">
@@ -1705,93 +1279,77 @@ aiAssistantButton?.addEventListener("click", function () {
                         </div>
 
                         <h3>
-                            Hali buyurtmalar yo‘q
+                            Hozircha buyurtmalar yo'q
                         </h3>
 
                         <p>
-                            Siz hali hech qanday mahsulot
-                            buyurtma qilmagansiz.
+                            Buyurtma berganingizdan
+                            keyin ular shu yerda ko'rinadi.
                         </p>
 
                     </div>
-
                 `;
 
                 return;
+
             }
 
 
-            // -------------------------------------------------
-            // BUYURTMALAR
-            // -------------------------------------------------
+            products.innerHTML = `
 
-            ordersContainer.innerHTML = "";
+                <div class="section-title">
+                    📦 Mening buyurtmalarim
+                </div>
+
+                <div class="orders-container">
+                </div>
+
+            `;
 
 
-            orders.forEach(
+            const ordersContainer =
+                products.querySelector(
+                    ".orders-container"
+                );
+
+
+            data.orders.forEach(
                 function (order) {
 
-                    const product =
-                        order.product ||
-                        "Noma'lum mahsulot";
-
-
-                    const username =
-                        order.telegram_username ||
-                        "";
-
-
-                    let detail =
-                        "";
-
-
-                    if (
-                        product ===
-                        "Telegram Premium"
-                    ) {
-
-                        detail =
-                            order.months
-                                ? order.months + " oy"
-                                : "Premium";
-
-
-                    } else if (
-                        product ===
-                        "Telegram Stars"
-                    ) {
-
-                        detail =
-                            order.stars
-                                ? order.stars + " Stars"
-                                : "Stars";
-                    }
-
-
-                    // -------------------------------------------------
-                    // STATUS
-                    // -------------------------------------------------
-
                     let statusText =
-                        "Kutilmoqda";
+                        "Noma'lum";
 
                     let statusClass =
-                        "status-pending";
+                        "";
 
 
                     if (
+                        order.status ===
+                        "pending"
+                    ) {
+
+                        statusText =
+                            "Kutilmoqda";
+
+                        statusClass =
+                            "status-pending";
+
+                    }
+
+                    else if (
                         order.status ===
                         "paid"
                     ) {
 
                         statusText =
-                            "To‘langan";
+                            "To'langan";
 
                         statusClass =
                             "status-paid";
 
+                    }
 
-                    } else if (
+                    else if (
                         order.status ===
                         "processing"
                     ) {
@@ -1802,8 +1360,9 @@ aiAssistantButton?.addEventListener("click", function () {
                         statusClass =
                             "status-processing";
 
+                    }
 
-                    } else if (
+                    else if (
                         order.status ===
                         "completed"
                     ) {
@@ -1814,8 +1373,9 @@ aiAssistantButton?.addEventListener("click", function () {
                         statusClass =
                             "status-completed";
 
+                    }
 
-                    } else if (
+                    else if (
                         order.status ===
                         "cancelled"
                     ) {
@@ -1825,92 +1385,139 @@ aiAssistantButton?.addEventListener("click", function () {
 
                         statusClass =
                             "status-cancelled";
+
                     }
 
 
-                    ordersContainer.insertAdjacentHTML(
-                        "beforeend",
-                        `
-
-                        <div class="order-card">
-
-                            <div class="order-header">
-
-                                <div class="order-title">
-
-                                    ${
-                                        product ===
-                                        "Telegram Premium"
-                                            ? "💎 Telegram Premium"
-                                            : "⭐ Telegram Stars"
-                                    }
-
-                                </div>
+                    let packageText =
+                        "";
 
 
-                                <div
+                    if (
+                        order.product ===
+                        "Telegram Premium"
+                    ) {
+
+                        packageText =
+                            order.months
+                                ? order.months +
+                                  " oy"
+                                : "Premium";
+
+                    }
+
+                    else if (
+                        order.product ===
+                        "Telegram Stars"
+                    ) {
+
+                        packageText =
+                            order.stars
+                                ? order.stars +
+                                  " Stars"
+                                : "Stars";
+
+                    }
+
+
+                    const card =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    card.className =
+                        "order-card";
+
+
+                    card.innerHTML = `
+
+                        <div class="order-header">
+
+                            <div class="order-title">
+                                ${
+                                    escapeHtml(
+                                        order.product
+                                    )
+                                }
+                            </div>
+
+                            <div class="order-id">
+                                #${order.id}
+                            </div>
+
+                        </div>
+
+
+                        <div class="order-recipient">
+                            👤 @${escapeHtml(
+                                order.telegram_username ||
+                                "Noma'lum"
+                            )}
+                        </div>
+
+
+                        <div class="order-info">
+
+                            <div class="order-row">
+
+                                <span class="order-row-label">
+                                    Paket
+                                </span>
+
+                                <span class="order-row-value">
+                                    ${escapeHtml(
+                                        packageText
+                                    )}
+                                </span>
+
+                            </div>
+
+
+                            <div class="order-row">
+
+                                <span class="order-row-label">
+                                    Holati
+                                </span>
+
+                                <span
                                     class="order-status ${statusClass}"
                                 >
                                     ${statusText}
-                                </div>
-
-                            </div>
-
-
-                            <div class="order-recipient">
-
-                                👤 @${escapeHtml(username)}
-
-                            </div>
-
-
-                            <div class="order-info">
-
-                                <div class="order-row">
-
-                                    <span class="order-row-label">
-                                        Buyurtma:
-                                    </span>
-
-                                    <span class="order-row-value">
-                                        #${order.id}
-                                    </span>
-
-                                </div>
-
-
-                                <div class="order-row">
-
-                                    <span class="order-row-label">
-                                        Paket:
-                                    </span>
-
-                                    <span class="order-row-value">
-                                        ${escapeHtml(detail)}
-                                    </span>
-
-                                </div>
-
-                            </div>
-
-
-                            <div class="order-price">
-
-                                <strong>
-                                    ${formatPrice(order.amount)}
-                                </strong>
+                                </span>
 
                             </div>
 
                         </div>
 
-                        `
+
+                        <div class="order-price">
+
+                            <span>
+                                Jami
+                            </span>
+
+                            <strong>
+                                ${formatPrice(
+                                    order.amount
+                                )}
+                            </strong>
+
+                        </div>
+
+                    `;
+
+
+                    ordersContainer.appendChild(
+                        card
                     );
+
                 }
             );
 
+        }
 
-        } catch (error) {
+        catch (error) {
 
             console.error(
                 "My orders error:",
@@ -1918,248 +1525,327 @@ aiAssistantButton?.addEventListener("click", function () {
             );
 
 
-            ordersContainer.innerHTML = `
-
+            products.innerHTML = `
                 <div class="orders-empty">
 
                     <div class="orders-empty-icon">
-                        ❌
+                        ⚠️
                     </div>
 
                     <h3>
-                        Server bilan bog‘lanib bo‘lmadi
+                        Xatolik yuz berdi
                     </h3>
 
                     <p>
-                        Internet aloqasini tekshirib,
-                        qaytadan urinib ko‘ring.
+                        Buyurtmalarni yuklashda
+                        server bilan bog'lanib bo'lmadi.
                     </p>
 
                 </div>
-
             `;
+
         }
+
     }
 
 
     // =====================================================
-    // BUYURTMA YARATISH
+    // AI ASSISTANT
     // =====================================================
 
-    async function createOrder(
-        product,
-        username,
-        option,
-        amount
-    ) {
+    if (aiAssistantButton) {
 
-        if (
-            !tg ||
-            !tg.initDataUnsafe ||
-            !tg.initDataUnsafe.user
-        ) {
+        aiAssistantButton.addEventListener(
+            "click",
+            function (event) {
 
-            alert(
-                "❗ Telegram foydalanuvchisi aniqlanmadi."
-            );
-
-            return;
-        }
+                event.preventDefault();
+                event.stopPropagation();
 
 
-        const buyer =
-            tg.initDataUnsafe.user;
-
-
-        let detail =
-            "";
-
-
-        if (
-            product ===
-            "Telegram Premium"
-        ) {
-
-            detail =
-                option + " oy";
-
-        } else {
-
-            detail =
-                option + " Stars";
-        }
-
-
-        const confirmed =
-            confirm(
-
-                "🎁 Buyurtma\n\n" +
-
-                "👤 @" +
-                username +
-                "\n" +
-
-                "📦 " +
-                product +
-                "\n" +
-
-                "🔹 " +
-                detail +
-                "\n" +
-
-                "💰 " +
-                formatPrice(amount) +
-                "\n\n" +
-
-                "Davom etasizmi?"
-            );
-
-
-        if (!confirmed) {
-            return;
-        }
-
-
-        let months =
-            null;
-
-        let stars =
-            null;
-
-
-        if (
-            product ===
-            "Telegram Premium"
-        ) {
-
-            months =
-                option;
-
-        } else {
-
-            stars =
-                option;
-        }
-
-
-        try {
-
-            const response =
-                await fetch(
-                    SERVER_URL +
-                    "/create-order",
-                    {
-
-                        method:
-                            "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body:
-                            JSON.stringify({
-
-                                user_id:
-                                    buyer.id,
-
-                                product:
-                                    product,
-
-                                amount:
-                                    amount,
-
-                                recipient_username:
-                                    username,
-
-                                months:
-                                    months,
-
-                                stars:
-                                    stars
-                            })
-                    }
+                aiAssistantButton.classList.add(
+                    "active"
                 );
 
 
-            const data =
-                await response.json();
+                if (premiumButton) {
 
-
-            if (data.ok) {
-
-                alert(
-                    "✅ Buyurtma yaratildi!\n\n" +
-
-                    "📦 Buyurtma №: " +
-                    data.order_id +
-                    "\n\n" +
-
-                    "👤 @" +
-                    username +
-                    "\n" +
-
-                    "📦 " +
-                    product +
-                    "\n" +
-
-                    "🔹 " +
-                    detail +
-                    "\n\n" +
-
-                    "💰 " +
-                    formatPrice(amount)
-                );
-
-
-                // Buyurtma yaratilgandan keyin
-                // "Mening buyurtmalarim" oynasiga o'tish
-
-                if (myOrdersButton) {
-
-                    premiumButton?.classList.remove(
+                    premiumButton.classList.remove(
                         "active"
                     );
 
-                    starsButton?.classList.remove(
-                        "active"
-                    );
-
-                    myOrdersButton.classList.add(
-                        "active"
-                    );
                 }
 
 
-                showMyOrders();
+                if (starsButton) {
+
+                    starsButton.classList.remove(
+                        "active"
+                    );
+
+                }
 
 
-            } else {
+                if (myOrdersButton) {
 
-                alert(
-                    "❌ Buyurtma yaratilmadi.\n\n" +
+                    myOrdersButton.classList.remove(
+                        "active"
+                    );
 
-                    (
-                        data.message ||
-                        "Noma'lum xato"
-                    )
-                );
+                }
+
+
+                showAIAssistant();
+
+            }
+        );
+
+    }
+
+
+    // =====================================================
+    // SHOW AI ASSISTANT
+    // =====================================================
+
+    function showAIAssistant() {
+
+        clearProducts();
+
+        productsSection.style.display =
+            "block";
+
+
+        createBackButton();
+
+
+        products.innerHTML = `
+
+            <div class="ai-assistant-container">
+
+                <div class="ai-chat-header">
+
+                    <div class="ai-chat-avatar">
+                        🤖
+                    </div>
+
+
+                    <div class="ai-chat-info">
+
+                        <strong>
+                            AI Assistant
+                        </strong>
+
+                        <span>
+                            ● Online
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="ai-welcome">
+
+                    <strong>
+                        👋 Assalomu alaykum!
+                    </strong>
+
+                    Men Premium Shop bo'yicha
+                    savollaringizga yordam beraman.
+
+                </div>
+
+
+                <div class="ai-quick-questions">
+
+                    <button
+                        class="ai-quick-button"
+                        type="button"
+                    >
+                        💎 Premium narxlari
+                    </button>
+
+
+                    <button
+                        class="ai-quick-button"
+                        type="button"
+                    >
+                        ⭐ Stars narxlari
+                    </button>
+
+
+                    <button
+                        class="ai-quick-button"
+                        type="button"
+                    >
+                        📦 Buyurtmam haqida
+                    </button>
+
+
+                    <button
+                        class="ai-quick-button"
+                        type="button"
+                    >
+                        ❓ Qanday sotib olaman?
+                    </button>
+
+                </div>
+
+
+                <div
+                    class="ai-messages"
+                    id="aiMessages"
+                >
+                </div>
+
+
+                <div class="ai-input-area">
+
+                    <input
+                        type="text"
+                        class="ai-input"
+                        id="aiInput"
+                        placeholder="Savolingizni yozing..."
+                        autocomplete="off"
+                    >
+
+
+                    <button
+                        type="button"
+                        class="ai-send-button"
+                        id="aiSendButton"
+                    >
+                        ➤
+                    </button>
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        const aiInput =
+            document.getElementById(
+                "aiInput"
+            );
+
+
+        const aiSendButton =
+            document.getElementById(
+                "aiSendButton"
+            );
+
+
+        const aiMessages =
+            document.getElementById(
+                "aiMessages"
+            );
+
+
+        function sendAIMessage(
+            text
+        ) {
+
+            text =
+                text.trim();
+
+
+            if (!text) {
+
+                return;
+
             }
 
 
-        } catch (error) {
-
-            console.error(
-                "Create order error:",
-                error
+            aiMessages.insertAdjacentHTML(
+                "beforeend",
+                `
+                    <div class="ai-message user">
+                        ${escapeHtml(text)}
+                    </div>
+                `
             );
 
 
-            alert(
-                "❌ Server bilan bog‘lanib bo‘lmadi."
+            aiInput.value = "";
+
+
+            aiMessages.insertAdjacentHTML(
+                "beforeend",
+                `
+                    <div class="ai-message bot">
+                        🤖 Hozircha AI Assistant
+                        demo rejimida.
+                        Tez orada sizga javob bera olaman.
+                    </div>
+                `
             );
+
+
+            aiMessages.scrollTop =
+                aiMessages.scrollHeight;
+
         }
+
+
+        aiSendButton.addEventListener(
+            "click",
+            function () {
+
+                sendAIMessage(
+                    aiInput.value
+                );
+
+            }
+        );
+
+
+        aiInput.addEventListener(
+            "keydown",
+            function (event) {
+
+                if (
+                    event.key ===
+                    "Enter"
+                ) {
+
+                    event.preventDefault();
+
+
+                    sendAIMessage(
+                        aiInput.value
+                    );
+
+                }
+
+            }
+        );
+
+
+        document
+            .querySelectorAll(
+                ".ai-quick-button"
+            )
+            .forEach(
+                function (button) {
+
+                    button.addEventListener(
+                        "click",
+                        function () {
+
+                            sendAIMessage(
+                                button
+                                    .textContent
+                                    .trim()
+                            );
+
+                        }
+                    );
+
+                }
+            );
+
     }
 
 
@@ -2187,6 +1873,7 @@ aiAssistantButton?.addEventListener("click", function () {
                     starsButton.classList.remove(
                         "active"
                     );
+
                 }
 
 
@@ -2195,14 +1882,26 @@ aiAssistantButton?.addEventListener("click", function () {
                     myOrdersButton.classList.remove(
                         "active"
                     );
+
+                }
+
+
+                if (aiAssistantButton) {
+
+                    aiAssistantButton.classList.remove(
+                        "active"
+                    );
+
                 }
 
 
                 showRecipientForm(
                     "premium"
                 );
+
             }
         );
+
     }
 
 
@@ -2230,6 +1929,7 @@ aiAssistantButton?.addEventListener("click", function () {
                     premiumButton.classList.remove(
                         "active"
                     );
+
                 }
 
 
@@ -2238,12 +1938,24 @@ aiAssistantButton?.addEventListener("click", function () {
                     starsButton.classList.remove(
                         "active"
                     );
+
+                }
+
+
+                if (aiAssistantButton) {
+
+                    aiAssistantButton.classList.remove(
+                        "active"
+                    );
+
                 }
 
 
                 showMyOrders();
+
             }
         );
+
     }
 
 
@@ -2271,6 +1983,7 @@ aiAssistantButton?.addEventListener("click", function () {
                     premiumButton.classList.remove(
                         "active"
                     );
+
                 }
 
 
@@ -2279,19 +1992,31 @@ aiAssistantButton?.addEventListener("click", function () {
                     myOrdersButton.classList.remove(
                         "active"
                     );
+
+                }
+
+
+                if (aiAssistantButton) {
+
+                    aiAssistantButton.classList.remove(
+                        "active"
+                    );
+
                 }
 
 
                 showRecipientForm(
                     "stars"
                 );
+
             }
         );
+
     }
 
 
     // =====================================================
-    // BOSHLANG‘ICH HOLAT
+    // BOSHLANG'ICH HOLAT
     // =====================================================
 
     clearProducts();
