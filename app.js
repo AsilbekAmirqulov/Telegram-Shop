@@ -18,6 +18,211 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const myOrdersButton =
         document.getElementById("myOrdersButton");
+    // ============================================================
+// AI ASSISTANT
+// ============================================================
+
+aiAssistantButton?.addEventListener("click", function () {
+
+    clearProducts();
+
+    productsSection.style.display = "block";
+
+    document
+        .querySelectorAll(".category")
+        .forEach(button => {
+            button.classList.remove("active");
+        });
+
+    aiAssistantButton.classList.add("active");
+
+    createBackButton();
+
+    products.innerHTML = `
+        <div class="ai-assistant-container">
+
+            <div class="ai-chat-header">
+
+                <div class="ai-chat-avatar">
+                    🤖
+                </div>
+
+                <div class="ai-chat-info">
+
+                    <strong>
+                        AI Assistant
+                    </strong>
+
+                    <span>
+                        ● Online
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="ai-welcome">
+
+                <strong>
+                    👋 Assalomu alaykum!
+                </strong>
+
+                Men Premium Shop bo‘yicha
+                savollaringizga yordam beraman.
+
+            </div>
+
+
+            <div class="ai-quick-questions">
+
+                <button
+                    class="ai-quick-button"
+                    type="button"
+                >
+                    💎 Premium narxlari
+                </button>
+
+                <button
+                    class="ai-quick-button"
+                    type="button"
+                >
+                    ⭐ Stars narxlari
+                </button>
+
+                <button
+                    class="ai-quick-button"
+                    type="button"
+                >
+                    📦 Buyurtmam haqida
+                </button>
+
+                <button
+                    class="ai-quick-button"
+                    type="button"
+                >
+                    ❓ Qanday sotib olaman?
+                </button>
+
+            </div>
+
+
+            <div
+                class="ai-messages"
+                id="aiMessages"
+            >
+            </div>
+
+
+            <div class="ai-input-area">
+
+                <input
+                    type="text"
+                    class="ai-input"
+                    id="aiInput"
+                    placeholder="Savolingizni yozing..."
+                    autocomplete="off"
+                >
+
+                <button
+                    type="button"
+                    class="ai-send-button"
+                    id="aiSendButton"
+                >
+                    ➤
+                </button>
+
+            </div>
+
+        </div>
+    `;
+
+
+    const aiInput =
+        document.getElementById("aiInput");
+
+    const aiSendButton =
+        document.getElementById("aiSendButton");
+
+    const aiMessages =
+        document.getElementById("aiMessages");
+
+
+    function sendAIMessage(text) {
+
+        text = text.trim();
+
+        if (!text) return;
+
+
+        aiMessages.insertAdjacentHTML(
+            "beforeend",
+            `
+            <div class="ai-message user">
+                ${escapeHtml(text)}
+            </div>
+            `
+        );
+
+
+        aiInput.value = "";
+
+        aiMessages.insertAdjacentHTML(
+            "beforeend",
+            `
+            <div class="ai-message bot">
+                🤖 Hozircha AI Assistant demo rejimida.
+                Tez orada sizga javob bera olaman.
+            </div>
+            `
+        );
+
+
+        aiMessages.scrollTop =
+            aiMessages.scrollHeight;
+    }
+
+
+    aiSendButton.addEventListener(
+        "click",
+        function () {
+            sendAIMessage(aiInput.value);
+        }
+    );
+
+
+    aiInput.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (event.key === "Enter") {
+
+                event.preventDefault();
+
+                sendAIMessage(aiInput.value);
+            }
+        }
+    );
+
+
+    document
+        .querySelectorAll(".ai-quick-button")
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                function () {
+
+                    sendAIMessage(
+                        button.textContent.trim()
+                    );
+
+                }
+            );
+
+        });
+
+});
 
     const tg =
         window.Telegram?.WebApp;
