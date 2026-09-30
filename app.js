@@ -18,6 +18,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const myOrdersButton =
         document.getElementById("myOrdersButton");
+    const aiAssistantButton =
+        document.getElementById("aiAssistantButton");
+
+    const tg =
+        window.Telegram?.WebApp;
     // ============================================================
 // AI ASSISTANT
 // ============================================================
