@@ -820,3 +820,157 @@ iframe {
 .category * {
     pointer-events: none;
 }
+/* =========================
+   MY ORDERS
+========================= */
+
+.orders-icon {
+    background: rgba(76, 175, 80, 0.15);
+}
+
+.orders-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.order-card {
+    width: 100%;
+    padding: 17px;
+    border-radius: 18px;
+    background: #17212b;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+}
+
+.order-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.order-title {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.order-id {
+    font-size: 11px;
+    color: #71808e;
+}
+
+.order-recipient {
+    font-size: 13px;
+    color: #8b9bab;
+    margin-bottom: 12px;
+}
+
+.order-info {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.order-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px;
+}
+
+.order-row-label {
+    color: #7f8e9c;
+}
+
+.order-row-value {
+    text-align: right;
+    font-weight: 600;
+}
+
+.order-price {
+    margin-top: 13px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.order-price strong {
+    font-size: 17px;
+}
+
+/* STATUS */
+.order-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 9px;
+    border-radius: 9px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.status-pending {
+    background: rgba(255, 193, 7, 0.12);
+    color: #ffc107;
+}
+
+.status-paid {
+    background: rgba(76, 175, 80, 0.12);
+    color: #4caf50;
+}
+
+.status-processing {
+    background: rgba(33, 150, 243, 0.12);
+    color: #2196f3;
+}
+
+.status-completed {
+    background: rgba(46, 204, 113, 0.12);
+    color: #2ecc71;
+}
+
+.status-cancelled {
+    background: rgba(244, 67, 54, 0.12);
+    color: #f44336;
+}
+
+/* EMPTY ORDERS */
+.orders-empty {
+    width: 100%;
+    padding: 35px 20px;
+    text-align: center;
+    border-radius: 18px;
+    background: #17212b;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.orders-empty-icon {
+    font-size: 42px;
+    margin-bottom: 12px;
+}
+
+.orders-empty h3 {
+    font-size: 17px;
+    margin-bottom: 6px;
+}
+
+.orders-empty p {
+    color: #7f8e9c;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* LOADING */
+.orders-loading {
+    width: 100%;
+    padding: 30px 20px;
+    text-align: center;
+    color: #8b9bab;
+    font-size: 14px;
+}
