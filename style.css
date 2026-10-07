@@ -3704,3 +3704,151 @@ select:focus {
         font-size: 14px;
     }
 }
+/* =========================================================
+   USERNAME PAGE — BACK BUTTON
+   ========================================================= */
+
+.recipient-back-btn {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    outline: none;
+    background: rgba(255, 255, 255, 0.07) !important;
+    color: #ffffff !important;
+
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 13px;
+
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.18),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+    transition:
+        transform 0.18s ease,
+        background 0.18s ease,
+        border-color 0.18s ease;
+}
+
+.recipient-back-btn:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.recipient-back-btn:active {
+    transform: scale(0.92);
+}
+/* =========================================================
+   PREMIUM PLANS — TEXT VISIBILITY
+   ========================================================= */
+
+.product-page-modern {
+    color: #ffffff;
+}
+
+.product-page-modern .product-top-title strong,
+.product-page-modern .product-top-title span,
+.product-page-modern .recipient-mini-info span,
+.product-page-modern .recipient-mini-info strong {
+    color: #ffffff !important;
+}
+
+.product-page-modern .product-intro,
+.product-page-modern .plans-title {
+    color: #ffffff;
+}
+
+.product-page-modern .product-intro .intro-text span,
+.product-page-modern .product-intro .intro-text h1,
+.product-page-modern .product-intro .intro-text p,
+.product-page-modern .plans-title span,
+.product-page-modern .plans-title h2 {
+    color: #ffffff !important;
+}
+
+.premium-plan-card {
+    color: #ffffff !important;
+}
+
+.premium-plan-card .plan-main strong {
+    color: #ffffff !important;
+}
+
+.premium-plan-card .plan-main span {
+    color: rgba(255, 255, 255, 0.68) !important;
+}
+
+.premium-plan-card .plan-card-bottom small {
+    color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.premium-plan-card .plan-card-bottom strong {
+    color: #ffffff !important;
+}
+
+.premium-plan-card .plan-badge {
+    color: #ffffff !important;
+}
+
+.premium-plan-card .plan-arrow {
+    color: #ffffff !important;
+}
+/* =========================================================
+   STARS PLANS — TEXT VISIBILITY
+   ========================================================= */
+
+.stars-plan-card {
+    color: #ffffff !important;
+}
+
+.stars-plan-card .stars-amount {
+    color: #ffffff !important;
+}
+
+.stars-plan-card .stars-amount span {
+    color: #ffffff !important;
+}
+
+.stars-plan-card .stars-amount strong {
+    color: #ffffff !important;
+}
+
+.stars-plan-card .stars-price {
+    color: #ffffff !important;
+}
+
+.stars-plan-card .stars-price small {
+    color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.stars-plan-card .stars-price strong {
+    color: #ffffff !important;
+}
+
+.stars-plan-card .stars-arrow {
+    color: #ffffff !important;
+}
+
+.stars-intro,
+.stars-intro .intro-text,
+.stars-intro .intro-text span,
+.stars-intro .intro-text h1,
+.stars-intro .intro-text p {
+    color: #ffffff !important;
+}
+
+.stars-plans-modern {
+    color: #ffffff;
+}
