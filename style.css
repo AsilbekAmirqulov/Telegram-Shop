@@ -3852,3 +3852,355 @@ select:focus {
 .stars-plans-modern {
     color: #ffffff;
 }
+/* =========================================================
+   WALLET TOP-UP MODAL
+   ========================================================= */
+
+.wallet-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+
+    padding: 12px;
+
+    background: rgba(0, 0, 0, 0.72);
+
+    opacity: 0;
+    visibility: hidden;
+
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    transition:
+        opacity 0.22s ease,
+        visibility 0.22s ease;
+}
+
+.wallet-modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.wallet-modal {
+    width: 100%;
+    max-width: 520px;
+
+    padding: 18px;
+
+    border-radius: 24px;
+
+    background:
+        radial-gradient(
+            circle at 100% 0%,
+            rgba(43, 157, 255, 0.12),
+            transparent 42%
+        ),
+        linear-gradient(
+            145deg,
+            #111821,
+            #070b10
+        );
+
+    border: 1px solid rgba(255, 255, 255, 0.09);
+
+    box-shadow:
+        0 -15px 60px rgba(0, 0, 0, 0.55),
+        inset 0 1px rgba(255, 255, 255, 0.035);
+
+    transform: translateY(30px);
+
+    transition:
+        transform 0.25s ease;
+}
+
+.wallet-modal-overlay.show .wallet-modal {
+    transform: translateY(0);
+}
+
+
+/* HEADER */
+
+.wallet-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 15px;
+}
+
+.wallet-modal-title {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.wallet-modal-title strong {
+    color: #ffffff;
+
+    font-size: 18px;
+    line-height: 23px;
+
+    font-weight: 800;
+}
+
+.wallet-modal-title span {
+    color: #718092;
+
+    font-size: 10px;
+    line-height: 14px;
+}
+
+.wallet-modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 36px;
+    height: 36px;
+
+    border-radius: 11px;
+
+    border: 1px solid rgba(255,255,255,0.07);
+
+    background: rgba(255,255,255,0.045);
+
+    color: #aeb8c4;
+
+    font-size: 18px;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.18s ease,
+        background 0.18s ease;
+}
+
+.wallet-modal-close:active {
+    transform: scale(0.9);
+}
+
+.wallet-modal-close:hover {
+    background: rgba(255,255,255,0.08);
+}
+/* =========================================================
+   WALLET BALANCE INFO
+   ========================================================= */
+
+.wallet-current-balance {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    min-height: 58px;
+
+    padding: 12px 14px;
+
+    margin-bottom: 12px;
+
+    border-radius: 16px;
+
+    background: rgba(255,255,255,0.035);
+
+    border: 1px solid rgba(255,255,255,0.055);
+}
+
+.wallet-current-balance span {
+    color: #697687;
+
+    font-size: 10px;
+}
+
+.wallet-current-balance strong {
+    color: #ffffff;
+
+    font-size: 15px;
+    font-weight: 800;
+}
+
+
+/* REQUIRED AMOUNT */
+
+.wallet-required {
+    padding: 12px 14px;
+
+    margin-bottom: 12px;
+
+    border-radius: 14px;
+
+    background: rgba(255, 193, 48, 0.07);
+
+    border: 1px solid rgba(255, 193, 48, 0.12);
+
+    color: #c9a94c;
+
+    font-size: 10px;
+
+    line-height: 15px;
+}
+
+.wallet-required strong {
+    color: #ffd75a;
+
+    font-weight: 800;
+}
+
+
+/* METHODS */
+
+.wallet-methods {
+    display: flex;
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+.wallet-method {
+    display: flex;
+    align-items: center;
+
+    width: 100%;
+    min-height: 58px;
+
+    padding: 10px 12px;
+
+    border-radius: 15px;
+
+    border: 1px solid rgba(255,255,255,0.06);
+
+    background:
+        rgba(255,255,255,0.035);
+
+    color: #ffffff;
+
+    cursor: pointer;
+
+    font-family: inherit;
+
+    text-align: left;
+
+    transition:
+        transform 0.18s ease,
+        background 0.18s ease,
+        border-color 0.18s ease;
+}
+
+.wallet-method:hover {
+    background: rgba(255,255,255,0.06);
+
+    border-color: rgba(255,255,255,0.10);
+}
+
+.wallet-method:active {
+    transform: scale(0.975);
+}
+
+.wallet-method-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 38px;
+    height: 38px;
+
+    min-width: 38px;
+
+    margin-right: 10px;
+
+    border-radius: 11px;
+
+    background: rgba(43,157,255,0.08);
+
+    border: 1px solid rgba(43,157,255,0.10);
+
+    font-size: 17px;
+}
+
+.wallet-method-content {
+    display: flex;
+    flex-direction: column;
+
+    flex: 1;
+
+    min-width: 0;
+
+    gap: 2px;
+}
+
+.wallet-method-content strong {
+    color: #eaf0f5;
+
+    font-size: 11px;
+    line-height: 15px;
+
+    font-weight: 750;
+}
+
+.wallet-method-content span {
+    color: #606d7b;
+
+    font-size: 8px;
+    line-height: 12px;
+}
+
+.wallet-method-arrow {
+    color: #536170;
+
+    font-size: 15px;
+}
+
+
+/* NOTE */
+
+.wallet-modal-note {
+    margin-top: 12px;
+
+    padding: 10px 12px;
+
+    border-radius: 12px;
+
+    background: rgba(255,255,255,0.025);
+
+    border: 1px solid rgba(255,255,255,0.04);
+
+    color: #596675;
+
+    font-size: 8px;
+
+    line-height: 13px;
+
+    text-align: center;
+}
+/* =========================================================
+   WALLET MODAL — MOBILE
+   ========================================================= */
+
+@media (max-width: 380px) {
+
+    .wallet-modal-overlay {
+        padding: 8px;
+    }
+
+    .wallet-modal {
+        padding: 15px;
+
+        border-radius: 21px;
+    }
+
+    .wallet-modal-title strong {
+        font-size: 17px;
+    }
+
+    .wallet-method {
+        min-height: 55px;
+    }
+
+    .wallet-method-icon {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+    }
+}
