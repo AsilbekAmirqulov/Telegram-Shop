@@ -2264,3 +2264,464 @@ select:focus {
         transition-duration: 0.01ms !important;
     }
 }
+/* =========================================================
+   PREMIUM / STARS PRODUCT PAGES
+   ========================================================= */
+
+.products-page {
+    width: 100%;
+    min-height: calc(100vh - 90px);
+    padding: 18px 16px 110px;
+    box-sizing: border-box;
+    animation: productsPageIn 0.3s ease;
+}
+
+@keyframes productsPageIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* BACK BUTTON */
+
+.products-page .back-button {
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.055);
+    color: #ffffff;
+    border-radius: 16px;
+    padding: 13px 16px;
+    margin-bottom: 18px;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: 0.2s ease;
+}
+
+.products-page .back-button:active {
+    transform: scale(0.98);
+    background: rgba(255, 255, 255, 0.09);
+}
+
+
+/* MAIN TITLES */
+
+.products-page .section-title {
+    margin: 0;
+    color: #ffffff;
+    font-size: 25px;
+    line-height: 1.15;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.products-page .section-subtitle {
+    margin: 9px 0 0;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.products-page .section-subtitle strong {
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.products-page .form-description {
+    margin: 7px 0 14px;
+    color: rgba(255, 255, 255, 0.42);
+    font-size: 12px;
+}
+
+
+/* USERNAME FORM */
+
+.products-page .gift-form {
+    position: relative;
+    padding: 22px 0 10px;
+}
+
+.products-page .gift-form::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 145px;
+    border-radius: 26px;
+    background:
+        radial-gradient(
+            circle at 20% 20%,
+            rgba(0, 136, 255, 0.18),
+            transparent 55%
+        );
+    pointer-events: none;
+    z-index: -1;
+}
+
+.products-page .username-input-wrapper {
+    margin-top: 20px;
+    position: relative;
+}
+
+.products-page .username-input {
+    width: 100%;
+    height: 56px;
+    box-sizing: border-box;
+
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 17px;
+
+    outline: none;
+
+    background: rgba(255, 255, 255, 0.065);
+    color: #ffffff;
+
+    padding: 0 17px;
+
+    font-size: 16px;
+    font-weight: 600;
+
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.products-page .username-input::placeholder {
+    color: rgba(255, 255, 255, 0.34);
+}
+
+.products-page .username-input:focus {
+    border-color: rgba(0, 153, 255, 0.65);
+    background: rgba(255, 255, 255, 0.085);
+    box-shadow: 0 0 0 4px rgba(0, 136, 255, 0.10);
+}
+
+
+/* USERNAME STATUS */
+
+.products-page .username-status {
+    min-height: 22px;
+    margin: 9px 4px 0;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    transition: 0.2s ease;
+}
+
+.products-page .username-status.loading {
+    color: #7abfff;
+}
+
+.products-page .username-status.success {
+    color: #48e08a;
+}
+
+.products-page .username-status.error {
+    color: #ff6b78;
+}
+
+
+/* CONTINUE BUTTON */
+
+.products-page .continue-button {
+    width: 100%;
+    height: 54px;
+
+    margin-top: 13px;
+
+    border: none;
+    border-radius: 17px;
+
+    background: linear-gradient(
+        135deg,
+        #168cff,
+        #006bea
+    );
+
+    color: #ffffff;
+
+    font-size: 15px;
+    font-weight: 800;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 10px 28px rgba(0, 112, 255, 0.22);
+
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        filter 0.18s ease;
+}
+
+.products-page .continue-button:active {
+    transform: scale(0.98);
+    box-shadow:
+        0 6px 18px rgba(0, 112, 255, 0.18);
+}
+
+
+/* =========================================================
+   PRODUCT LIST
+   ========================================================= */
+
+.products-page #products {
+    width: 100%;
+}
+
+.products-page #products > div:first-child {
+    margin-bottom: 18px;
+}
+
+
+/* PRODUCT CARD */
+
+.products-page .product-card {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 14px;
+
+    width: 100%;
+    min-height: 78px;
+
+    box-sizing: border-box;
+
+    margin-bottom: 11px;
+    padding: 14px;
+
+    border-radius: 19px;
+
+    border: 1px solid rgba(255, 255, 255, 0.075);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255, 255, 255, 0.075),
+            rgba(255, 255, 255, 0.035)
+        );
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    box-shadow:
+        0 8px 28px rgba(0, 0, 0, 0.12);
+
+    transition:
+        transform 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease;
+}
+
+.products-page .product-card:active {
+    transform: scale(0.985);
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+
+/* PRODUCT INFO */
+
+.products-page .product-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.products-page .product-info h3 {
+    margin: 0;
+
+    color: #ffffff;
+
+    font-size: 15px;
+    line-height: 1.25;
+    font-weight: 750;
+}
+
+.products-page .product-info p {
+    margin: 5px 0 0;
+
+    color: rgba(255, 255, 255, 0.48);
+
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+
+/* PRICE */
+
+.products-page .product-price {
+    white-space: nowrap;
+
+    color: #ffffff;
+
+    font-size: 12px;
+    font-weight: 800;
+}
+
+
+/* BUY BUTTON */
+
+.products-page .buy-button {
+    border: none;
+
+    min-width: 82px;
+    height: 38px;
+
+    padding: 0 12px;
+
+    border-radius: 12px;
+
+    background: linear-gradient(
+        135deg,
+        #168cff,
+        #006bea
+    );
+
+    color: #ffffff;
+
+    font-size: 12px;
+    font-weight: 800;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 7px 18px rgba(0, 112, 255, 0.18);
+
+    transition:
+        transform 0.18s ease,
+        filter 0.18s ease;
+}
+
+.products-page .buy-button:active {
+    transform: scale(0.95);
+}
+
+
+/* =========================================================
+   PREMIUM SPECIFIC LOOK
+   ========================================================= */
+
+/* Premium sahifasidagi birinchi title */
+
+.products-page:has(.product-card) #products .section-title {
+    color: #ffffff;
+}
+
+
+/* Premium card */
+
+.products-page #products .product-card:has(.product-info h3) {
+    overflow: hidden;
+}
+
+.products-page #products .product-card:has(.product-info h3)::before {
+    content: "";
+    position: absolute;
+
+    width: 90px;
+    height: 90px;
+
+    top: -45px;
+    left: -45px;
+
+    border-radius: 50%;
+
+    background: rgba(0, 136, 255, 0.08);
+
+    pointer-events: none;
+}
+
+
+/* =========================================================
+   STARS LOOK
+   ========================================================= */
+
+.products-page #products .product-card .product-info h3 {
+    position: relative;
+}
+
+
+/* Stars kartalarida sariq aksent */
+
+.products-page #products .product-card:has(.product-info h3:first-child) {
+    --card-accent: rgba(255, 196, 0, 0.10);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (min-width: 600px) {
+
+    .products-page {
+        max-width: 620px;
+        margin: 0 auto;
+        padding-left: 22px;
+        padding-right: 22px;
+    }
+
+    .products-page .product-card {
+        min-height: 82px;
+        padding: 16px;
+    }
+
+    .products-page .product-info h3 {
+        font-size: 16px;
+    }
+
+    .products-page .buy-button {
+        min-width: 94px;
+        height: 40px;
+    }
+}
+
+
+/* =========================================================
+   SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 370px) {
+
+    .products-page {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .products-page .product-card {
+        gap: 8px;
+        padding: 12px;
+    }
+
+    .products-page .product-price {
+        font-size: 10px;
+    }
+
+    .products-page .buy-button {
+        min-width: 70px;
+        padding: 0 8px;
+        font-size: 11px;
+    }
+
+    .products-page .section-title {
+        font-size: 22px;
+    }
+}
