@@ -172,6 +172,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let searchTimer = null;
 
+    // MUHIM:
+    // Foydalanuvchining joriy wallet balansi
+    let currentBalance = 0;
+
 
     // =========================================================
     // NARXLAR
@@ -491,8 +495,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function setBalance(amount) {
 
+        currentBalance =
+            Number(amount || 0);
+
+
         const formatted =
-            `${formatPrice(amount)} so'm`;
+            `${formatPrice(currentBalance)} so'm`;
 
 
         if (userBalance) {
@@ -517,7 +525,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!userId) {
 
             setBalance(0);
-            return;
+            return 0;
 
         }
 
@@ -530,17 +538,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
 
 
+            const data =
+                await response.json();
+
+
             if (!response.ok) {
 
                 throw new Error(
+                    data.detail ||
+                    data.message ||
                     "Balance API error"
                 );
 
             }
-
-
-            const data =
-                await response.json();
 
 
             const balance =
@@ -553,6 +563,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             setBalance(balance);
 
+            return balance;
+
 
         } catch (error) {
 
@@ -561,7 +573,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 error
             );
 
+            // Agar server vaqtincha javob bermasa,
+            // mavjud balansni 0 ga tushiramiz.
             setBalance(0);
+
+            return 0;
 
         }
 
@@ -575,23 +591,19 @@ document.addEventListener("DOMContentLoaded", () => {
     function hideAllPages() {
 
         if (homePage) {
-            homePage.style.display =
-                "none";
+            homePage.style.display = "none";
         }
 
         if (ordersPage) {
-            ordersPage.style.display =
-                "none";
+            ordersPage.style.display = "none";
         }
 
         if (profilePage) {
-            profilePage.style.display =
-                "none";
+            profilePage.style.display = "none";
         }
 
         if (productsSection) {
-            productsSection.style.display =
-                "none";
+            productsSection.style.display = "none";
         }
 
     }
@@ -603,18 +615,14 @@ document.addEventListener("DOMContentLoaded", () => {
             .querySelectorAll(".nav-item")
             .forEach(item => {
 
-                item.classList.remove(
-                    "active"
-                );
+                item.classList.remove("active");
 
             });
 
 
         if (button) {
 
-            button.classList.add(
-                "active"
-            );
+            button.classList.add("active");
 
         }
 
@@ -625,12 +633,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         hideAllPages();
 
+
         if (homePage) {
-
-            homePage.style.display =
-                "block";
-
+            homePage.style.display = "block";
         }
+
 
         setActiveNav(
             homeNavButton
@@ -649,12 +656,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         hideAllPages();
 
+
         if (ordersPage) {
-
-            ordersPage.style.display =
-                "block";
-
+            ordersPage.style.display = "block";
         }
+
 
         setActiveNav(
             ordersNavButton
@@ -676,12 +682,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         hideAllPages();
 
+
         if (profilePage) {
-
-            profilePage.style.display =
-                "block";
-
+            profilePage.style.display = "block";
         }
+
 
         setActiveNav(
             profileNavButton
@@ -702,10 +707,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         if (productsSection) {
-
-            productsSection.style.display =
-                "block";
-
+            productsSection.style.display = "block";
         }
 
 
@@ -713,9 +715,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .querySelectorAll(".nav-item")
             .forEach(item => {
 
-                item.classList.remove(
-                    "active"
-                );
+                item.classList.remove("active");
 
             });
 
@@ -814,8 +814,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             // Backend vaqtincha javob bermasa,
-            // format to‘g‘ri bo‘lsa davom etamiz.
-
+            // username formati to‘g‘ri bo‘lsa davom etamiz.
             return {
                 ok: true,
                 username: clean
@@ -830,9 +829,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // USERNAME OYNASI
     // =========================================================
 
-    function showRecipientForm(
-        productType
-    ) {
+    function showRecipientForm(productType) {
 
         currentProductType =
             productType;
@@ -857,8 +854,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     <span>
                         ${
-                            productType ===
-                            "Telegram Premium"
+                            productType === "Telegram Premium"
                                 ? "Telegram Premium"
                                 : "Telegram Stars"
                         }
@@ -871,8 +867,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     <div class="recipient-icon">
                         ${
-                            productType ===
-                            "Telegram Premium"
+                            productType === "Telegram Premium"
                                 ? "💎"
                                 : "⭐"
                         }
@@ -880,8 +875,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     <span class="recipient-kicker">
                         ${
-                            productType ===
-                            "Telegram Premium"
+                            productType === "Telegram Premium"
                                 ? "PREMIUM"
                                 : "STARS"
                         }
@@ -893,8 +887,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     <p>
                         ${
-                            productType ===
-                            "Telegram Premium"
+                            productType === "Telegram Premium"
                                 ? "Premium sovg‘a qilmoqchi bo‘lgan Telegram username'ni kiriting."
                                 : "Stars yubormoqchi bo‘lgan Telegram username'ni kiriting."
                         }
@@ -915,9 +908,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     <div class="username-input-wrapper">
 
-                        <span class="username-at">
-
-                        </span>
+                        <span class="username-at"></span>
 
                         <input
                             id="usernameInput"
@@ -1038,9 +1029,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         value;
 
 
-                    verifiedUsername =
-                        "";
-
+                    verifiedUsername = "";
 
                     continueButton.disabled =
                         true;
@@ -1054,20 +1043,26 @@ document.addEventListener("DOMContentLoaded", () => {
                         status.className =
                             "username-status";
 
+                        loading.classList.remove(
+                            "active"
+                        );
+
                         return;
 
                     }
 
 
-                    if (
-                        !isValidUsername(value)
-                    ) {
+                    if (!isValidUsername(value)) {
 
                         status.textContent =
                             "Username noto‘g‘ri formatda.";
 
                         status.className =
                             "username-status error";
+
+                        loading.classList.remove(
+                            "active"
+                        );
 
                         return;
 
@@ -1111,7 +1106,6 @@ document.addEventListener("DOMContentLoaded", () => {
                                     status.textContent =
                                         "✓ Username tayyor";
 
-
                                     status.className =
                                         "username-status success";
 
@@ -1119,13 +1113,11 @@ document.addEventListener("DOMContentLoaded", () => {
                                     continueButton.disabled =
                                         false;
 
-
                                 } else {
 
                                     status.textContent =
                                         result.message ||
                                         "Username topilmadi.";
-
 
                                     status.className =
                                         "username-status error";
@@ -1172,9 +1164,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (
                         continueButton.disabled
                     ) {
-
                         return;
-
                     }
 
 
@@ -1211,16 +1201,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
             backButton.addEventListener(
                 "click",
-                () => {
-
-                    showHome();
-
-                }
+                showHome
             );
 
         }
+
     }
-            // =========================================================
+
+
+    // =========================================================
     // PREMIUM MAHSULOTLARI
     // =========================================================
 
@@ -1354,7 +1343,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     ${
                         PREMIUM_PLANS.map(
-                            (plan, index) => {
+                            plan => {
 
                                 const isPopular =
                                     plan.months === 6;
@@ -1362,22 +1351,15 @@ document.addEventListener("DOMContentLoaded", () => {
                                 const isBest =
                                     plan.months === 12;
 
+
                                 return `
 
                                     <button
                                         type="button"
                                         class="
                                             premium-plan-card
-                                            ${
-                                                isPopular
-                                                    ? "popular-plan"
-                                                    : ""
-                                            }
-                                            ${
-                                                isBest
-                                                    ? "best-plan"
-                                                    : ""
-                                            }
+                                            ${isPopular ? "popular-plan" : ""}
+                                            ${isBest ? "best-plan" : ""}
                                         "
                                         data-months="${plan.months}"
                                         data-price="${plan.price}"
@@ -1513,12 +1495,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 "productBackBtn"
             );
 
-
         const changeUsernameButton =
             document.getElementById(
                 "changeUsernameBtn"
             );
-
 
         const contactButton =
             document.getElementById(
@@ -1605,7 +1585,6 @@ document.addEventListener("DOMContentLoaded", () => {
                             Number(
                                 card.dataset.months
                             );
-
 
                         const price =
                             Number(
@@ -1708,7 +1687,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         👤
                     </div>
 
-
                     <div class="recipient-mini-info">
 
                         <span>
@@ -1739,7 +1717,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="intro-icon">
                         ⭐
                     </div>
-
 
                     <div class="intro-text">
 
@@ -1818,1381 +1795,8 @@ document.addEventListener("DOMContentLoaded", () => {
                                         type="button"
                                         class="
                                             stars-plan-card
-                                            ${
-                                                isPopular
-                                                    ? "popular-stars"
-                                                    : ""
-                                            }
-                                            ${
-                                                isMega
-                                                    ? "mega-stars"
-                                                    : ""
-                                            }
-                                        "
-                                        data-stars="${plan.stars}"
-                                        data-price="${plan.price}"
-                                    >
-
-                                        ${
-                                            badge
-                                                ? `
-                                                    <div class="stars-popular">
-                                                        ${badge}
-                                                    </div>
-                                                `
-                                                : ""
-                                        }
-
-
-                                        <div class="stars-amount">
-
-                                            <span>
-                                                ⭐
-                                            </span>
-
-                                            <strong>
-                                                ${formatPrice(plan.stars)}
-                                            </strong>
-
-                                        </div>
-
-
-                                        <div class="stars-price">
-
-                                            <small>
-                                                Narxi
-                                            </small>
-
-                                            <strong>
-                                                ${formatPrice(plan.price)} so‘m
-                                            </strong>
-
-                                        </div>
-
-
-                                        <div class="stars-arrow">
-                                            →
-                                        </div>
-
-                                    </button>
-
-                                `;
-
-                            }
-                        ).join("")
-                    }
-
-                </div>
-
-            </div>
-
-        `;
-
-
-        const backButton =
-            document.getElementById(
-                "productBackBtn"
-            );
-
-
-        const changeUsernameButton =
-            document.getElementById(
-                "changeUsernameBtn"
-            );
-
-
-        if (backButton) {
-
-            backButton.addEventListener(
-                "click",
-                () => {
-
-                    showRecipientForm(
-                        "Telegram Stars"
-                    );
-
-                }
-            );
-
-        }
-
-
-        if (changeUsernameButton) {
-
-            changeUsernameButton.addEventListener(
-                "click",
-                () => {
-
-                    showRecipientForm(
-                        "Telegram Stars"
-                    );
-
-                }
-            );
-
-        }
-
-
-        document
-            .querySelectorAll(
-                ".stars-plan-card"
-            )
-            .forEach(card => {
-
-                card.addEventListener(
-                    "click",
-                    async () => {
-
-                        const stars =
-                            Number(
-                                card.dataset.stars
-                            );
-
-
-                        const price =
-                            Number(
-                                card.dataset.price
-                            );
-
-
-                        haptic("medium");
-
-
-                        await createOrder({
-
-                            product:
-                                "Telegram Stars",
-
-                            amount:
-                                price,
-
-                            months:
-                                null,
-
-                            stars:
-                                stars,
-
-                            recipient_username:
-                                username,
-
-                            button:
-                                card
-
-                        });
-
-                    }
-                );
-
-            });
-
-    }
-            // =========================================================
-    // BUYURTMA YARATISH
-    // =========================================================
-
-    async function createOrder({
-        product,
-        amount,
-        recipient_username,
-        months = null,
-        stars = null,
-        button = null
-    }) {
-
-        const userId =
-            getUserId();
-
-
-        if (!userId) {
-
-            telegramAlert(
-                "Telegram foydalanuvchisi aniqlanmadi."
-            );
-
-            return;
-
-        }
-
-
-        if (!recipient_username) {
-
-            telegramAlert(
-                "Qabul qiluvchi username kiritilmagan."
-            );
-
-            return;
-
-        }
-
-
-        const cleanUsername =
-            normalizeUsername(
-                recipient_username
-            );
-
-
-        const confirmText =
-            product === "Telegram Premium"
-
-                ? `${months} oylik Telegram Premium\n\nQabul qiluvchi: @${cleanUsername}\nNarxi: ${formatPrice(amount)} so'm`
-
-                : `${formatPrice(stars)} Stars\n\nQabul qiluvchi: @${cleanUsername}\nNarxi: ${formatPrice(amount)} so'm`;
-
-
-        const confirmed =
-            window.confirm(
-                `${confirmText}\n\nBuyurtmani davom ettirasizmi?`
-            );
-
-
-        if (!confirmed) {
-            return;
-        }
-
-
-        if (button) {
-            button.disabled = true;
-        }
-
-
-        try {
-
-            showToast(
-                "Buyurtma tayyorlanmoqda...",
-                "info"
-            );
-
-
-            const response =
-                await fetch(
-                    `${SERVER_URL}/create-order`,
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body: JSON.stringify({
-
-                            user_id:
-                                userId,
-
-                            product:
-                                product,
-
-                            amount:
-                                amount,
-
-                            recipient_username:
-                                cleanUsername,
-
-                            months:
-                                months,
-
-                            stars:
-                                stars
-
-                        })
-
-                    }
-                );
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    `HTTP ${response.status}`
-                );
-
-            }
-
-
-            const data =
-                await response.json();
-
-
-            if (
-                data.ok === false
-            ) {
-
-                throw new Error(
-                    data.message ||
-                    "Buyurtma yaratilmadi."
-                );
-
-            }
-
-
-            haptic("success");
-
-
-            showToast(
-                "✓ Buyurtma yaratildi",
-                "success"
-            );
-
-
-            setTimeout(() => {
-
-                showOrders();
-
-            }, 700);
-
-
-        } catch (error) {
-
-            console.error(
-                "Create order error:",
-                error
-            );
-
-
-            haptic("error");
-
-
-            telegramAlert(
-                error.message ||
-                "Buyurtma yaratishda xatolik yuz berdi."
-            );
-
-
-        } finally {
-
-            if (button) {
-                button.disabled = false;
-            }
-
-        }
-
-    }
-
-
-    // =========================================================
-    // BUYURTMALAR
-    // =========================================================
-
-    async function loadOrders() {
-
-        if (!ordersContent) {
-            return;
-        }
-
-
-        const userId =
-            getUserId();
-
-
-        if (!userId) {
-
-            ordersContent.innerHTML = `
-
-                <div class="empty-orders">
-
-                    <div>
-                        📦
-                    </div>
-
-                    <h3>
-                        Buyurtmalar topilmadi
-                    </h3>
-
-                    <p>
-                        Telegram foydalanuvchisi
-                        aniqlanmadi.
-                    </p>
-
-                </div>
-
-            `;
-
-            return;
-
-        }
-
-
-        ordersContent.innerHTML = `
-
-            <div class="orders-loading">
-                ⏳ Buyurtmalar yuklanmoqda...
-            </div>
-
-        `;
-
-
-        try {
-
-            const response =
-                await fetch(
-                    `${SERVER_URL}/my-orders?user_id=${encodeURIComponent(userId)}`
-                );
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    "Orders API error"
-                );
-
-            }
-
-
-            const data =
-                await response.json();
-
-
-            const orders =
-                Array.isArray(data)
-                    ? data
-                    : (
-                        data.orders ||
-                        []
-                    );
-
-
-            if (!orders.length) {
-
-                ordersContent.innerHTML = `
-
-                    <div class="empty-orders">
-
-                        <div class="empty-orders-icon">
-                            📦
-                        </div>
-
-                        <h3>
-                            Hali buyurtmalar yo‘q
-                        </h3>
-
-                        <p>
-                            Birinchi buyurtmangizni
-                            hoziroq berishingiz mumkin.
-                        </p>
-
-                        <button
-                            type="button"
-                            class="empty-order-button"
-                            id="emptyOrderButton"
-                        >
-                            Xizmatlarni ko‘rish
-                        </button>
-
-                    </div>
-
-                `;
-
-
-                const emptyButton =
-                    document.getElementById(
-                        "emptyOrderButton"
-                    );
-
-
-                if (emptyButton) {
-
-                    emptyButton.addEventListener(
-                        "click",
-                        showHome
-                    );
-
-                }
-
-
-                return;
-
-            }
-
-
-            ordersContent.innerHTML =
-                orders
-                    .map(
-                        order =>
-                            renderOrderCard(order)
-                    )
-                    .join("");
-
-
-        } catch (error) {
-
-            console.error(
-                "Orders error:",
-                error
-            );
-
-
-            ordersContent.innerHTML = `
-
-                <div class="empty-orders">
-
-                    <div class="empty-orders-icon">
-                        ⚠️
-                    </div>
-
-                    <h3>
-                        Yuklashda xatolik
-                    </h3>
-
-                    <p>
-                        Buyurtmalarni yuklab bo‘lmadi.
-                        Keyinroq qayta urinib ko‘ring.
-                    </p>
-
-                    <button
-                        type="button"
-                        class="empty-order-button"
-                        id="retryOrdersButton"
-                    >
-                        Qayta urinish
-                    </button>
-
-                </div>
-
-            `;
-
-
-            const retryButton =
-                document.getElementById(
-                    "retryOrdersButton"
-                );
-
-
-            if (retryButton) {
-
-                retryButton.addEventListener(
-                    "click",
-                    loadOrders
-                );
-
-            }
-
-        }
-
-    }
-
-
-    function renderOrderCard(order) {
-
-        const product =
-            order.product ||
-            "Xizmat";
-
-
-        const amount =
-            Number(
-                order.amount || 0
-            );
-
-
-        const status =
-            String(
-                order.status ||
-                "pending"
-            ).toLowerCase();
-
-
-        const statusMap = {
-
-            pending: {
-                text: "Kutilmoqda",
-                icon: "⏳",
-                className: "pending"
-            },
-
-            paid: {
-                text: "To‘langan",
-                icon: "💳",
-                className: "paid"
-            },
-
-            processing: {
-                text: "Jarayonda",
-                icon: "⚙️",
-                className: "processing"
-            },
-
-            completed: {
-                text: "Bajarildi",
-                icon: "✅",
-                className: "completed"
-            },
-
-            cancelled: {
-                text: "Bekor qilingan",
-                icon: "❌",
-                className: "cancelled"
-            }
-
-        };
-
-
-        const statusInfo =
-            statusMap[status] ||
-            {
-                text: status,
-                icon: "📋",
-                className: "pending"
-            };
-
-
-        const recipient =
-            order.recipient_username
-                ? `@${normalizeUsername(
-                    order.recipient_username
-                )}`
-                : "—";
-
-
-        const orderId =
-            order.id ||
-            order.order_id ||
-            "—";
-
-
-        const date =
-            order.created_at
-                ? formatOrderDate(
-                    order.created_at
-                )
-                : "";
-
-
-        let serviceIcon =
-            "📦";
-
-
-        const productLower =
-            product.toLowerCase();
-
-
-        if (
-            productLower.includes(
-                "premium"
-            )
-        ) {
-
-            serviceIcon = "💎";
-
-        } else if (
-            productLower.includes(
-                "stars"
-            )
-        ) {
-
-            serviceIcon = "⭐";
-
-        }
-
-
-        return `
-
-            <div class="order-card">
-
-                <div class="order-card-top">
-
-                    <div class="order-service-icon">
-                        ${serviceIcon}
-                    </div>
-
-
-                    <div class="order-service-info">
-
-                        <strong>
-                            ${escapeHtml(product)}
-                        </strong>
-
-                        <span>
-                            Buyurtma #${escapeHtml(
-                                orderId
-                            )}
-                        </span>
-
-                    </div>
-
-
-                    <div
-                        class="order-status ${statusInfo.className}"
-                    >
-                        ${statusInfo.icon}
-                        ${statusInfo.text}
-                    </div>
-
-                </div>
-
-
-                <div class="order-details">
-
-                    <div>
-
-                        <span>
-                            Qabul qiluvchi
-                        </span>
-
-                        <strong>
-                            ${escapeHtml(
-                                recipient
-                            )}
-                        </strong>
-
-                    </div>
-
-
-                    <div>
-
-                        <span>
-                            Summa
-                        </span>
-
-                        <strong>
-                            ${formatPrice(
-                                amount
-                            )} so‘m
-                        </strong>
-
-                    </div>
-
-                </div>
-
-
-                ${
-                    date
-                        ? `
-                            <div class="order-date">
-                                🕐 ${escapeHtml(
-                                    date
-                                )}
-                            </div>
-                        `
-                        : ""
-                }
-
-            </div>
-
-        `;
-
-    }
-
-
-    function formatOrderDate(
-        dateValue
-    ) {
-
-        try {
-
-            const date =
-                new Date(dateValue);
-
-
-            if (
-                Number.isNaN(
-                    date.getTime()
-                )
-            ) {
-
-                return String(
-                    dateValue
-                );
-
-            }
-
-
-            return date.toLocaleString(
-                "uz-UZ",
-                {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit"
-                }
-            );
-
-
-        } catch (error) {
-
-            return String(
-                dateValue
-            );
-
-        }
-
-    }
-
-
-    // =========================================================
-    // REFERAL
-    // =========================================================
-
-    function openReferral() {
-
-        const userId =
-            getUserId();
-
-
-        const botUsername =
-            "Tprembot";
-
-
-        const referralLink =
-            `https://t.me/${botUsername}?start=ref_${userId}`;
-
-
-        const message = `
-
-🎁 REFERAL DASTURI
-
-Do‘stlaringizni Premium Shop'ga taklif qiling.
-
-Sizning referral linkingiz:
-
-${referralLink}
-
-Linkni do‘stlaringizga yuboring.
-
-        `.trim();
-
-
-        if (
-            tg &&
-            typeof tg.showPopup ===
-                "function"
-        ) {
-
-            tg.showPopup(
-                {
-                    title:
-                        "🎁 Referal dasturi",
-
-                    message:
-                        message,
-
-                    buttons: [
-                        {
-                            id: "share",
-                            type: "default",
-                            text: "Ulashish"
-                        },
-                        {
-                            type: "cancel"
-                        }
-                    ]
-                },
-
-                id => {
-
-                    if (id === "share") {
-
-                        shareReferralLink(
-                            referralLink
-                        );
-
-                    }
-
-                }
-            );
-
-        } else {
-
-            shareReferralLink(
-                referralLink
-            );
-
-        }
-
-    }
-
-
-    function shareReferralLink(
-        link
-    ) {
-
-        const text =
-            `🎁 Premium Shop'ga qo‘shiling!\n\n${link}`;
-
-
-        if (
-            tg &&
-            typeof tg.openTelegramLink ===
-                "function"
-        ) {
-
-            const shareUrl =
-                `https://t.me/share/url?url=${encodeURIComponent(
-                    link
-                )}&text=${encodeURIComponent(
-                    "🎁 Premium Shop'ga qo‘shiling!"
-                )}`;
-
-
-            tg.openTelegramLink(
-                shareUrl
-            );
-
-        } else {
-
-            navigator.clipboard
-                ?.writeText(text)
-                .then(() => {
-
-                    showToast(
-                        "Referral link nusxalandi",
-                        "success"
-                    );
-
-                })
-                .catch(() => {
-
-                    telegramAlert(
-                        text
-                    );
-
-                });
-
-        }
-
-    }
-
-
-    // =========================================================
-    // SUPPORT
-    // =========================================================
-
-    function openSupport() {
-
-        const username =
-            "AmirquIov";
-
-
-        if (
-            tg &&
-            typeof tg.openTelegramLink ===
-                "function"
-        ) {
-
-            tg.openTelegramLink(
-                `https://t.me/${username}`
-            );
-
-        } else {
-
-            window.open(
-                `https://t.me/${username}`,
-                "_blank"
-            );
-
-        }
-
-    }
-
-
-    // =========================================================
-    // BALANSNI TO‘LDIRISH
-    // =========================================================
-
-    function openAddBalance() {
-
-        haptic("light");
-
-
-        telegramAlert(
-            "Balansni to‘ldirish funksiyasi tez orada ishga tushadi."
-        );
-
-    }
-
-
-    // =========================================================
-    // BILDIRISHNOMALAR
-    // =========================================================
-
-    function openNotifications() {
-
-        haptic("light");
-
-
-        telegramAlert(
-            "Hozircha yangi bildirishnomalar yo‘q."
-        );
-
-    }
-
-
-    // =========================================================
-    // GAMING SERVICES
-    // =========================================================
-
-    function setupGamingCards() {
-
-        document
-            .querySelectorAll(
-                ".gaming-card.coming-soon"
-            )
-            .forEach(card => {
-
-                card.addEventListener(
-                    "click",
-                    () => {
-
-                        haptic("light");
-
-
-                        const service =
-                            card.dataset.service ||
-                            "Bu xizmat";
-
-
-                        showToast(
-                            `${service} — tez orada 🚀`,
-                            "info"
-                        );
-
-                    }
-                );
-
-            });
-
-    }
-
-
-    // =========================================================
-    // NAVIGATION EVENTLARI
-    // =========================================================
-
-    if (homeNavButton) {
-
-        homeNavButton.addEventListener(
-            "click",
-            showHome
-        );
-
-    }
-
-
-    if (ordersNavButton) {
-
-        ordersNavButton.addEventListener(
-            "click",
-            showOrders
-        );
-
-    }
-
-
-    if (profileNavButton) {
-
-        profileNavButton.addEventListener(
-            "click",
-            showProfile
-        );
-
-    }
-
-
-    if (premiumButton) {
-
-        premiumButton.addEventListener(
-            "click",
-            () => {
-
-                haptic("light");
-
-
-                showRecipientForm(
-                    "Telegram Premium"
-                );
-
-            }
-        );
-
-    }
-
-
-    if (starsButton) {
-
-        starsButton.addEventListener(
-            "click",
-            () => {
-
-                haptic("light");
-
-
-                showRecipientForm(
-                    "Telegram Stars"
-                );
-
-            }
-        );
-
-    }
-
-
-    if (profileOrdersButton) {
-
-        profileOrdersButton.addEventListener(
-            "click",
-            showOrders
-        );
-
-    }
-
-
-    if (ordersBackButton) {
-
-        ordersBackButton.addEventListener(
-            "click",
-            showProfile
-        );
-
-    }
-
-
-    if (referralButton) {
-
-        referralButton.addEventListener(
-            "click",
-            openReferral
-        );
-
-    }
-
-
-    if (supportButton) {
-
-        supportButton.addEventListener(
-            "click",
-            openSupport
-        );
-
-    }
-
-
-    if (addBalanceButton) {
-
-        addBalanceButton.addEventListener(
-            "click",
-            openAddBalance
-        );
-
-    }
-
-
-    if (profileAddBalanceButton) {
-
-        profileAddBalanceButton.addEventListener(
-            "click",
-            openAddBalance
-        );
-
-    }
-
-
-    if (notificationButton) {
-
-        notificationButton.addEventListener(
-            "click",
-            openNotifications
-        );
-
-    }
-
-
-    // =========================================================
-    // START
-    // =========================================================
-
-    updateUserProfile();
-
-    setBalance(0);
-
-    loadBalance();
-
-    setupGamingCards();
-
-    showHome();
-
-});
-    // =========================================================
-    // STARS MAHSULOTLARI
-    // =========================================================
-
-    function showStarsPlans() {
-
-        currentProductType =
-            "Telegram Stars";
-
-
-        showProductsPage();
-
-
-        const username =
-            verifiedUsername ||
-            currentUsername;
-
-
-        products.innerHTML = `
-
-            <div class="product-page-modern">
-
-                <div class="product-topbar">
-
-                    <button
-                        type="button"
-                        class="product-back-btn"
-                        id="productBackBtn"
-                    >
-                        ←
-                    </button>
-
-
-                    <div class="product-top-title stars-title">
-
-                        <span class="product-type-icon">
-                            ⭐
-                        </span>
-
-                        <div>
-
-                            <span>
-                                TELEGRAM
-                            </span>
-
-                            <strong>
-                                Stars
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="recipient-mini-card stars-recipient">
-
-                    <div class="recipient-mini-icon">
-                        👤
-                    </div>
-
-
-                    <div class="recipient-mini-info">
-
-                        <span>
-                            Qabul qiluvchi
-                        </span>
-
-                        <strong>
-                            @${escapeHtml(username)}
-                        </strong>
-
-                    </div>
-
-
-                    <button
-                        type="button"
-                        id="changeUsernameBtn"
-                    >
-                        O‘zgartirish
-                    </button>
-
-                </div>
-
-
-                <div class="product-intro stars-intro">
-
-                    <div class="product-intro-glow"></div>
-
-                    <div class="intro-icon">
-                        ⭐
-                    </div>
-
-
-                    <div class="intro-text">
-
-                        <span>
-                            TELEGRAM STARS
-                        </span>
-
-                        <h1>
-                            Stars miqdorini tanlang
-                        </h1>
-
-                        <p>
-                            Kerakli Stars paketini tanlang
-                            va buyurtmani davom ettiring.
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="plans-title">
-
-                    <div>
-
-                        <span>
-                            STARS PAKETLARI
-                        </span>
-
-                        <h2>
-                            Miqdorni tanlang
-                        </h2>
-
-                    </div>
-
-                </div>
-
-
-                <div class="stars-plans-modern">
-
-                    ${
-                        STARS_PLANS.map(
-                            plan => {
-
-                                const isPopular =
-                                    plan.stars === 350 ||
-                                    plan.stars === 1000;
-
-                                const isMega =
-                                    plan.stars === 5000;
-
-
-                                let badge = "";
-
-
-                                if (
-                                    plan.stars === 350
-                                ) {
-
-                                    badge =
-                                        "🔥 OMMABOP";
-
-                                } else if (
-                                    plan.stars === 1000
-                                ) {
-
-                                    badge =
-                                        "👑 KO‘P TANLANADI";
-
-                                }
-
-
-                                return `
-
-                                    <button
-                                        type="button"
-                                        class="
-                                            stars-plan-card
-                                            ${
-                                                isPopular
-                                                    ? "popular-stars"
-                                                    : ""
-                                            }
-                                            ${
-                                                isMega
-                                                    ? "mega-stars"
-                                                    : ""
-                                            }
+                                            ${isPopular ? "popular-stars" : ""}
+                                            ${isMega ? "mega-stars" : ""}
                                         "
                                         data-stars="${plan.stars}"
                                         data-price="${plan.price}"
@@ -3317,6 +1921,7 @@ Linkni do‘stlaringizga yuboring.
                                 card.dataset.price
                             );
 
+
                         haptic("medium");
 
 
@@ -3348,9 +1953,7 @@ Linkni do‘stlaringizga yuboring.
             });
 
     }
-
-
-    // =========================================================
+        // =========================================================
     // BUYURTMA YARATISH
     // =========================================================
 
@@ -3395,20 +1998,24 @@ Linkni do‘stlaringizga yuboring.
             );
 
 
-        // -----------------------------------------------------
-        // BALANSNI OLDINDAN TEKSHIRISH
-        // -----------------------------------------------------
+        // =====================================================
+        // BALANSNI OLDINDAN YANGILASH
+        // =====================================================
 
         await loadBalance();
 
 
-        if (currentBalance < amount) {
+        // =====================================================
+        // BALANS YETARLIMI?
+        // =====================================================
+
+        if (currentBalance < Number(amount)) {
 
             haptic("warning");
 
 
             openAddBalance(
-                amount
+                Number(amount)
             );
 
 
@@ -3469,7 +2076,7 @@ Linkni do‘stlaringizga yuboring.
                                 product,
 
                             amount:
-                                amount,
+                                Number(amount),
 
                             recipient_username:
                                 cleanUsername,
@@ -3486,8 +2093,20 @@ Linkni do‘stlaringizga yuboring.
                 );
 
 
-            const data =
-                await response.json();
+            let data = {};
+
+            try {
+
+                data =
+                    await response.json();
+
+            } catch (jsonError) {
+
+                throw new Error(
+                    `Server javobi noto‘g‘ri. HTTP ${response.status}`
+                );
+
+            }
 
 
             if (!response.ok) {
@@ -3501,9 +2120,7 @@ Linkni do‘stlaringizga yuboring.
             }
 
 
-            if (
-                data.ok === false
-            ) {
+            if (data.ok === false) {
 
                 throw new Error(
                     data.message ||
@@ -3513,9 +2130,13 @@ Linkni do‘stlaringizga yuboring.
             }
 
 
-            // Backend qaytargan yangi balans
+            // =================================================
+            // YANGI BALANS
+            // =================================================
+
             if (
-                data.balance !== undefined
+                data.balance !== undefined &&
+                data.balance !== null
             ) {
 
                 setBalance(
@@ -3633,14 +2254,27 @@ Linkni do‘stlaringizga yuboring.
                 );
 
 
-            const data =
-                await response.json();
+            let data = {};
+
+            try {
+
+                data =
+                    await response.json();
+
+            } catch (jsonError) {
+
+                throw new Error(
+                    "Server javobini o‘qib bo‘lmadi."
+                );
+
+            }
 
 
             if (!response.ok) {
 
                 throw new Error(
                     data.detail ||
+                    data.message ||
                     "Orders API error"
                 );
 
@@ -3651,8 +2285,9 @@ Linkni do‘stlaringizga yuboring.
                 Array.isArray(data)
                     ? data
                     : (
-                        data.orders ||
-                        []
+                        Array.isArray(data.orders)
+                            ? data.orders
+                            : []
                     );
 
 
@@ -3877,17 +2512,13 @@ Linkni do‘stlaringizga yuboring.
 
 
         if (
-            productLower.includes(
-                "premium"
-            )
+            productLower.includes("premium")
         ) {
 
             serviceIcon = "💎";
 
         } else if (
-            productLower.includes(
-                "stars"
-            )
+            productLower.includes("stars")
         ) {
 
             serviceIcon = "⭐";
@@ -3969,9 +2600,7 @@ Linkni do‘stlaringizga yuboring.
                     date
                         ? `
                             <div class="order-date">
-                                🕐 ${escapeHtml(
-                                    date
-                                )}
+                                🕐 ${escapeHtml(date)}
                             </div>
                         `
                         : ""
@@ -3984,9 +2613,7 @@ Linkni do‘stlaringizga yuboring.
     }
 
 
-    function formatOrderDate(
-        dateValue
-    ) {
+    function formatOrderDate(dateValue) {
 
         try {
 
@@ -4028,6 +2655,8 @@ Linkni do‘stlaringizga yuboring.
         }
 
     }
+
+
     // =========================================================
     // REFERAL
     // =========================================================
@@ -4111,9 +2740,7 @@ Linkni do‘stlaringizga yuboring.
     }
 
 
-    function shareReferralLink(
-        link
-    ) {
+    function shareReferralLink(link) {
 
         const text =
             `🎁 Premium Shop'ga qo‘shiling!\n\n${link}`;
@@ -4139,23 +2766,32 @@ Linkni do‘stlaringizga yuboring.
 
         } else {
 
-            navigator.clipboard
-                ?.writeText(text)
-                .then(() => {
+            if (
+                navigator.clipboard &&
+                navigator.clipboard.writeText
+            ) {
 
-                    showToast(
-                        "Referral link nusxalandi",
-                        "success"
-                    );
+                navigator.clipboard
+                    .writeText(text)
+                    .then(() => {
 
-                })
-                .catch(() => {
+                        showToast(
+                            "Referral link nusxalandi",
+                            "success"
+                        );
 
-                    telegramAlert(
-                        text
-                    );
+                    })
+                    .catch(() => {
 
-                });
+                        telegramAlert(text);
+
+                    });
+
+            } else {
+
+                telegramAlert(text);
+
+            }
 
         }
 
@@ -4192,15 +2828,11 @@ Linkni do‘stlaringizga yuboring.
         }
 
     }
-
-
-    // =========================================================
+        // =========================================================
     // BALANSNI TO‘LDIRISH
     // =========================================================
 
-    function openAddBalance(
-        requiredAmount = 0
-    ) {
+    function openAddBalance(requiredAmount = 0) {
 
         haptic("light");
 
@@ -4286,9 +2918,13 @@ Linkni do‘stlaringizga yuboring.
                         class="wallet-method"
                         data-method="click"
                     >
-                        <span>💳</span>
+
+                        <span>
+                            💳
+                        </span>
 
                         <div>
+
                             <strong>
                                 Click
                             </strong>
@@ -4296,11 +2932,13 @@ Linkni do‘stlaringizga yuboring.
                             <small>
                                 Tez orada
                             </small>
+
                         </div>
 
                         <b>
                             →
                         </b>
+
                     </button>
 
 
@@ -4309,9 +2947,13 @@ Linkni do‘stlaringizga yuboring.
                         class="wallet-method"
                         data-method="payme"
                     >
-                        <span>💳</span>
+
+                        <span>
+                            💳
+                        </span>
 
                         <div>
+
                             <strong>
                                 Payme
                             </strong>
@@ -4319,11 +2961,13 @@ Linkni do‘stlaringizga yuboring.
                             <small>
                                 Tez orada
                             </small>
+
                         </div>
 
                         <b>
                             →
                         </b>
+
                     </button>
 
 
@@ -4332,9 +2976,13 @@ Linkni do‘stlaringizga yuboring.
                         class="wallet-method"
                         data-method="uzcard"
                     >
-                        <span>💳</span>
+
+                        <span>
+                            💳
+                        </span>
 
                         <div>
+
                             <strong>
                                 Uzcard / Humo
                             </strong>
@@ -4342,20 +2990,24 @@ Linkni do‘stlaringizga yuboring.
                             <small>
                                 Tez orada
                             </small>
+
                         </div>
 
                         <b>
                             →
                         </b>
+
                     </button>
 
                 </div>
 
 
                 <div class="wallet-modal-note">
+
                     🔒 To‘lov tizimlari ulanishi
                     yakunlangach balans avtomatik
                     to‘ldiriladi.
+
                 </div>
 
             </div>
@@ -4370,9 +3022,7 @@ Linkni do‘stlaringizga yuboring.
 
         requestAnimationFrame(() => {
 
-            modal.classList.add(
-                "show"
-            );
+            modal.classList.add("show");
 
         });
 
@@ -4427,9 +3077,16 @@ Linkni do‘stlaringizga yuboring.
 
 
                         const methodNames = {
-                            click: "Click",
-                            payme: "Payme",
-                            uzcard: "Uzcard / Humo"
+
+                            click:
+                                "Click",
+
+                            payme:
+                                "Payme",
+
+                            uzcard:
+                                "Uzcard / Humo"
+
                         };
 
 
@@ -4466,7 +3123,9 @@ Linkni do‘stlaringizga yuboring.
 
         setTimeout(() => {
 
-            modal.remove();
+            if (modal.parentNode) {
+                modal.remove();
+            }
 
         }, 250);
 
@@ -4560,6 +3219,10 @@ Linkni do‘stlaringizga yuboring.
     }
 
 
+    // =========================================================
+    // PREMIUM
+    // =========================================================
+
     if (premiumButton) {
 
         premiumButton.addEventListener(
@@ -4578,6 +3241,10 @@ Linkni do‘stlaringizga yuboring.
 
     }
 
+
+    // =========================================================
+    // STARS
+    // =========================================================
 
     if (starsButton) {
 
@@ -4598,6 +3265,10 @@ Linkni do‘stlaringizga yuboring.
     }
 
 
+    // =========================================================
+    // PROFILE ORDERS
+    // =========================================================
+
     if (profileOrdersButton) {
 
         profileOrdersButton.addEventListener(
@@ -4607,6 +3278,10 @@ Linkni do‘stlaringizga yuboring.
 
     }
 
+
+    // =========================================================
+    // ORDERS BACK
+    // =========================================================
 
     if (ordersBackButton) {
 
@@ -4618,6 +3293,10 @@ Linkni do‘stlaringizga yuboring.
     }
 
 
+    // =========================================================
+    // REFERRAL
+    // =========================================================
+
     if (referralButton) {
 
         referralButton.addEventListener(
@@ -4628,6 +3307,10 @@ Linkni do‘stlaringizga yuboring.
     }
 
 
+    // =========================================================
+    // SUPPORT
+    // =========================================================
+
     if (supportButton) {
 
         supportButton.addEventListener(
@@ -4637,6 +3320,10 @@ Linkni do‘stlaringizga yuboring.
 
     }
 
+
+    // =========================================================
+    // ADD BALANCE — HOME
+    // =========================================================
 
     if (addBalanceButton) {
 
@@ -4652,6 +3339,10 @@ Linkni do‘stlaringizga yuboring.
     }
 
 
+    // =========================================================
+    // ADD BALANCE — PROFILE
+    // =========================================================
+
     if (profileAddBalanceButton) {
 
         profileAddBalanceButton.addEventListener(
@@ -4665,6 +3356,10 @@ Linkni do‘stlaringizga yuboring.
 
     }
 
+
+    // =========================================================
+    // NOTIFICATIONS
+    // =========================================================
 
     if (notificationButton) {
 
@@ -4691,5 +3386,3 @@ Linkni do‘stlaringizga yuboring.
     showHome();
 
 });
-
-    
