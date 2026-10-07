@@ -4,20 +4,32 @@ document.addEventListener("DOMContentLoaded", () => {
     // SOZLAMALAR
     // =========================================================
 
-    const SERVER_URL = "https://telegram-shop-co3o.onrender.com";
+    const SERVER_URL =
+        "https://telegram-shop-co3o.onrender.com";
 
-    const tg = window.Telegram?.WebApp;
+    const tg =
+        window.Telegram?.WebApp || null;
+
 
     if (tg) {
+
         tg.ready();
         tg.expand();
 
         try {
+
             tg.setHeaderColor("#0b1118");
             tg.setBackgroundColor("#0b1118");
-        } catch (e) {
-            console.log("Telegram theme:", e);
+
+        } catch (error) {
+
+            console.log(
+                "Telegram theme:",
+                error
+            );
+
         }
+
     }
 
 
@@ -25,64 +37,119 @@ document.addEventListener("DOMContentLoaded", () => {
     // DOM
     // =========================================================
 
-    const homePage = document.getElementById("homePage");
-    const ordersPage = document.getElementById("ordersPage");
-    const profilePage = document.getElementById("profilePage");
+    const homePage =
+        document.getElementById("homePage");
 
-    const productsSection = document.getElementById("productsSection");
-    const products = document.getElementById("products");
+    const ordersPage =
+        document.getElementById("ordersPage");
 
-    const homeNavButton = document.getElementById("homeNavButton");
-    const ordersNavButton = document.getElementById("ordersNavButton");
-    const profileNavButton = document.getElementById("profileNavButton");
+    const profilePage =
+        document.getElementById("profilePage");
 
-    const premiumButton = document.getElementById("premiumButton");
-    const starsButton = document.getElementById("starsButton");
+    const productsSection =
+        document.getElementById("productsSection");
+
+    const products =
+        document.getElementById("products");
+
+
+    const homeNavButton =
+        document.getElementById("homeNavButton");
+
+    const ordersNavButton =
+        document.getElementById("ordersNavButton");
+
+    const profileNavButton =
+        document.getElementById("profileNavButton");
+
+
+    const premiumButton =
+        document.getElementById("premiumButton");
+
+    const starsButton =
+        document.getElementById("starsButton");
+
 
     const profileOrdersButton =
-        document.getElementById("profileOrdersButton");
+        document.getElementById(
+            "profileOrdersButton"
+        );
 
     const referralButton =
-        document.getElementById("referralButton");
+        document.getElementById(
+            "referralButton"
+        );
 
     const supportButton =
-        document.getElementById("supportButton");
+        document.getElementById(
+            "supportButton"
+        );
+
 
     const addBalanceButton =
-        document.getElementById("addBalanceButton");
+        document.getElementById(
+            "addBalanceButton"
+        );
 
     const profileAddBalanceButton =
-        document.getElementById("profileAddBalanceButton");
+        document.getElementById(
+            "profileAddBalanceButton"
+        );
+
 
     const notificationButton =
-        document.getElementById("notificationButton");
+        document.getElementById(
+            "notificationButton"
+        );
 
     const ordersBackButton =
-        document.getElementById("ordersBackButton");
+        document.getElementById(
+            "ordersBackButton"
+        );
+
 
     const userAvatar =
-        document.getElementById("userAvatar");
+        document.getElementById(
+            "userAvatar"
+        );
 
     const userName =
-        document.getElementById("userName");
+        document.getElementById(
+            "userName"
+        );
+
 
     const profileAvatar =
-        document.getElementById("profileAvatar");
+        document.getElementById(
+            "profileAvatar"
+        );
 
     const profileName =
-        document.getElementById("profileName");
+        document.getElementById(
+            "profileName"
+        );
 
     const profileUsername =
-        document.getElementById("profileUsername");
+        document.getElementById(
+            "profileUsername"
+        );
+
 
     const userBalance =
-        document.getElementById("userBalance");
+        document.getElementById(
+            "userBalance"
+        );
 
     const profileBalance =
-        document.getElementById("profileBalance");
+        document.getElementById(
+            "profileBalance"
+        );
+
 
     const ordersContent =
-        document.getElementById("ordersContent");
+        document.getElementById(
+            "ordersContent"
+        );
 
 
     // =========================================================
@@ -212,9 +279,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const full =
             `${first} ${last}`.trim();
 
-        return full ||
+        return (
+            full ||
             telegramUser.username ||
-            "Telegram foydalanuvchisi";
+            "Telegram foydalanuvchisi"
+        );
 
     }
 
@@ -225,7 +294,9 @@ document.addEventListener("DOMContentLoaded", () => {
             telegramUser &&
             telegramUser.username
         ) {
+
             return `@${telegramUser.username}`;
+
         }
 
         return "@username";
@@ -278,17 +349,19 @@ document.addEventListener("DOMContentLoaded", () => {
                     type === "warning"
                 ) {
 
-                    tg.HapticFeedback.notificationOccurred(type);
+                    tg.HapticFeedback
+                        .notificationOccurred(type);
 
                 } else {
 
-                    tg.HapticFeedback.impactOccurred(type);
+                    tg.HapticFeedback
+                        .impactOccurred(type);
 
                 }
 
             }
 
-        } catch (e) {}
+        } catch (error) {}
 
     }
 
@@ -311,14 +384,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    function showToast(message, type = "info") {
+    function showToast(
+        message,
+        type = "info"
+    ) {
 
         const oldToast =
-            document.querySelector(".shop-toast");
+            document.querySelector(
+                ".shop-toast"
+            );
 
         if (oldToast) {
             oldToast.remove();
         }
+
 
         const toast =
             document.createElement("div");
@@ -329,18 +408,26 @@ document.addEventListener("DOMContentLoaded", () => {
         toast.textContent =
             message;
 
-        document.body.appendChild(toast);
+        document.body.appendChild(
+            toast
+        );
+
 
         requestAnimationFrame(() => {
+
             toast.classList.add("show");
+
         });
+
 
         setTimeout(() => {
 
             toast.classList.remove("show");
 
             setTimeout(() => {
+
                 toast.remove();
+
             }, 250);
 
         }, 2600);
@@ -360,6 +447,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const username =
             getUserUsername();
 
+
         if (userName) {
             userName.textContent = name;
         }
@@ -369,22 +457,27 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (profileUsername) {
-            profileUsername.textContent = username;
+            profileUsername.textContent =
+                username;
         }
+
 
         const initials =
             telegramUser?.first_name
                 ?.charAt(0)
                 ?.toUpperCase();
 
+
         if (initials) {
 
             if (userAvatar) {
-                userAvatar.textContent = initials;
+                userAvatar.textContent =
+                    initials;
             }
 
             if (profileAvatar) {
-                profileAvatar.textContent = initials;
+                profileAvatar.textContent =
+                    initials;
             }
 
         }
@@ -400,6 +493,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const formatted =
             `${formatPrice(amount)} so'm`;
+
 
         if (userBalance) {
             userBalance.textContent =
@@ -419,10 +513,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const userId =
             getUserId();
 
+
         if (!userId) {
+
             setBalance(0);
             return;
+
         }
+
 
         try {
 
@@ -431,12 +529,19 @@ document.addEventListener("DOMContentLoaded", () => {
                     `${SERVER_URL}/balance?user_id=${encodeURIComponent(userId)}`
                 );
 
+
             if (!response.ok) {
-                throw new Error("Balance API error");
+
+                throw new Error(
+                    "Balance API error"
+                );
+
             }
+
 
             const data =
                 await response.json();
+
 
             const balance =
                 Number(
@@ -445,7 +550,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     0
                 );
 
+
             setBalance(balance);
+
 
         } catch (error) {
 
@@ -468,19 +575,23 @@ document.addEventListener("DOMContentLoaded", () => {
     function hideAllPages() {
 
         if (homePage) {
-            homePage.style.display = "none";
+            homePage.style.display =
+                "none";
         }
 
         if (ordersPage) {
-            ordersPage.style.display = "none";
+            ordersPage.style.display =
+                "none";
         }
 
         if (profilePage) {
-            profilePage.style.display = "none";
+            profilePage.style.display =
+                "none";
         }
 
         if (productsSection) {
-            productsSection.style.display = "none";
+            productsSection.style.display =
+                "none";
         }
 
     }
@@ -492,12 +603,19 @@ document.addEventListener("DOMContentLoaded", () => {
             .querySelectorAll(".nav-item")
             .forEach(item => {
 
-                item.classList.remove("active");
+                item.classList.remove(
+                    "active"
+                );
 
             });
 
+
         if (button) {
-            button.classList.add("active");
+
+            button.classList.add(
+                "active"
+            );
+
         }
 
     }
@@ -508,10 +626,16 @@ document.addEventListener("DOMContentLoaded", () => {
         hideAllPages();
 
         if (homePage) {
-            homePage.style.display = "block";
+
+            homePage.style.display =
+                "block";
+
         }
 
-        setActiveNav(homeNavButton);
+        setActiveNav(
+            homeNavButton
+        );
+
 
         window.scrollTo({
             top: 0,
@@ -526,12 +650,19 @@ document.addEventListener("DOMContentLoaded", () => {
         hideAllPages();
 
         if (ordersPage) {
-            ordersPage.style.display = "block";
+
+            ordersPage.style.display =
+                "block";
+
         }
 
-        setActiveNav(ordersNavButton);
+        setActiveNav(
+            ordersNavButton
+        );
+
 
         loadOrders();
+
 
         window.scrollTo({
             top: 0,
@@ -546,10 +677,16 @@ document.addEventListener("DOMContentLoaded", () => {
         hideAllPages();
 
         if (profilePage) {
-            profilePage.style.display = "block";
+
+            profilePage.style.display =
+                "block";
+
         }
 
-        setActiveNav(profileNavButton);
+        setActiveNav(
+            profileNavButton
+        );
+
 
         window.scrollTo({
             top: 0,
@@ -563,15 +700,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
         hideAllPages();
 
+
         if (productsSection) {
-            productsSection.style.display = "block";
+
+            productsSection.style.display =
+                "block";
+
         }
+
 
         document
             .querySelectorAll(".nav-item")
             .forEach(item => {
-                item.classList.remove("active");
+
+                item.classList.remove(
+                    "active"
+                );
+
             });
+
 
         window.scrollTo({
             top: 0,
@@ -601,6 +748,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const clean =
             normalizeUsername(username);
 
+
         if (!isValidUsername(clean)) {
 
             return {
@@ -611,6 +759,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         }
 
+
         try {
 
             const response =
@@ -618,12 +767,19 @@ document.addEventListener("DOMContentLoaded", () => {
                     `${SERVER_URL}/check-username?username=${encodeURIComponent(clean)}`
                 );
 
+
             if (!response.ok) {
-                throw new Error("API error");
+
+                throw new Error(
+                    "API error"
+                );
+
             }
+
 
             const data =
                 await response.json();
+
 
             if (
                 data.ok === true ||
@@ -640,12 +796,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
             }
 
+
             return {
                 ok: false,
                 message:
                     data.message ||
                     "Username topilmadi."
             };
+
 
         } catch (error) {
 
@@ -654,10 +812,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 error
             );
 
-            /*
-             * Backend vaqtincha javob bermasa,
-             * format to‘g‘ri bo‘lsa davom etamiz.
-             */
+
+            // Backend vaqtincha javob bermasa,
+            // format to‘g‘ri bo‘lsa davom etamiz.
 
             return {
                 ok: true,
@@ -673,12 +830,16 @@ document.addEventListener("DOMContentLoaded", () => {
     // USERNAME OYNASI
     // =========================================================
 
-    function showRecipientForm(productType) {
+    function showRecipientForm(
+        productType
+    ) {
 
         currentProductType =
             productType;
 
+
         showProductsPage();
+
 
         products.innerHTML = `
 
@@ -695,9 +856,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     </button>
 
                     <span>
-                        ${productType === "Telegram Premium"
-                            ? "Telegram Premium"
-                            : "Telegram Stars"}
+                        ${
+                            productType ===
+                            "Telegram Premium"
+                                ? "Telegram Premium"
+                                : "Telegram Stars"
+                        }
                     </span>
 
                 </div>
@@ -706,15 +870,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="recipient-hero">
 
                     <div class="recipient-icon">
-                        ${productType === "Telegram Premium"
-                            ? "💎"
-                            : "⭐"}
+                        ${
+                            productType ===
+                            "Telegram Premium"
+                                ? "💎"
+                                : "⭐"
+                        }
                     </div>
 
                     <span class="recipient-kicker">
-                        ${productType === "Telegram Premium"
-                            ? "PREMIUM"
-                            : "STARS"}
+                        ${
+                            productType ===
+                            "Telegram Premium"
+                                ? "PREMIUM"
+                                : "STARS"
+                        }
                     </span>
 
                     <h1>
@@ -722,9 +892,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     </h1>
 
                     <p>
-                        ${productType === "Telegram Premium"
-                            ? "Premium sovg‘a qilmoqchi bo‘lgan Telegram username'ni kiriting."
-                            : "Stars yubormoqchi bo‘lgan Telegram username'ni kiriting."}
+                        ${
+                            productType ===
+                            "Telegram Premium"
+                                ? "Premium sovg‘a qilmoqchi bo‘lgan Telegram username'ni kiriting."
+                                : "Stars yubormoqchi bo‘lgan Telegram username'ni kiriting."
+                        }
                     </p>
 
                 </div>
@@ -760,8 +933,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div
                             class="username-loading"
                             id="usernameLoading"
-                        >
-                        </div>
+                        ></div>
 
                     </div>
 
@@ -797,6 +969,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <span>🔒</span>
 
                     <div>
+
                         <strong>
                             Xavfsiz xizmat
                         </strong>
@@ -805,11 +978,13 @@ document.addEventListener("DOMContentLoaded", () => {
                             Username faqat buyurtmani
                             tayyorlash uchun ishlatiladi.
                         </p>
+
                     </div>
 
                 </div>
 
             </div>
+
         `;
 
 
@@ -843,6 +1018,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             input.focus();
 
+
             input.addEventListener(
                 "input",
                 () => {
@@ -851,18 +1027,24 @@ document.addEventListener("DOMContentLoaded", () => {
                         searchTimer
                     );
 
+
                     let value =
                         input.value
                             .replace(/\s/g, "")
                             .replace(/^@+/, "");
 
+
                     input.value =
                         value;
 
-                    verifiedUsername = "";
+
+                    verifiedUsername =
+                        "";
+
 
                     continueButton.disabled =
                         true;
+
 
                     if (!value) {
 
@@ -876,7 +1058,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     }
 
-                    if (!isValidUsername(value)) {
+
+                    if (
+                        !isValidUsername(value)
+                    ) {
 
                         status.textContent =
                             "Username noto‘g‘ri formatda.";
@@ -888,15 +1073,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     }
 
+
                     status.textContent =
                         "Username tekshirilmoqda...";
 
                     status.className =
                         "username-status checking";
 
+
                     loading.classList.add(
                         "active"
                     );
+
 
                     searchTimer =
                         setTimeout(
@@ -907,9 +1095,11 @@ document.addEventListener("DOMContentLoaded", () => {
                                         value
                                     );
 
+
                                 loading.classList.remove(
                                     "active"
                                 );
+
 
                                 if (result.ok) {
 
@@ -917,14 +1107,18 @@ document.addEventListener("DOMContentLoaded", () => {
                                         result.username ||
                                         value;
 
+
                                     status.textContent =
                                         "✓ Username tayyor";
+
 
                                     status.className =
                                         "username-status success";
 
+
                                     continueButton.disabled =
                                         false;
+
 
                                 } else {
 
@@ -932,8 +1126,10 @@ document.addEventListener("DOMContentLoaded", () => {
                                         result.message ||
                                         "Username topilmadi.";
 
+
                                     status.className =
                                         "username-status error";
+
 
                                     continueButton.disabled =
                                         true;
@@ -976,8 +1172,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (
                         continueButton.disabled
                     ) {
+
                         return;
+
                     }
+
 
                     currentUsername =
                         verifiedUsername ||
@@ -985,7 +1184,9 @@ document.addEventListener("DOMContentLoaded", () => {
                             input.value
                         );
 
+
                     haptic("medium");
+
 
                     if (
                         currentProductType ===
@@ -1027,17 +1228,19 @@ document.addEventListener("DOMContentLoaded", () => {
         currentProductType =
             "Telegram Premium";
 
+
         showProductsPage();
+
 
         const username =
             verifiedUsername ||
             currentUsername;
 
+
         products.innerHTML = `
 
             <div class="product-page-modern">
 
-                <!-- TOP BAR -->
                 <div class="product-topbar">
 
                     <button
@@ -1048,6 +1251,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         ←
                     </button>
 
+
                     <div class="product-top-title">
 
                         <span class="product-type-icon">
@@ -1055,8 +1259,15 @@ document.addEventListener("DOMContentLoaded", () => {
                         </span>
 
                         <div>
-                            <span>TELEGRAM</span>
-                            <strong>Premium</strong>
+
+                            <span>
+                                TELEGRAM
+                            </span>
+
+                            <strong>
+                                Premium
+                            </strong>
+
                         </div>
 
                     </div>
@@ -1064,7 +1275,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
 
 
-                <!-- RECIPIENT -->
                 <div class="recipient-mini-card">
 
                     <div class="recipient-mini-icon">
@@ -1083,6 +1293,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     </div>
 
+
                     <button
                         type="button"
                         id="changeUsernameBtn"
@@ -1093,7 +1304,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
 
 
-                <!-- HERO -->
                 <div class="product-intro premium-intro">
 
                     <div class="product-intro-glow"></div>
@@ -1122,10 +1332,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
 
 
-                <!-- TITLE -->
                 <div class="plans-title">
 
                     <div>
+
                         <span>
                             PREMIUM TARIFLARI
                         </span>
@@ -1133,204 +1343,140 @@ document.addEventListener("DOMContentLoaded", () => {
                         <h2>
                             Muddatni tanlang
                         </h2>
+
                     </div>
 
                 </div>
 
 
-                <!-- PREMIUM PLANS -->
                 <div class="premium-plans-modern">
 
+                    ${
+                        PREMIUM_PLANS.map(
+                            (plan, index) => {
 
-                    <!-- 3 OY -->
-                    <button
-                        type="button"
-                        class="premium-plan-card"
-                        data-months="3"
-                        data-price="165000"
-                    >
+                                const isPopular =
+                                    plan.months === 6;
 
-                        <div class="plan-card-top">
+                                const isBest =
+                                    plan.months === 12;
 
-                            <div class="plan-big-icon">
-                                💎
-                            </div>
+                                return `
 
-                            <div class="plan-badge">
-                                3 OY
-                            </div>
+                                    <button
+                                        type="button"
+                                        class="
+                                            premium-plan-card
+                                            ${
+                                                isPopular
+                                                    ? "popular-plan"
+                                                    : ""
+                                            }
+                                            ${
+                                                isBest
+                                                    ? "best-plan"
+                                                    : ""
+                                            }
+                                        "
+                                        data-months="${plan.months}"
+                                        data-price="${plan.price}"
+                                    >
 
-                        </div>
+                                        ${
+                                            isPopular
+                                                ? `
+                                                    <div class="popular-label">
+                                                        🔥 ENG OMMABOP
+                                                    </div>
+                                                `
+                                                : ""
+                                        }
 
-
-                        <div class="plan-main">
-
-                            <strong>
-                                Premium 3 oy
-                            </strong>
-
-                            <span>
-                                Qulay boshlang‘ich tarif
-                            </span>
-
-                        </div>
-
-
-                        <div class="plan-card-bottom">
-
-                            <div>
-
-                                <small>
-                                    Narxi
-                                </small>
-
-                                <strong>
-                                    165 000 so‘m
-                                </strong>
-
-                            </div>
-
-                            <div class="plan-arrow">
-                                →
-                            </div>
-
-                        </div>
-
-                    </button>
+                                        ${
+                                            isBest
+                                                ? `
+                                                    <div class="best-label">
+                                                        👑 ENG YAXSHI TANLOV
+                                                    </div>
+                                                `
+                                                : ""
+                                        }
 
 
-                    <!-- 6 OY -->
-                    <button
-                        type="button"
-                        class="premium-plan-card popular-plan"
-                        data-months="6"
-                        data-price="220000"
-                    >
+                                        <div class="plan-card-top">
 
-                        <div class="popular-label">
-                            🔥 ENG OMMABOP
-                        </div>
+                                            <div class="plan-big-icon">
+                                                ${
+                                                    isBest
+                                                        ? "👑"
+                                                        : "💎"
+                                                }
+                                            </div>
 
+                                            <div class="plan-badge">
+                                                ${plan.months} OY
+                                            </div>
 
-                        <div class="plan-card-top">
-
-                            <div class="plan-big-icon">
-                                💎
-                            </div>
-
-                            <div class="plan-badge">
-                                6 OY
-                            </div>
-
-                        </div>
+                                        </div>
 
 
-                        <div class="plan-main">
+                                        <div class="plan-main">
 
-                            <strong>
-                                Premium 6 oy
-                            </strong>
+                                            <strong>
+                                                Premium ${plan.months} oy
+                                            </strong>
 
-                            <span>
-                                Ko‘proq muddat, qulay narx
-                            </span>
+                                            <span>
+                                                ${
+                                                    plan.months === 3
+                                                        ? "Qulay boshlang‘ich tarif"
+                                                        : plan.months === 6
+                                                            ? "Ko‘proq muddat, qulay narx"
+                                                            : "Bir yil davomida Premium"
+                                                }
+                                            </span>
 
-                        </div>
-
-
-                        <div class="plan-card-bottom">
-
-                            <div>
-
-                                <small>
-                                    Narxi
-                                </small>
-
-                                <strong>
-                                    220 000 so‘m
-                                </strong>
-
-                            </div>
-
-                            <div class="plan-arrow">
-                                →
-                            </div>
-
-                        </div>
-
-                    </button>
+                                        </div>
 
 
-                    <!-- 12 OY -->
-                    <button
-                        type="button"
-                        class="premium-plan-card best-plan"
-                        data-months="12"
-                        data-price="390000"
-                    >
+                                        <div class="plan-card-bottom">
 
-                        <div class="best-label">
-                            👑 ENG YAXSHI TANLOV
-                        </div>
+                                            <div>
 
+                                                <small>
+                                                    Narxi
+                                                </small>
 
-                        <div class="plan-card-top">
+                                                <strong>
+                                                    ${formatPrice(plan.price)} so‘m
+                                                </strong>
 
-                            <div class="plan-big-icon">
-                                👑
-                            </div>
-
-                            <div class="plan-badge">
-                                12 OY
-                            </div>
-
-                        </div>
+                                            </div>
 
 
-                        <div class="plan-main">
+                                            <div class="plan-arrow">
+                                                →
+                                            </div>
 
-                            <strong>
-                                Premium 12 oy
-                            </strong>
+                                        </div>
 
-                            <span>
-                                Bir yil davomida Premium
-                            </span>
+                                    </button>
 
-                        </div>
+                                `;
 
-
-                        <div class="plan-card-bottom">
-
-                            <div>
-
-                                <small>
-                                    Narxi
-                                </small>
-
-                                <strong>
-                                    390 000 so‘m
-                                </strong>
-
-                            </div>
-
-                            <div class="plan-arrow">
-                                →
-                            </div>
-
-                        </div>
-
-                    </button>
+                            }
+                        ).join("")
+                    }
 
                 </div>
 
 
-                <!-- CONTACT -->
                 <div class="contact-premium-box">
 
                     <div class="contact-premium-icon">
                         💬
                     </div>
+
 
                     <div class="contact-premium-content">
 
@@ -1346,6 +1492,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     </div>
 
+
                     <button
                         type="button"
                         id="contactPremiumBtn"
@@ -1356,22 +1503,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
 
             </div>
+
         `;
 
-
-        // =====================================================
-        // PREMIUM EVENTLARI
-        // =====================================================
 
         const backButton =
             document.getElementById(
                 "productBackBtn"
             );
 
+
         const changeUsernameButton =
             document.getElementById(
                 "changeUsernameBtn"
             );
+
 
         const contactButton =
             document.getElementById(
@@ -1419,7 +1565,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     haptic("light");
 
-                    if (tg?.openTelegramLink) {
+
+                    if (
+                        tg &&
+                        tg.openTelegramLink
+                    ) {
 
                         tg.openTelegramLink(
                             "https://t.me/AmirquIov"
@@ -1455,14 +1605,18 @@ document.addEventListener("DOMContentLoaded", () => {
                                 card.dataset.months
                             );
 
+
                         const price =
                             Number(
                                 card.dataset.price
                             );
 
+
                         haptic("medium");
 
+
                         await createOrder({
+
                             product:
                                 "Telegram Premium",
 
@@ -1476,7 +1630,11 @@ document.addEventListener("DOMContentLoaded", () => {
                                 null,
 
                             recipient_username:
-                                username
+                                username,
+
+                            button:
+                                card
+
                         });
 
                     }
@@ -1496,17 +1654,19 @@ document.addEventListener("DOMContentLoaded", () => {
         currentProductType =
             "Telegram Stars";
 
+
         showProductsPage();
+
 
         const username =
             verifiedUsername ||
             currentUsername;
 
+
         products.innerHTML = `
 
             <div class="product-page-modern">
 
-                <!-- TOP BAR -->
                 <div class="product-topbar">
 
                     <button
@@ -1517,6 +1677,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         ←
                     </button>
 
+
                     <div class="product-top-title stars-title">
 
                         <span class="product-type-icon">
@@ -1524,8 +1685,15 @@ document.addEventListener("DOMContentLoaded", () => {
                         </span>
 
                         <div>
-                            <span>TELEGRAM</span>
-                            <strong>Stars</strong>
+
+                            <span>
+                                TELEGRAM
+                            </span>
+
+                            <strong>
+                                Stars
+                            </strong>
+
                         </div>
 
                     </div>
@@ -1533,12 +1701,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
 
 
-                <!-- RECIPIENT -->
                 <div class="recipient-mini-card stars-recipient">
 
                     <div class="recipient-mini-icon">
                         👤
                     </div>
+
 
                     <div class="recipient-mini-info">
 
@@ -1552,6 +1720,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     </div>
 
+
                     <button
                         type="button"
                         id="changeUsernameBtn"
@@ -1562,7 +1731,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
 
 
-                <!-- HERO -->
                 <div class="product-intro stars-intro">
 
                     <div class="product-intro-glow"></div>
@@ -1570,6 +1738,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="intro-icon">
                         ⭐
                     </div>
+
 
                     <div class="intro-text">
 
@@ -1591,7 +1760,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
 
 
-                <!-- TITLE -->
                 <div class="plans-title">
 
                     <div>
@@ -1609,449 +1777,122 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
 
 
-                <!-- STARS GRID -->
                 <div class="stars-plans-modern">
 
+                    ${
+                        STARS_PLANS.map(
+                            plan => {
 
-                    <button
-                        type="button"
-                        class="stars-plan-card"
-                        data-stars="50"
-                        data-price="11000"
-                    >
+                                const isPopular =
+                                    plan.stars === 350 ||
+                                    plan.stars === 1000;
 
-                        <div class="stars-amount">
+                                const isMega =
+                                    plan.stars === 5000;
 
-                            <span>
-                                ⭐
-                            </span>
 
-                            <strong>
-                                50
-                            </strong>
+                                let badge = "";
 
-                        </div>
 
-                        <div class="stars-price">
+                                if (
+                                    plan.stars === 350
+                                ) {
 
-                            <small>
-                                Narxi
-                            </small>
+                                    badge =
+                                        "🔥 OMMABOP";
 
-                            <strong>
-                                11 000 so‘m
-                            </strong>
+                                } else if (
+                                    plan.stars === 1000
+                                ) {
 
-                        </div>
+                                    badge =
+                                        "👑 KO‘P TANLANADI";
 
-                        <div class="stars-arrow">
-                            →
-                        </div>
+                                }
 
-                    </button>
 
+                                return `
 
-                    <button
-                        type="button"
-                        class="stars-plan-card"
-                        data-stars="100"
-                        data-price="30000"
-                    >
+                                    <button
+                                        type="button"
+                                        class="
+                                            stars-plan-card
+                                            ${
+                                                isPopular
+                                                    ? "popular-stars"
+                                                    : ""
+                                            }
+                                            ${
+                                                isMega
+                                                    ? "mega-stars"
+                                                    : ""
+                                            }
+                                        "
+                                        data-stars="${plan.stars}"
+                                        data-price="${plan.price}"
+                                    >
 
-                        <div class="stars-amount">
+                                        ${
+                                            badge
+                                                ? `
+                                                    <div class="stars-popular">
+                                                        ${badge}
+                                                    </div>
+                                                `
+                                                : ""
+                                        }
 
-                            <span>
-                                ⭐
-                            </span>
 
-                            <strong>
-                                100
-                            </strong>
+                                        <div class="stars-amount">
 
-                        </div>
+                                            <span>
+                                                ⭐
+                                            </span>
 
-                        <div class="stars-price">
+                                            <strong>
+                                                ${formatPrice(plan.stars)}
+                                            </strong>
 
-                            <small>
-                                Narxi
-                            </small>
+                                        </div>
 
-                            <strong>
-                                30 000 so‘m
-                            </strong>
 
-                        </div>
+                                        <div class="stars-price">
 
-                        <div class="stars-arrow">
-                            →
-                        </div>
+                                            <small>
+                                                Narxi
+                                            </small>
 
-                    </button>
+                                            <strong>
+                                                ${formatPrice(plan.price)} so‘m
+                                            </strong>
 
+                                        </div>
 
-                    <button
-                        type="button"
-                        class="stars-plan-card"
-                        data-stars="150"
-                        data-price="40000"
-                    >
 
-                        <div class="stars-amount">
+                                        <div class="stars-arrow">
+                                            →
+                                        </div>
 
-                            <span>
-                                ⭐
-                            </span>
+                                    </button>
 
-                            <strong>
-                                150
-                            </strong>
+                                `;
 
-                        </div>
-
-                        <div class="stars-price">
-
-                            <small>
-                                Narxi
-                            </small>
-
-                            <strong>
-                                40 000 so‘m
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-arrow">
-                            →
-                        </div>
-
-                    </button>
-
-
-                    <button
-                        type="button"
-                        class="stars-plan-card"
-                        data-stars="250"
-                        data-price="64000"
-                    >
-
-                        <div class="stars-amount">
-
-                            <span>
-                                ⭐
-                            </span>
-
-                            <strong>
-                                250
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-price">
-
-                            <small>
-                                Narxi
-                            </small>
-
-                            <strong>
-                                64 000 so‘m
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-arrow">
-                            →
-                        </div>
-
-                    </button>
-
-
-                    <button
-                        type="button"
-                        class="stars-plan-card popular-stars"
-                        data-stars="350"
-                        data-price="89000"
-                    >
-
-                        <div class="stars-popular">
-                            🔥 OMMABOP
-                        </div>
-
-                        <div class="stars-amount">
-
-                            <span>
-                                ⭐
-                            </span>
-
-                            <strong>
-                                350
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-price">
-
-                            <small>
-                                Narxi
-                            </small>
-
-                            <strong>
-                                89 000 so‘m
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-arrow">
-                            →
-                        </div>
-
-                    </button>
-
-
-                    <button
-                        type="button"
-                        class="stars-plan-card"
-                        data-stars="500"
-                        data-price="125000"
-                    >
-
-                        <div class="stars-amount">
-
-                            <span>
-                                ⭐
-                            </span>
-
-                            <strong>
-                                500
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-price">
-
-                            <small>
-                                Narxi
-                            </small>
-
-                            <strong>
-                                125 000 so‘m
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-arrow">
-                            →
-                        </div>
-
-                    </button>
-
-
-                    <button
-                        type="button"
-                        class="stars-plan-card"
-                        data-stars="750"
-                        data-price="185000"
-                    >
-
-                        <div class="stars-amount">
-
-                            <span>
-                                ⭐
-                            </span>
-
-                            <strong>
-                                750
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-price">
-
-                            <small>
-                                Narxi
-                            </small>
-
-                            <strong>
-                                185 000 so‘m
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-arrow">
-                            →
-                        </div>
-
-                    </button>
-
-
-                    <button
-                        type="button"
-                        class="stars-plan-card popular-stars"
-                        data-stars="1000"
-                        data-price="244000"
-                    >
-
-                        <div class="stars-popular">
-                            👑 KO‘P TANLANADI
-                        </div>
-
-                        <div class="stars-amount">
-
-                            <span>
-                                ⭐
-                            </span>
-
-                            <strong>
-                                1 000
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-price">
-
-                            <small>
-                                Narxi
-                            </small>
-
-                            <strong>
-                                244 000 so‘m
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-arrow">
-                            →
-                        </div>
-
-                    </button>
-
-
-                    <button
-                        type="button"
-                        class="stars-plan-card"
-                        data-stars="1500"
-                        data-price="365000"
-                    >
-
-                        <div class="stars-amount">
-
-                            <span>
-                                ⭐
-                            </span>
-
-                            <strong>
-                                1 500
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-price">
-
-                            <small>
-                                Narxi
-                            </small>
-
-                            <strong>
-                                365 000 so‘m
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-arrow">
-                            →
-                        </div>
-
-                    </button>
-
-
-                    <button
-                        type="button"
-                        class="stars-plan-card"
-                        data-stars="2500"
-                        data-price="605000"
-                    >
-
-                        <div class="stars-amount">
-
-                            <span>
-                                ⭐
-                            </span>
-
-                            <strong>
-                                2 500
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-price">
-
-                            <small>
-                                Narxi
-                            </small>
-
-                            <strong>
-                                605 000 so‘m
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-arrow">
-                            →
-                        </div>
-
-                    </button>
-
-
-                    <button
-                        type="button"
-                        class="stars-plan-card mega-stars"
-                        data-stars="5000"
-                        data-price="1205000"
-                    >
-
-                        <div class="stars-amount">
-
-                            <span>
-                                ⭐
-                            </span>
-
-                            <strong>
-                                5 000
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-price">
-
-                            <small>
-                                Narxi
-                            </small>
-
-                            <strong>
-                                1 205 000 so‘m
-                            </strong>
-
-                        </div>
-
-                        <div class="stars-arrow">
-                            →
-                        </div>
-
-                    </button>
+                            }
+                        ).join("")
+                    }
 
                 </div>
 
             </div>
+
         `;
 
-
-        // =====================================================
-        // STARS EVENTLARI
-        // =====================================================
 
         const backButton =
             document.getElementById(
                 "productBackBtn"
             );
+
 
         const changeUsernameButton =
             document.getElementById(
@@ -2106,14 +1947,18 @@ document.addEventListener("DOMContentLoaded", () => {
                                 card.dataset.stars
                             );
 
+
                         const price =
                             Number(
                                 card.dataset.price
                             );
 
+
                         haptic("medium");
 
+
                         await createOrder({
+
                             product:
                                 "Telegram Stars",
 
@@ -2127,7 +1972,11 @@ document.addEventListener("DOMContentLoaded", () => {
                                 stars,
 
                             recipient_username:
-                                username
+                                username,
+
+                            button:
+                                card
+
                         });
 
                     }
@@ -2136,9 +1985,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
     }
-
-
-    // =========================================================
+            // =========================================================
     // BUYURTMA YARATISH
     // =========================================================
 
@@ -2147,11 +1994,13 @@ document.addEventListener("DOMContentLoaded", () => {
         amount,
         recipient_username,
         months = null,
-        stars = null
+        stars = null,
+        button = null
     }) {
 
         const userId =
             getUserId();
+
 
         if (!userId) {
 
@@ -2190,7 +2039,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         const confirmed =
-            confirm(
+            window.confirm(
                 `${confirmText}\n\nBuyurtmani davom ettirasizmi?`
             );
 
@@ -2198,10 +2047,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!confirmed) {
             return;
         }
-
-
-        const button =
-            event?.currentTarget;
 
 
         if (button) {
@@ -2459,10 +2304,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             ordersContent.innerHTML =
-                orders.map(
-                    order =>
-                        renderOrderCard(order)
-                ).join("");
+                orders
+                    .map(
+                        order =>
+                            renderOrderCard(order)
+                    )
+                    .join("");
 
 
         } catch (error) {
@@ -2589,7 +2436,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const recipient =
             order.recipient_username
-                ? `@${normalizeUsername(order.recipient_username)}`
+                ? `@${normalizeUsername(
+                    order.recipient_username
+                )}`
                 : "—";
 
 
@@ -2611,23 +2460,25 @@ document.addEventListener("DOMContentLoaded", () => {
             "📦";
 
 
+        const productLower =
+            product.toLowerCase();
+
+
         if (
-            product
-                .toLowerCase()
-                .includes("premium")
+            productLower.includes(
+                "premium"
+            )
         ) {
 
-            serviceIcon =
-                "💎";
+            serviceIcon = "💎";
 
         } else if (
-            product
-                .toLowerCase()
-                .includes("stars")
+            productLower.includes(
+                "stars"
+            )
         ) {
 
-            serviceIcon =
-                "⭐";
+            serviceIcon = "⭐";
 
         }
 
@@ -2642,6 +2493,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         ${serviceIcon}
                     </div>
 
+
                     <div class="order-service-info">
 
                         <strong>
@@ -2649,10 +2501,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         </strong>
 
                         <span>
-                            Buyurtma #${escapeHtml(orderId)}
+                            Buyurtma #${escapeHtml(
+                                orderId
+                            )}
                         </span>
 
                     </div>
+
 
                     <div
                         class="order-status ${statusInfo.className}"
@@ -2673,7 +2528,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         </span>
 
                         <strong>
-                            ${escapeHtml(recipient)}
+                            ${escapeHtml(
+                                recipient
+                            )}
                         </strong>
 
                     </div>
@@ -2686,7 +2543,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         </span>
 
                         <strong>
-                            ${formatPrice(amount)} so‘m
+                            ${formatPrice(
+                                amount
+                            )} so‘m
                         </strong>
 
                     </div>
@@ -2698,9 +2557,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     date
                         ? `
                             <div class="order-date">
-                                🕐 ${escapeHtml(date)}
+                                🕐 ${escapeHtml(
+                                    date
+                                )}
                             </div>
-                          `
+                        `
                         : ""
                 }
 
@@ -2711,7 +2572,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    function formatOrderDate(dateValue) {
+    function formatOrderDate(
+        dateValue
+    ) {
 
         try {
 
@@ -2743,7 +2606,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             );
 
-        } catch (e) {
+
+        } catch (error) {
 
             return String(
                 dateValue
@@ -2752,7 +2616,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
     }
-            // =========================================================
+
+
+    // =========================================================
     // REFERAL
     // =========================================================
 
@@ -2781,12 +2647,14 @@ Sizning referral linkingiz:
 ${referralLink}
 
 Linkni do‘stlaringizga yuboring.
+
         `.trim();
 
 
         if (
             tg &&
-            typeof tg.showPopup === "function"
+            typeof tg.showPopup ===
+                "function"
         ) {
 
             tg.showPopup(
@@ -2833,7 +2701,9 @@ Linkni do‘stlaringizga yuboring.
     }
 
 
-    function shareReferralLink(link) {
+    function shareReferralLink(
+        link
+    ) {
 
         const text =
             `🎁 Premium Shop'ga qo‘shiling!\n\n${link}`;
@@ -2846,7 +2716,12 @@ Linkni do‘stlaringizga yuboring.
         ) {
 
             const shareUrl =
-                `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent("🎁 Premium Shop'ga qo‘shiling!")}`;
+                `https://t.me/share/url?url=${encodeURIComponent(
+                    link
+                )}&text=${encodeURIComponent(
+                    "🎁 Premium Shop'ga qo‘shiling!"
+                )}`;
+
 
             tg.openTelegramLink(
                 shareUrl
@@ -2926,7 +2801,7 @@ Linkni do‘stlaringizga yuboring.
 
 
     // =========================================================
-    // BILDIRISHNOMA
+    // BILDIRISHNOMALAR
     // =========================================================
 
     function openNotifications() {
@@ -3020,6 +2895,7 @@ Linkni do‘stlaringizga yuboring.
 
                 haptic("light");
 
+
                 showRecipientForm(
                     "Telegram Premium"
                 );
@@ -3037,6 +2913,7 @@ Linkni do‘stlaringizga yuboring.
             () => {
 
                 haptic("light");
+
 
                 showRecipientForm(
                     "Telegram Stars"
