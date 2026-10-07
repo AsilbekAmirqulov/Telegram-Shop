@@ -1219,6 +1219,7 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
         }
+    }
             // =========================================================
     // PREMIUM MAHSULOTLARI
     // =========================================================
@@ -3011,4 +3012,4 @@ Linkni do‘stlaringizga yuboring.
 
 });
 
-    }
+    
