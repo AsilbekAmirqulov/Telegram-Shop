@@ -1,308 +1,603 @@
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", () => {
 
-    // =====================================================
-    // ASOSIY ELEMENTLAR
-    // =====================================================
+    // =========================================================
+    // CONFIG
+    // =========================================================
 
-    const products =
-        document.getElementById("products");
+    const SERVER_URL = "https://telegram-shop-co3o.onrender.com";
 
-    const productsSection =
-        document.getElementById("productsSection");
-
-    const premiumButton =
-        document.getElementById("premiumButton");
-
-    const starsButton =
-        document.getElementById("starsButton");
-
-    const myOrdersButton =
-        document.getElementById("myOrdersButton");
-
-    const aiAssistantButton =
-        document.getElementById("aiAssistantButton");
-
-    const tg =
-        window.Telegram?.WebApp;
-
-
-    // =====================================================
-    // TELEGRAM WEB APP
-    // =====================================================
+    const tg = window.Telegram?.WebApp;
 
     if (tg) {
         tg.ready();
         tg.expand();
+
+        try {
+            tg.setHeaderColor("#0b1118");
+            tg.setBackgroundColor("#0b1118");
+        } catch (error) {
+            console.log("Telegram theme config error:", error);
+        }
     }
 
 
-    // =====================================================
-    // SERVER
-    // =====================================================
+    // =========================================================
+    // DOM ELEMENTS
+    // =========================================================
 
-    const SERVER_URL =
-        "https://telegram-shop-co3o.onrender.com";
+    const homePage = document.getElementById("homePage");
+    const ordersPage = document.getElementById("ordersPage");
+    const profilePage = document.getElementById("profilePage");
+    const productsSection = document.getElementById("productsSection");
+
+    const homeNavButton = document.getElementById("homeNavButton");
+    const ordersNavButton = document.getElementById("ordersNavButton");
+    const profileNavButton = document.getElementById("profileNavButton");
+
+    const premiumButton = document.getElementById("premiumButton");
+    const starsButton = document.getElementById("starsButton");
+
+    const profileOrdersButton =
+        document.getElementById("profileOrdersButton");
+
+    const referralButton =
+        document.getElementById("referralButton");
+
+    const supportButton =
+        document.getElementById("supportButton");
+
+    const addBalanceButton =
+        document.getElementById("addBalanceButton");
+
+    const products =
+        document.getElementById("products");
 
 
-    // =====================================================
-    // PREMIUM SOVG'A PAKETLARI
-    // =====================================================
+    // =========================================================
+    // TELEGRAM USER
+    // =========================================================
+
+    const telegramUser =
+        tg?.initDataUnsafe?.user || null;
+
+
+    // =========================================================
+    // STATE
+    // =========================================================
+
+    let currentUsername = "";
+    let verifiedUsername = "";
+
+    let currentProductType = "";
+
+    let usernameInput = null;
+    let usernameStatus = null;
+
+    let searchTimer = null;
+
+
+    // =========================================================
+    // PRODUCT DATA
+    // =========================================================
 
     const premiumPlans = [
         {
-            months: 3,
             title: "3 oy",
+            months: 3,
             price: 165000
         },
         {
-            months: 6,
             title: "6 oy",
+            months: 6,
             price: 220000
         },
         {
-            months: 12,
             title: "12 oy",
+            months: 12,
             price: 390000
         }
     ];
 
 
-    // =====================================================
-    // PREMIUM MUROJAAT ORQALI
-    // =====================================================
-
     const contactPlans = [
         {
-            months: 1,
             title: "1 oy",
+            months: 1,
             price: 40000
         },
         {
-            months: 12,
             title: "12 oy",
+            months: 12,
             price: 280000
         }
     ];
 
 
-    // =====================================================
-    // STARS PACKAGES
-    // =====================================================
-
     const starsPlans = [
         {
-            stars: 50,
             title: "50 Stars",
+            stars: 50,
             price: 11000
         },
         {
-            stars: 100,
             title: "100 Stars",
+            stars: 100,
             price: 30000
         },
         {
-            stars: 150,
             title: "150 Stars",
+            stars: 150,
             price: 40000
         },
         {
-            stars: 250,
             title: "250 Stars",
+            stars: 250,
             price: 64000
         },
         {
-            stars: 350,
             title: "350 Stars",
+            stars: 350,
             price: 89000
         },
         {
-            stars: 500,
             title: "500 Stars",
+            stars: 500,
             price: 125000
         },
         {
-            stars: 750,
             title: "750 Stars",
+            stars: 750,
             price: 185000
         },
         {
-            stars: 1000,
             title: "1000 Stars",
+            stars: 1000,
             price: 244000
         },
         {
-            stars: 1500,
             title: "1500 Stars",
+            stars: 1500,
             price: 365000
         },
         {
-            stars: 2500,
             title: "2500 Stars",
+            stars: 2500,
             price: 605000
         },
         {
-            stars: 5000,
             title: "5000 Stars",
+            stars: 5000,
             price: 1205000
         }
     ];
 
 
-    // =====================================================
-    // STATE
-    // =====================================================
+    // =========================================================
+    // HELPERS
+    // =========================================================
 
-    let currentUsername = "";
-    let verifiedUsername = "";
-    let usernameInput = null;
-    let usernameStatus = null;
-    let searchTimer = null;
-
-
-    // =====================================================
-    // PRICE FORMAT
-    // =====================================================
-
-    function formatPrice(price) {
-
-        return new Intl.NumberFormat(
-            "uz-UZ"
-        ).format(price) + " so'm";
-
+    function formatPrice(value) {
+        return Number(value || 0)
+            .toLocaleString("uz-UZ")
+            .replace(/\s/g, " ") + " so'm";
     }
 
 
-    // =====================================================
-    // HTML ESCAPE
-    // =====================================================
+    function escapeHtml(value) {
+        if (value === null || value === undefined) {
+            return "";
+        }
 
-    function escapeHtml(text) {
-
-        const div =
-            document.createElement("div");
-
-        div.textContent =
-            String(text ?? "");
-
-        return div.innerHTML;
-
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 
 
-    // =====================================================
-    // PRODUCTS CLEAR
-    // =====================================================
+    function getUserId() {
+        return telegramUser?.id || null;
+    }
 
-    function clearProducts() {
 
-        if (!products) {
+    function showToast(message) {
+
+        let toast = document.querySelector(".toast");
+
+        if (!toast) {
+
+            toast = document.createElement("div");
+
+            toast.className = "toast";
+
+            document.body.appendChild(toast);
+        }
+
+        toast.textContent = message;
+
+        toast.classList.add("show");
+
+        setTimeout(() => {
+            toast.classList.remove("show");
+        }, 2500);
+    }
+
+
+    function telegramAlert(message) {
+
+        if (tg?.showAlert) {
+            tg.showAlert(message);
+        } else {
+            alert(message);
+        }
+    }
+
+
+    function haptic(type = "light") {
+
+        try {
+
+            tg?.HapticFeedback?.impactOccurred(type);
+
+        } catch (error) {
+            // ignore
+        }
+    }
+
+
+    // =========================================================
+    // USER PROFILE
+    // =========================================================
+
+    function getUserDisplayName() {
+
+        if (!telegramUser) {
+            return "Telegram foydalanuvchisi";
+        }
+
+        const first =
+            telegramUser.first_name || "";
+
+        const last =
+            telegramUser.last_name || "";
+
+        const fullName =
+            `${first} ${last}`.trim();
+
+        return fullName ||
+            telegramUser.username ||
+            "Foydalanuvchi";
+    }
+
+
+    function getUserUsername() {
+
+        if (!telegramUser?.username) {
+            return "";
+        }
+
+        return "@" + telegramUser.username;
+    }
+
+
+    function setAvatar(element) {
+
+        if (!element) {
             return;
         }
 
-        products.innerHTML = "";
+        if (telegramUser?.photo_url) {
 
+            element.innerHTML = `
+                <img
+                    src="${escapeHtml(telegramUser.photo_url)}"
+                    alt="Avatar"
+                >
+            `;
+
+            return;
+        }
+
+        const name =
+            getUserDisplayName();
+
+        const letter =
+            name.charAt(0).toUpperCase() || "U";
+
+        element.textContent = letter;
     }
 
 
-    // =====================================================
-    // ACTIVE BUTTONS
-    // =====================================================
+    function loadUserProfile() {
 
-    function clearCategoryActive() {
+        const userName =
+            document.getElementById("userName");
 
-        document
-            .querySelectorAll(".category")
-            .forEach(function (item) {
+        const userAvatar =
+            document.getElementById("userAvatar");
 
-                item.classList.remove("active");
+        const profileName =
+            document.getElementById("profileName");
 
-            });
+        const profileUsername =
+            document.getElementById("profileUsername");
 
+        const profileAvatar =
+            document.getElementById("profileAvatar");
+
+        const name =
+            getUserDisplayName();
+
+        const username =
+            getUserUsername();
+
+        if (userName) {
+            userName.textContent = name;
+        }
+
+        if (profileName) {
+            profileName.textContent = name;
+        }
+
+        if (profileUsername) {
+            profileUsername.textContent =
+                username || "Telegram username mavjud emas";
+        }
+
+        setAvatar(userAvatar);
+        setAvatar(profileAvatar);
     }
 
 
-    // =====================================================
-    // BACK BUTTON
-    // =====================================================
+    // =========================================================
+    // BALANCE
+    // =========================================================
+
+    function setBalance(balance = 0) {
+
+        const balanceText =
+            formatPrice(balance);
+
+        const userBalance =
+            document.getElementById("userBalance");
+
+        const profileBalance =
+            document.getElementById("profileBalance");
+
+        if (userBalance) {
+            userBalance.textContent = balanceText;
+        }
+
+        if (profileBalance) {
+            profileBalance.textContent = balanceText;
+        }
+    }
+
+
+    /*
+       Hozircha backendda balance endpointi bo'lmasa,
+       balans 0 so'm ko'rsatiladi.
+
+       Keyinchalik:
+       GET /balance?user_id=...
+       endpointini qo'shib, shu funksiyani real
+       balans bilan ulaymiz.
+    */
+
+    async function loadBalance() {
+
+        const userId = getUserId();
+
+        if (!userId) {
+            setBalance(0);
+            return;
+        }
+
+        try {
+
+            /*
+            Keyinchalik backend tayyor bo'lganda:
+
+            const response = await fetch(
+                `${SERVER_URL}/balance?user_id=${userId}`
+            );
+
+            const data = await response.json();
+
+            setBalance(data.balance || 0);
+            */
+
+            setBalance(0);
+
+        } catch (error) {
+
+            console.error(
+                "Balance error:",
+                error
+            );
+
+            setBalance(0);
+        }
+    }
+
+
+    // =========================================================
+    // PAGE NAVIGATION
+    // =========================================================
+
+    function hideAllPages() {
+
+        [
+            homePage,
+            ordersPage,
+            profilePage,
+            productsSection
+        ].forEach(page => {
+
+            if (page) {
+                page.classList.remove("active-page");
+                page.style.display = "none";
+            }
+
+        });
+    }
+
+
+    function clearNavActive() {
+
+        [
+            homeNavButton,
+            ordersNavButton,
+            profileNavButton
+        ].forEach(button => {
+
+            if (button) {
+                button.classList.remove("active");
+            }
+
+        });
+    }
+
+
+    function showHome() {
+
+        hideAllPages();
+        clearNavActive();
+
+        if (homePage) {
+            homePage.style.display = "block";
+            homePage.classList.add("active-page");
+        }
+
+        if (homeNavButton) {
+            homeNavButton.classList.add("active");
+        }
+
+        haptic("light");
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+    }
+
+
+    async function showOrders() {
+
+        hideAllPages();
+        clearNavActive();
+
+        if (ordersPage) {
+            ordersPage.style.display = "block";
+            ordersPage.classList.add("active-page");
+        }
+
+        if (ordersNavButton) {
+            ordersNavButton.classList.add("active");
+        }
+
+        haptic("light");
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+
+        await showMyOrders();
+    }
+
+
+    function showProfile() {
+
+        hideAllPages();
+        clearNavActive();
+
+        if (profilePage) {
+            profilePage.style.display = "block";
+            profilePage.classList.add("active-page");
+        }
+
+        if (profileNavButton) {
+            profileNavButton.classList.add("active");
+        }
+
+        haptic("light");
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+    }
+
+
+    // =========================================================
+    // PRODUCTS PAGE
+    // =========================================================
+
+    function showProductsPage() {
+
+        hideAllPages();
+        clearNavActive();
+
+        if (productsSection) {
+            productsSection.style.display = "block";
+        }
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+    }
+
+
+    function clearProducts() {
+
+        if (products) {
+            products.innerHTML = "";
+        }
+    }
+
 
     function createBackButton() {
 
         const oldButton =
-            document.getElementById(
-                "shopBackButton"
-            );
+            document.querySelector(".back-button");
 
         if (oldButton) {
             oldButton.remove();
         }
 
-
         const button =
             document.createElement("button");
 
-        button.id =
-            "shopBackButton";
+        button.className = "back-button";
 
-        button.type =
-            "button";
-
-        button.innerHTML =
-            "‹ Orqaga";
-
-
-        button.style.cssText = `
-            width: 100%;
-            margin-bottom: 12px;
-            padding: 11px 14px;
-            border: none;
-            border-radius: 13px;
-            background: #17212b;
-            color: #d8e1e8;
-            font-size: 14px;
-            text-align: left;
-            cursor: pointer;
-        `;
-
+        button.innerHTML = "← Bosh sahifa";
 
         button.addEventListener(
             "click",
-            function () {
-
-                if (searchTimer) {
-                    clearTimeout(searchTimer);
-                    searchTimer = null;
-                }
-
-                usernameInput = null;
-                usernameStatus = null;
-                verifiedUsername = "";
-                currentUsername = "";
-
-                clearProducts();
-
-                productsSection.style.display =
-                    "none";
-
-                clearCategoryActive();
-
-                button.remove();
-
-            }
+            showHome
         );
 
+        if (productsSection) {
 
-        productsSection.prepend(button);
-
+            productsSection.insertBefore(
+                button,
+                productsSection.firstChild
+            );
+        }
     }
 
 
-    // =====================================================
-    // USERNAME STATUS
-    // =====================================================
+    // =========================================================
+    // USERNAME FORM
+    // =========================================================
 
     function showUsernameStatus(
-        message,
-        type
+        message = "",
+        type = ""
     ) {
 
         if (!usernameStatus) {
@@ -313,221 +608,219 @@ document.addEventListener("DOMContentLoaded", function () {
             message;
 
         usernameStatus.className =
-            "username-status " + type;
+            "username-status";
 
+        if (type) {
+            usernameStatus.classList.add(type);
+        }
     }
 
 
-    // =====================================================
-    // CHECK USERNAME
-    // =====================================================
+    function normalizeUsername(value) {
 
-    async function checkUsername(
-        username
-    ) {
-
-        username =
-            username
-                .trim()
-                .replace(/^@/, "");
+        return String(value || "")
+            .trim()
+            .replace(/^@+/, "");
+    }
 
 
-        if (!username) {
+    async function checkUsername(username) {
+
+        const cleanUsername =
+            normalizeUsername(username);
+
+        if (!cleanUsername) {
 
             showUsernameStatus(
-                "❗ Username kiriting",
+                "Username kiriting.",
                 "error"
             );
 
-            verifiedUsername = "";
-
-            return;
-
+            return false;
         }
 
-
         if (
-            !/^[A-Za-z0-9_]{5,32}$/.test(
-                username
-            )
+            !/^[A-Za-z0-9_]{5,32}$/
+                .test(cleanUsername)
         ) {
 
             showUsernameStatus(
-                "❗ Username noto'g'ri. Masalan: @qwerty123",
+                "Username 5–32 ta belgidan iborat bo‘lishi kerak.",
                 "error"
             );
 
-            verifiedUsername = "";
-
-            return;
-
+            return false;
         }
 
-
         showUsernameStatus(
-            "⏳ Tekshirilmoqda...",
+            "Username tekshirilmoqda...",
             "loading"
         );
-
 
         try {
 
             const response =
                 await fetch(
-                    SERVER_URL +
-                    "/check-username?username=" +
-                    encodeURIComponent(username)
+                    `${SERVER_URL}/check-username?username=${encodeURIComponent(cleanUsername)}`
                 );
-
 
             const data =
                 await response.json();
 
+            if (!response.ok) {
 
-            if (!data.ok) {
+                throw new Error(
+                    data?.detail ||
+                    "Username tekshirishda xatolik."
+                );
+            }
 
-                verifiedUsername = "";
+            /*
+               Backend turli formatlarda javob qaytarishi
+               mumkin. Shuning uchun bir nechta holatni
+               tekshiramiz.
+            */
+
+            const exists =
+                data?.exists ??
+                data?.valid ??
+                data?.available ??
+                data?.ok;
+
+            if (
+                exists === false
+            ) {
 
                 showUsernameStatus(
-                    data.message ||
-                    "❌ Username topilmadi",
+                    "Bu username topilmadi.",
                     "error"
                 );
 
-                return;
+                verifiedUsername = "";
 
+                return false;
             }
 
-
             verifiedUsername =
-                data.username;
-
-
-            currentUsername =
-                data.username;
-
+                cleanUsername;
 
             showUsernameStatus(
-                data.message ||
-                "👤 Telegram foydalanuvchisi: @" +
-                verifiedUsername,
+                `@${cleanUsername} tasdiqlandi ✓`,
                 "success"
             );
 
-        }
+            return true;
 
-        catch (error) {
+        } catch (error) {
 
             console.error(
                 "Username check error:",
                 error
             );
 
-            verifiedUsername = "";
-
             showUsernameStatus(
-                "❌ Username tekshirib bo'lmadi",
+                "Username tekshirishda xatolik yuz berdi.",
                 "error"
             );
 
-        }
+            verifiedUsername = "";
 
+            return false;
+        }
     }
 
 
-    // =====================================================
+    // =========================================================
     // RECIPIENT FORM
-    // =====================================================
+    // =========================================================
 
-    function showRecipientForm(
-        type = "premium"
-    ) {
+    function showRecipientForm(type) {
 
-        // Eski timerlarni to'xtatish
-        if (searchTimer) {
-            clearTimeout(searchTimer);
-            searchTimer = null;
-        }
+        currentProductType =
+            type;
 
-        // Eski state'ni to'liq tozalash
-        currentUsername = "";
-        verifiedUsername = "";
-        usernameInput = null;
-        usernameStatus = null;
-
+        showProductsPage();
 
         clearProducts();
 
-        productsSection.style.display =
-            "block";
+        const oldForm =
+            productsSection.querySelector(
+                ".gift-form"
+            );
 
-        createBackButton();
+        if (oldForm) {
+            oldForm.remove();
+        }
 
+        const form =
+            document.createElement("div");
 
-        products.innerHTML = `
+        form.className =
+            "gift-form";
 
-            <div class="gift-form">
+        const title =
+            type === "premium"
+                ? "Telegram Premium"
+                : "Telegram Stars";
 
-                <div class="form-title">
-                    ${
-                        type === "premium"
-                            ? "💎 Premium oluvchi"
-                            : "⭐ Stars oluvchi"
-                    }
-                </div>
+        form.innerHTML = `
+            <h2 class="section-title">
+                ${title}
+            </h2>
 
-                <div class="form-description">
-                    ${
-                        type === "premium"
-                            ? "Premium yubormoqchi bo'lgan Telegram foydalanuvchisining username'ini kiriting."
-                            : "Stars yubormoqchi bo'lgan Telegram foydalanuvchisining username'ini kiriting."
-                    }
-                </div>
+            <p class="section-subtitle">
+                Avval xizmat yuboriladigan Telegram
+                username'ni kiriting.
+            </p>
+
+            <p class="form-description">
+                Masalan: @qwerty123
+            </p>
+
+            <div class="username-input-wrapper">
 
                 <input
                     type="text"
                     id="usernameInput"
                     class="username-input"
-                    placeholder="@qwerty123"
+                    placeholder="@username"
                     autocomplete="off"
-                    autocapitalize="none"
-                    spellcheck="false"
+                    maxlength="33"
                 >
-
-                <div
-                    id="usernameStatus"
-                    class="username-status"
-                ></div>
-
-                <button
-                    type="button"
-                    id="continueUsernameButton"
-                    class="continue-button"
-                    style="
-                        display: block;
-                        width: 100%;
-                        margin-top: 12px;
-                        padding: 13px 16px;
-                        border: none;
-                        border-radius: 13px;
-                        background: #2aabee;
-                        color: #ffffff;
-                        font-size: 15px;
-                        font-weight: 700;
-                        cursor: pointer;
-                        opacity: 1;
-                        visibility: visible;
-                    "
-                >
-                    Davom etish →
-                </button>
 
             </div>
 
+            <div
+                id="usernameStatus"
+                class="username-status"
+            ></div>
+
+            <button
+                id="continueUsernameButton"
+                class="continue-button"
+                type="button"
+            >
+                Davom etish →
+            </button>
         `;
 
+        const backButton =
+            productsSection.querySelector(
+                ".back-button"
+            );
 
-        // YANGI DOM elementlarni olish
+        if (backButton) {
+
+            productsSection.insertBefore(
+                form,
+                backButton.nextSibling
+            );
+
+        } else {
+
+            productsSection.prepend(form);
+        }
+
         usernameInput =
             document.getElementById(
                 "usernameInput"
@@ -538,614 +831,403 @@ document.addEventListener("DOMContentLoaded", function () {
                 "usernameStatus"
             );
 
-
         const continueButton =
             document.getElementById(
                 "continueUsernameButton"
             );
 
 
-        // Inputni to'liq tozalash
-        usernameInput.value = "";
-
-        usernameInput.focus();
-
-
-        // =================================================
-        // USERNAME INPUT
-        // =================================================
-
         usernameInput.addEventListener(
             "input",
-            function () {
-
-                if (searchTimer) {
-                    clearTimeout(searchTimer);
-                    searchTimer = null;
-                }
+            () => {
 
                 verifiedUsername = "";
-                currentUsername = "";
 
+                showUsernameStatus("");
+
+                clearTimeout(searchTimer);
 
                 const value =
-                    usernameInput.value.trim();
-
-
-                if (!value) {
-
-                    showUsernameStatus(
-                        "",
-                        ""
+                    normalizeUsername(
+                        usernameInput.value
                     );
 
+                if (!value) {
                     return;
-
                 }
-
 
                 searchTimer =
                     setTimeout(
-                        function () {
-
-                            checkUsername(
-                                value
-                            );
-
+                        () => {
+                            checkUsername(value);
                         },
-                        500
+                        700
                     );
-
             }
         );
 
 
-        // =================================================
-        // DAVOM ETISH
-        // =================================================
-
         continueButton.addEventListener(
             "click",
-            async function () {
+            async () => {
 
                 const username =
-                    usernameInput.value.trim();
-
+                    normalizeUsername(
+                        usernameInput.value
+                    );
 
                 if (!username) {
 
                     showUsernameStatus(
-                        "❗ Username kiriting",
+                        "Username kiriting.",
                         "error"
                     );
 
-                    usernameInput.focus();
-
-                    return;
-
-                }
-
-
-                // Inputdagi eski tekshiruvni to'xtatish
-                if (searchTimer) {
-                    clearTimeout(searchTimer);
-                    searchTimer = null;
-                }
-
-
-                // Har safar tugma bosilganda yangi tekshiruv
-                verifiedUsername = "";
-
-
-                continueButton.disabled = true;
-
-                continueButton.style.opacity =
-                    "0.6";
-
-                continueButton.textContent =
-                    "⏳ Tekshirilmoqda...";
-
-
-                await checkUsername(
-                    username
-                );
-
-
-                continueButton.disabled = false;
-
-                continueButton.style.opacity =
-                    "1";
-
-                continueButton.textContent =
-                    "Davom etish →";
-
-
-                if (!verifiedUsername) {
                     return;
                 }
 
+                const valid =
+                    await checkUsername(
+                        username
+                    );
 
-                const finalUsername =
+                if (!valid) {
+                    return;
+                }
+
+                currentUsername =
                     verifiedUsername;
 
+                haptic("medium");
 
-                // Formani yopib, keyingi bosqichga o'tamiz
-                usernameInput = null;
-                usernameStatus = null;
-
-
-                if (type === "premium") {
+                if (
+                    currentProductType ===
+                    "premium"
+                ) {
 
                     showPremium(
-                        finalUsername
+                        currentUsername
                     );
 
-                }
-
-                else {
+                } else {
 
                     showStars(
-                        finalUsername
+                        currentUsername
                     );
-
                 }
-
             }
         );
-
-    }
-
-
-    // =====================================================
-    // GET USERNAME
-    // =====================================================
-
-    function getUsername() {
-
-        return (
-            verifiedUsername ||
-            currentUsername
-        );
-
-    }
-
-
-    // =====================================================
-    // PREMIUM PACKAGES
-    // =====================================================
-
-    function showPremium(
-        username
-    ) {
-
-        // Eski input state'larini tozalash
-        if (searchTimer) {
-            clearTimeout(searchTimer);
-            searchTimer = null;
-        }
-
-        usernameInput = null;
-        usernameStatus = null;
-
-
-        clearProducts();
-
-        productsSection.style.display =
-            "block";
 
         createBackButton();
 
+        usernameInput.focus();
+    }
 
-        products.innerHTML = `
 
-            <div class="section-title">
-                💎 Telegram Premium
-            </div>
+    // =========================================================
+    // PREMIUM
+    // =========================================================
 
-            <div class="section-subtitle">
-                👤 @${escapeHtml(username)}
-            </div>
+    function showPremium(username) {
 
-            <div class="form-description"
-                 style="margin-bottom: 12px;">
-                🎁 Premium sovg'a paketlari
-            </div>
+        showProductsPage();
 
+        clearProducts();
+
+        const title =
+            document.createElement("div");
+
+        title.innerHTML = `
+            <h2 class="section-title">
+                Telegram Premium
+            </h2>
+
+            <p class="section-subtitle">
+                <strong>@${escapeHtml(username)}</strong>
+                uchun Premium paketini tanlang.
+            </p>
         `;
 
+        products.appendChild(title);
 
-        // =================================================
-        // 3 / 6 / 12 OY SOVG'A
-        // =================================================
 
-        premiumPlans.forEach(
-            function (plan) {
+        premiumPlans.forEach(plan => {
 
-                const card =
-                    document.createElement(
-                        "div"
+            createProductCard({
+                title: `Premium — ${plan.title}`,
+                description:
+                    `${formatPrice(plan.price)} • ${plan.months} oy`,
+                price: plan.price,
+                buttonText: "Sotib olish",
+                onClick: () => {
+                    createOrder(
+                        "Telegram Premium",
+                        plan
                     );
+                }
+            });
 
-                card.className =
-                    "product-card";
+        });
 
-
-                card.innerHTML = `
-
-                    <div class="product-info">
-
-                        <strong>
-                            🎁 Premium ${plan.title}
-                        </strong>
-
-                        <span>
-                            Telegram Premium sovg'a
-                        </span>
-
-                    </div>
-
-                    <div class="product-price">
-                        ${formatPrice(plan.price)}
-                    </div>
-
-                    <button
-                        type="button"
-                        class="buy-button"
-                    >
-                        Sotib olish
-                    </button>
-
-                `;
-
-
-                const button =
-                    card.querySelector(
-                        ".buy-button"
-                    );
-
-
-                button.addEventListener(
-                    "click",
-                    function () {
-
-                        createOrder(
-                            "Telegram Premium",
-                            username,
-                            plan,
-                            plan.price
-                        );
-
-                    }
-                );
-
-
-                products.appendChild(card);
-
-            }
-        );
-
-
-        // =================================================
-        // MUROJAAT ORQALI
-        // =================================================
 
         const contactTitle =
             document.createElement("div");
 
-        contactTitle.className =
-            "section-title";
-
         contactTitle.style.marginTop =
-            "22px";
+            "20px";
 
-        contactTitle.textContent =
-            "📞 Murojaat orqali Premium";
+        contactTitle.innerHTML = `
+            <h2 class="section-title">
+                Murojaat orqali
+            </h2>
+
+            <p class="section-subtitle">
+                Boshqa variant kerak bo‘lsa,
+                administrator bilan bog‘laning.
+            </p>
+        `;
 
         products.appendChild(
             contactTitle
         );
 
 
-        const contactDescription =
-            document.createElement("div");
+        contactPlans.forEach(plan => {
 
-        contactDescription.className =
-            "form-description";
+            createProductCard({
+                title:
+                    `Premium — ${plan.title}`,
+                description:
+                    "Administrator orqali",
+                price: plan.price,
+                buttonText: "Murojaat",
+                onClick: () => {
+                    openContactTelegram();
+                }
+            });
 
-        contactDescription.style.marginBottom =
-            "12px";
-
-        contactDescription.textContent =
-            "Ushbu paketlar bo'yicha @AmirquIov ga murojaat qiling.";
-
-        products.appendChild(
-            contactDescription
-        );
-
-
-        // 1 OY va 12 OY — ALOHIDA
-        contactPlans.forEach(
-            function (plan) {
-
-                const card =
-                    document.createElement(
-                        "div"
-                    );
-
-                card.className =
-                    "product-card";
-
-
-                card.innerHTML = `
-
-                    <div class="product-info">
-
-                        <strong>
-                            📞 Premium ${plan.title}
-                        </strong>
-
-                        <span>
-                            Murojaat orqali
-                        </span>
-
-                    </div>
-
-                    <div class="product-price">
-                        ${formatPrice(plan.price)}
-                    </div>
-
-                    <button
-                        type="button"
-                        class="buy-button"
-                    >
-                        @AmirquIov ga murojaat qilish
-                    </button>
-
-                `;
-
-
-                const button =
-                    card.querySelector(
-                        ".buy-button"
-                    );
-
-
-                button.addEventListener(
-                    "click",
-                    function () {
-
-                        openContactTelegram();
-
-                    }
-                );
-
-
-                products.appendChild(card);
-
-            }
-        );
-
+        });
     }
 
 
-    // =====================================================
-    // TELEGRAM CONTACT
-    // =====================================================
+    // =========================================================
+    // STARS
+    // =========================================================
+
+    function showStars(username) {
+
+        showProductsPage();
+
+        clearProducts();
+
+        const title =
+            document.createElement("div");
+
+        title.innerHTML = `
+            <h2 class="section-title">
+                Telegram Stars
+            </h2>
+
+            <p class="section-subtitle">
+                <strong>@${escapeHtml(username)}</strong>
+                uchun Stars miqdorini tanlang.
+            </p>
+        `;
+
+        products.appendChild(title);
+
+
+        starsPlans.forEach(plan => {
+
+            createProductCard({
+                title:
+                    `⭐ ${plan.stars} Stars`,
+                description:
+                    formatPrice(plan.price),
+                price:
+                    plan.price,
+                buttonText:
+                    "Sotib olish",
+                onClick: () => {
+                    createOrder(
+                        "Telegram Stars",
+                        plan
+                    );
+                }
+            });
+
+        });
+    }
+
+
+    // =========================================================
+    // PRODUCT CARD
+    // =========================================================
+
+    function createProductCard({
+        title,
+        description,
+        price,
+        buttonText,
+        onClick
+    }) {
+
+        const card =
+            document.createElement("div");
+
+        card.className =
+            "product-card";
+
+        card.innerHTML = `
+            <div class="product-info">
+
+                <h3>
+                    ${escapeHtml(title)}
+                </h3>
+
+                <p>
+                    ${escapeHtml(description)}
+                </p>
+
+            </div>
+
+            <div style="
+                display:flex;
+                align-items:center;
+                gap:9px;
+            ">
+
+                <div class="product-price">
+                    ${formatPrice(price)}
+                </div>
+
+                <button
+                    class="buy-button"
+                    type="button"
+                >
+                    ${escapeHtml(buttonText)}
+                </button>
+
+            </div>
+        `;
+
+        const button =
+            card.querySelector(
+                ".buy-button"
+            );
+
+        button.addEventListener(
+            "click",
+            () => {
+
+                haptic("medium");
+
+                onClick();
+            }
+        );
+
+        products.appendChild(card);
+    }
+
+
+    // =========================================================
+    // CONTACT
+    // =========================================================
 
     function openContactTelegram() {
 
         const username =
             "AmirquIov";
 
+        const url =
+            `https://t.me/${username}`;
 
-        const telegramUrl =
-            "https://t.me/" + username;
+        haptic("medium");
 
+        if (tg?.openTelegramLink) {
 
-        if (tg && typeof tg.openTelegramLink === "function") {
+            tg.openTelegramLink(url);
 
-            tg.openTelegramLink(
-                telegramUrl
-            );
-
-        }
-
-        else {
+        } else {
 
             window.open(
-                telegramUrl,
+                url,
                 "_blank"
             );
-
         }
-
     }
 
 
-    // =====================================================
-    // STARS PACKAGES
-    // =====================================================
-
-    function showStars(
-        username
-    ) {
-
-        // Eski input state'larini tozalash
-        if (searchTimer) {
-            clearTimeout(searchTimer);
-            searchTimer = null;
-        }
-
-        usernameInput = null;
-        usernameStatus = null;
-
-
-        clearProducts();
-
-        productsSection.style.display =
-            "block";
-
-        createBackButton();
-
-
-        products.innerHTML = `
-
-            <div class="section-title">
-                ⭐ Telegram Stars
-            </div>
-
-            <div class="section-subtitle">
-                👤 @${escapeHtml(username)}
-            </div>
-
-        `;
-
-
-        starsPlans.forEach(
-            function (plan) {
-
-                const card =
-                    document.createElement(
-                        "div"
-                    );
-
-                card.className =
-                    "product-card";
-
-
-                card.innerHTML = `
-
-                    <div class="product-info">
-
-                        <strong>
-                            ⭐ ${plan.title}
-                        </strong>
-
-                        <span>
-                            Telegram Stars
-                        </span>
-
-                    </div>
-
-                    <div class="product-price">
-                        ${formatPrice(plan.price)}
-                    </div>
-
-                    <button
-                        type="button"
-                        class="buy-button"
-                    >
-                        Sotib olish
-                    </button>
-
-                `;
-
-
-                const button =
-                    card.querySelector(
-                        ".buy-button"
-                    );
-
-
-                button.addEventListener(
-                    "click",
-                    function () {
-
-                        createOrder(
-                            "Telegram Stars",
-                            username,
-                            plan,
-                            plan.price
-                        );
-
-                    }
-                );
-
-
-                products.appendChild(card);
-
-            }
-        );
-
-    }
-
-
-    // =====================================================
+    // =========================================================
     // CREATE ORDER
-    // =====================================================
+    // =========================================================
 
     async function createOrder(
         product,
-        username,
-        option,
-        amount
+        option
     ) {
 
-        if (
-            !tg ||
-            !tg.initDataUnsafe ||
-            !tg.initDataUnsafe.user
-        ) {
+        const buyerId =
+            getUserId();
 
-            alert(
-                "Telegram foydalanuvchisi aniqlanmadi."
+        if (!buyerId) {
+
+            telegramAlert(
+                "Buyurtma berish uchun Telegram orqali oching."
             );
 
             return;
-
         }
 
+        const username =
+            currentUsername ||
+            verifiedUsername;
 
-        const buyer =
-            tg.initDataUnsafe.user;
+        if (!username) {
 
-
-        const confirmed =
-            confirm(
-                "Buyurtmani yaratmoqchimisiz?"
+            telegramAlert(
+                "Avval username tanlang."
             );
 
-
-        if (!confirmed) {
             return;
         }
 
 
-        const payload = {
+        const orderData = {
 
-            user_id:
-                buyer.id,
+            user_id: buyerId,
 
-            product:
-                product,
+            product: product,
 
-            amount:
-                amount,
+            amount: option.price,
 
             recipient_username:
                 username,
 
             months:
-                product === "Telegram Premium"
+                product ===
+                "Telegram Premium"
                     ? option.months
                     : null,
 
             stars:
-                product === "Telegram Stars"
+                product ===
+                "Telegram Stars"
                     ? option.stars
                     : null
-
         };
 
 
         try {
 
+            showToast(
+                "Buyurtma yaratilmoqda..."
+            );
+
             const response =
                 await fetch(
-                    SERVER_URL +
-                    "/create-order",
+                    `${SERVER_URL}/create-order`,
                     {
-
                         method: "POST",
 
                         headers: {
@@ -1154,8 +1236,9 @@ document.addEventListener("DOMContentLoaded", function () {
                         },
 
                         body:
-                            JSON.stringify(payload)
-
+                            JSON.stringify(
+                                orderData
+                            )
                     }
                 );
 
@@ -1164,111 +1247,107 @@ document.addEventListener("DOMContentLoaded", function () {
                 await response.json();
 
 
-            if (!data.ok) {
+            if (!response.ok) {
 
-                alert(
-                    data.message ||
+                throw new Error(
+                    data?.detail ||
+                    data?.message ||
                     "Buyurtma yaratilmadi."
                 );
-
-                return;
-
             }
 
 
-            alert(
-                "✅ Buyurtma yaratildi!\n\n" +
-                "Buyurtma #" +
-                data.order_id
+            haptic("heavy");
+
+
+            /*
+               Backend payment tizimi tayyor bo'lganda
+               bu yerda payment sahifasiga o'tkazamiz.
+
+               Hozir esa buyurtma muvaffaqiyatli yaratilganini
+               ko'rsatamiz.
+            */
+
+            telegramAlert(
+                "Buyurtma muvaffaqiyatli yaratildi!"
             );
 
 
-            showMyOrders();
+            await showOrders();
 
-        }
-
-        catch (error) {
+        } catch (error) {
 
             console.error(
                 "Create order error:",
                 error
             );
 
-            alert(
-                "❌ Server bilan bog'lanib bo'lmadi."
+            telegramAlert(
+                error.message ||
+                "Buyurtma yaratishda xatolik yuz berdi."
             );
-
         }
-
     }
 
 
-    // =====================================================
+    // =========================================================
     // MY ORDERS
-    // =====================================================
+    // =========================================================
 
     async function showMyOrders() {
 
-        clearProducts();
+        const ordersContent =
+            document.getElementById(
+                "ordersContent"
+            );
 
-        productsSection.style.display =
-            "block";
-
-        createBackButton();
-
-
-        products.innerHTML = `
-            <div class="orders-loading">
-                ⏳ Buyurtmalar yuklanmoqda...
-            </div>
-        `;
-
-
-        if (
-            !tg ||
-            !tg.initDataUnsafe ||
-            !tg.initDataUnsafe.user
-        ) {
-
-            products.innerHTML = `
-
-                <div class="orders-empty">
-
-                    <div class="orders-empty-icon">
-                        ⚠️
-                    </div>
-
-                    <h3>
-                        Foydalanuvchi aniqlanmadi
-                    </h3>
-
-                    <p>
-                        Buyurtmalarni ko'rish uchun
-                        Telegram orqali oching.
-                    </p>
-
-                </div>
-
-            `;
-
+        if (!ordersContent) {
             return;
-
         }
 
 
-        const buyer =
-            tg.initDataUnsafe.user;
+        const userId =
+            getUserId();
+
+
+        if (!userId) {
+
+            ordersContent.innerHTML = `
+                <div class="empty-state">
+
+                    <div class="empty-icon">
+                        🔐
+                    </div>
+
+                    <h3>
+                        Telegram orqali kiring
+                    </h3>
+
+                    <p>
+                        Buyurtmalarni ko‘rish uchun
+                        Mini App'ni Telegram ichida oching.
+                    </p>
+
+                </div>
+            `;
+
+            return;
+        }
+
+
+        ordersContent.innerHTML = `
+            <div class="loading">
+                <div class="spinner"></div>
+                Buyurtmalar yuklanmoqda...
+            </div>
+        `;
 
 
         try {
 
             const response =
                 await fetch(
-                    SERVER_URL +
-                    "/my-orders?user_id=" +
-                    encodeURIComponent(
-                        buyer.id
-                    )
+                    `${SERVER_URL}/my-orders?user_id=${encodeURIComponent(userId)}`
                 );
 
 
@@ -1276,290 +1355,41 @@ document.addEventListener("DOMContentLoaded", function () {
                 await response.json();
 
 
-            if (!data.ok) {
+            if (!response.ok) {
 
-                products.innerHTML = `
-
-                    <div class="orders-empty">
-
-                        <div class="orders-empty-icon">
-                            ⚠️
-                        </div>
-
-                        <h3>
-                            Xatolik
-                        </h3>
-
-                        <p>
-                            ${
-                                escapeHtml(
-                                    data.message ||
-                                    "Buyurtmalarni yuklab bo'lmadi."
-                                )
-                            }
-                        </p>
-
-                    </div>
-
-                `;
-
-                return;
-
-            }
-
-
-            if (
-                !data.orders ||
-                data.orders.length === 0
-            ) {
-
-                products.innerHTML = `
-
-                    <div class="orders-empty">
-
-                        <div class="orders-empty-icon">
-                            📦
-                        </div>
-
-                        <h3>
-                            Hozircha buyurtmalar yo'q
-                        </h3>
-
-                        <p>
-                            Buyurtma berganingizdan
-                            keyin ular shu yerda ko'rinadi.
-                        </p>
-
-                    </div>
-
-                `;
-
-                return;
-
-            }
-
-
-            products.innerHTML = `
-
-                <div class="section-title">
-                    📦 Mening buyurtmalarim
-                </div>
-
-                <div class="orders-container"></div>
-
-            `;
-
-
-            const ordersContainer =
-                products.querySelector(
-                    ".orders-container"
+                throw new Error(
+                    data?.detail ||
+                    "Buyurtmalarni olishda xatolik."
                 );
+            }
 
 
-            data.orders.forEach(
-                function (order) {
-
-                    let statusText =
-                        "Noma'lum";
-
-                    let statusClass =
-                        "";
-
-
-                    if (
-                        order.status === "pending"
-                    ) {
-
-                        statusText =
-                            "Kutilmoqda";
-
-                        statusClass =
-                            "status-pending";
-
-                    }
-
-                    else if (
-                        order.status === "paid"
-                    ) {
-
-                        statusText =
-                            "To'langan";
-
-                        statusClass =
-                            "status-paid";
-
-                    }
-
-                    else if (
-                        order.status === "processing"
-                    ) {
-
-                        statusText =
-                            "Jarayonda";
-
-                        statusClass =
-                            "status-processing";
-
-                    }
-
-                    else if (
-                        order.status === "completed"
-                    ) {
-
-                        statusText =
-                            "Yakunlangan";
-
-                        statusClass =
-                            "status-completed";
-
-                    }
-
-                    else if (
-                        order.status === "cancelled"
-                    ) {
-
-                        statusText =
-                            "Bekor qilingan";
-
-                        statusClass =
-                            "status-cancelled";
-
-                    }
-
-
-                    let packageText =
-                        "";
-
-
-                    if (
-                        order.product ===
-                        "Telegram Premium"
-                    ) {
-
-                        packageText =
-                            order.months
-                                ? order.months + " oy"
-                                : "Premium";
-
-                    }
-
-                    else if (
-                        order.product ===
-                        "Telegram Stars"
-                    ) {
-
-                        packageText =
-                            order.stars
-                                ? order.stars + " Stars"
-                                : "Stars";
-
-                    }
-
-
-                    const card =
-                        document.createElement(
-                            "div"
-                        );
-
-
-                    card.className =
-                        "order-card";
-
-
-                    card.innerHTML = `
-
-                        <div class="order-header">
-
-                            <div class="order-title">
-                                ${escapeHtml(
-                                    order.product
-                                )}
-                            </div>
-
-                            <div class="order-id">
-                                #${order.id}
-                            </div>
-
-                        </div>
-
-                        <div class="order-recipient">
-                            👤 @${escapeHtml(
-                                order.telegram_username ||
-                                "Noma'lum"
-                            )}
-                        </div>
-
-                        <div class="order-info">
-
-                            <div class="order-row">
-
-                                <span class="order-row-label">
-                                    Paket
-                                </span>
-
-                                <span class="order-row-value">
-                                    ${escapeHtml(
-                                        packageText
-                                    )}
-                                </span>
-
-                            </div>
-
-                            <div class="order-row">
-
-                                <span class="order-row-label">
-                                    Holati
-                                </span>
-
-                                <span
-                                    class="order-status ${statusClass}"
-                                >
-                                    ${statusText}
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                        <div class="order-price">
-
-                            <span>
-                                Jami
-                            </span>
-
-                            <strong>
-                                ${formatPrice(
-                                    order.amount
-                                )}
-                            </strong>
-
-                        </div>
-
-                    `;
-
-
-                    ordersContainer.appendChild(
-                        card
+            const orders =
+                Array.isArray(data)
+                    ? data
+                    : (
+                        data.orders ||
+                        []
                     );
 
-                }
+
+            renderOrders(
+                orders
             );
 
-        }
 
-        catch (error) {
+        } catch (error) {
 
             console.error(
-                "My orders error:",
+                "Orders error:",
                 error
             );
 
 
-            products.innerHTML = `
+            ordersContent.innerHTML = `
+                <div class="empty-state">
 
-                <div class="orders-empty">
-
-                    <div class="orders-empty-icon">
+                    <div class="empty-icon">
                         ⚠️
                     </div>
 
@@ -1568,497 +1398,480 @@ document.addEventListener("DOMContentLoaded", function () {
                     </h3>
 
                     <p>
-                        Buyurtmalarni yuklashda
-                        server bilan bog'lanib bo'lmadi.
+                        Buyurtmalarni yuklab bo‘lmadi.
+                        Keyinroq qayta urinib ko‘ring.
                     </p>
 
                 </div>
+            `;
+        }
+    }
 
+
+    // =========================================================
+    // RENDER ORDERS
+    // =========================================================
+
+    function renderOrders(orders) {
+
+        const ordersContent =
+            document.getElementById(
+                "ordersContent"
+            );
+
+        if (!ordersContent) {
+            return;
+        }
+
+
+        if (!orders.length) {
+
+            ordersContent.innerHTML = `
+                <div class="empty-state">
+
+                    <div class="empty-icon">
+                        📦
+                    </div>
+
+                    <h3>
+                        Hozircha buyurtmalar yo‘q
+                    </h3>
+
+                    <p>
+                        Siz hali hech qanday xizmat
+                        sotib olmagansiz.
+                    </p>
+
+                </div>
             `;
 
-        }
-
-    }
-
-
-    // =====================================================
-    // AI ASSISTANT
-    // =====================================================
-
-    function showAIAssistant() {
-
-        clearProducts();
-
-        productsSection.style.display =
-            "block";
-
-        createBackButton();
-
-
-        products.innerHTML = `
-
-            <div class="ai-assistant-container">
-
-                <div class="ai-chat-header">
-
-                    <div class="ai-chat-avatar">
-                        🤖
-                    </div>
-
-                    <div class="ai-chat-info">
-
-                        <strong>
-                            AI Assistant
-                        </strong>
-
-                        <span>
-                            ● Online
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <div class="ai-welcome">
-
-                    <strong>
-                        👋 Assalomu alaykum!
-                    </strong>
-
-                    Men Premium Shop bo'yicha
-                    savollaringizga yordam beraman.
-
-                </div>
-
-
-                <div class="ai-quick-questions">
-
-                    <button
-                        class="ai-quick-button"
-                        type="button"
-                        data-question="Premium narxlari qancha?"
-                    >
-                        💎 Premium narxlari
-                    </button>
-
-                    <button
-                        class="ai-quick-button"
-                        type="button"
-                        data-question="Stars narxlari qanday?"
-                    >
-                        ⭐ Stars narxlari
-                    </button>
-
-                    <button
-                        class="ai-quick-button"
-                        type="button"
-                        data-question="Buyurtmam haqida ma'lumot ber"
-                    >
-                        📦 Buyurtmam haqida
-                    </button>
-
-                    <button
-                        class="ai-quick-button"
-                        type="button"
-                        data-question="Qanday qilib sotib olaman?"
-                    >
-                        ❓ Qanday sotib olaman?
-                    </button>
-
-                </div>
-
-
-                <div
-                    class="ai-messages"
-                    id="aiMessages"
-                ></div>
-
-
-                <div class="ai-input-area">
-
-                    <input
-                        type="text"
-                        class="ai-input"
-                        id="aiInput"
-                        placeholder="Savolingizni yozing..."
-                        autocomplete="off"
-                    >
-
-                    <button
-                        type="button"
-                        class="ai-send-button"
-                        id="aiSendButton"
-                    >
-                        ➤
-                    </button>
-
-                </div>
-
-            </div>
-
-        `;
-
-
-        const aiInput =
-            document.getElementById(
-                "aiInput"
-            );
-
-        const aiSendButton =
-            document.getElementById(
-                "aiSendButton"
-            );
-
-        const aiMessages =
-            document.getElementById(
-                "aiMessages"
-            );
-
-
-        const userId =
-            tg?.initDataUnsafe?.user?.id || 0;
-
-
-        function addAIMessage(
-            text,
-            type
-        ) {
-
-            const message =
-                document.createElement(
-                    "div"
-                );
-
-            message.className =
-                "ai-message " + type;
-
-            message.textContent =
-                text;
-
-            aiMessages.appendChild(
-                message
-            );
-
-            aiMessages.scrollTop =
-                aiMessages.scrollHeight;
-
+            return;
         }
 
 
-        async function sendAIMessage(
-            text
-        ) {
+        ordersContent.innerHTML =
+            orders
+                .map(order => {
 
-            text =
-                text.trim();
-
-
-            if (!text) {
-                return;
-            }
+                    const status =
+                        String(
+                            order.status ||
+                            "pending"
+                        ).toLowerCase();
 
 
-            addAIMessage(
-                text,
-                "user"
-            );
-
-
-            aiInput.value = "";
-
-            aiInput.disabled = true;
-            aiSendButton.disabled = true;
-
-
-            const loadingMessage =
-                document.createElement(
-                    "div"
-                );
-
-            loadingMessage.className =
-                "ai-message bot";
-
-            loadingMessage.textContent =
-                "🤔 O‘ylayapman...";
-
-
-            aiMessages.appendChild(
-                loadingMessage
-            );
-
-
-            aiMessages.scrollTop =
-                aiMessages.scrollHeight;
-
-
-            try {
-
-                const response =
-                    await fetch(
-                        SERVER_URL +
-                        "/ai-chat",
-                        {
-
-                            method: "POST",
-
-                            headers: {
-                                "Content-Type":
-                                    "application/json"
-                            },
-
-                            body:
-                                JSON.stringify({
-                                    message: text,
-                                    user_id: userId
-                                })
-
-                        }
-                    );
-
-
-                const data =
-                    await response.json();
-
-
-                loadingMessage.remove();
-
-
-                if (
-                    data.ok &&
-                    data.reply
-                ) {
-
-                    addAIMessage(
-                        data.reply,
-                        "bot"
-                    );
-
-                }
-
-                else {
-
-                    addAIMessage(
-                        "❌ AI javob bera olmadi. Iltimos, qaytadan urinib ko‘ring.",
-                        "bot"
-                    );
-
-                }
-
-            }
-
-            catch (error) {
-
-                console.error(
-                    "AI Chat Error:",
-                    error
-                );
-
-
-                loadingMessage.remove();
-
-
-                addAIMessage(
-                    "❌ Server bilan bog‘lanishda xatolik yuz berdi.",
-                    "bot"
-                );
-
-            }
-
-
-            aiInput.disabled = false;
-            aiSendButton.disabled = false;
-
-            aiInput.focus();
-
-        }
-
-
-        aiSendButton.addEventListener(
-            "click",
-            function () {
-
-                sendAIMessage(
-                    aiInput.value
-                );
-
-            }
-        );
-
-
-        aiInput.addEventListener(
-            "keydown",
-            function (event) {
-
-                if (
-                    event.key === "Enter"
-                ) {
-
-                    event.preventDefault();
-
-                    sendAIMessage(
-                        aiInput.value
-                    );
-
-                }
-
-            }
-        );
-
-
-        const quickButtons =
-            document.querySelectorAll(
-                ".ai-quick-button"
-            );
-
-
-        quickButtons.forEach(
-            function (button) {
-
-                button.addEventListener(
-                    "click",
-                    function () {
-
-                        sendAIMessage(
-                            button.dataset.question
+                    const statusText =
+                        getStatusText(
+                            status
                         );
 
+
+                    const product =
+                        order.product ||
+                        "Noma'lum xizmat";
+
+
+                    const amount =
+                        order.amount
+                            ? formatPrice(
+                                order.amount
+                            )
+                            : "—";
+
+
+                    const username =
+                        order.recipient_username
+                            ? "@" +
+                              String(
+                                order.recipient_username
+                              ).replace(/^@/, "")
+                            : "—";
+
+
+                    const date =
+                        order.created_at ||
+                        order.date ||
+                        "—";
+
+
+                    let packageInfo = "";
+
+
+                    if (
+                        product ===
+                        "Telegram Premium" &&
+                        order.months
+                    ) {
+
+                        packageInfo =
+                            `${order.months} oy Premium`;
+
+                    } else if (
+                        product ===
+                        "Telegram Stars" &&
+                        order.stars
+                    ) {
+
+                        packageInfo =
+                            `${order.stars} Stars`;
+
                     }
-                );
 
-            }
-        );
 
+                    return `
+                        <div class="order-card">
+
+                            <div class="order-top">
+
+                                <div class="order-product">
+                                    ${escapeHtml(product)}
+                                </div>
+
+                                <div
+                                    class="
+                                        order-status
+                                        status-${escapeHtml(status)}
+                                    "
+                                >
+                                    ${escapeHtml(statusText)}
+                                </div>
+
+                            </div>
+
+
+                            <div class="order-info">
+
+                                <div class="order-row">
+                                    <span>
+                                        Qabul qiluvchi
+                                    </span>
+
+                                    <span>
+                                        ${escapeHtml(username)}
+                                    </span>
+                                </div>
+
+
+                                ${
+                                    packageInfo
+                                    ? `
+                                        <div class="order-row">
+
+                                            <span>
+                                                Paket
+                                            </span>
+
+                                            <span>
+                                                ${escapeHtml(packageInfo)}
+                                            </span>
+
+                                        </div>
+                                    `
+                                    : ""
+                                }
+
+
+                                <div class="order-row">
+
+                                    <span>
+                                        Summa
+                                    </span>
+
+                                    <span>
+                                        ${escapeHtml(amount)}
+                                    </span>
+
+                                </div>
+
+
+                                <div class="order-row">
+
+                                    <span>
+                                        Sana
+                                    </span>
+
+                                    <span>
+                                        ${escapeHtml(
+                                            formatDate(date)
+                                        )}
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+                    `;
+
+                })
+                .join("");
     }
 
 
-    // =====================================================
-    // PREMIUM CATEGORY
-    // =====================================================
+    function getStatusText(status) {
+
+        const statuses = {
+
+            pending: "Kutilmoqda",
+
+            paid: "To‘langan",
+
+            processing: "Jarayonda",
+
+            completed: "Bajarildi",
+
+            cancelled: "Bekor qilindi"
+
+        };
+
+        return statuses[status] ||
+            "Kutilmoqda";
+    }
+
+
+    function formatDate(value) {
+
+        if (!value) {
+            return "—";
+        }
+
+        const date =
+            new Date(value);
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+
+            return String(value);
+        }
+
+        return date.toLocaleString(
+            "uz-UZ",
+            {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+            }
+        );
+    }
+
+
+    // =========================================================
+    // REFERRAL
+    // =========================================================
+
+    function openReferral() {
+
+        const userId =
+            getUserId();
+
+        if (!userId) {
+
+            telegramAlert(
+                "Referral uchun Telegram orqali kiring."
+            );
+
+            return;
+        }
+
+
+        const botUsername =
+            "Tprembot";
+
+
+        const referralLink =
+            `https://t.me/${botUsername}?start=ref_${userId}`;
+
+
+        telegramAlert(
+            `Sizning referral linkingiz:\n\n${referralLink}`
+        );
+    }
+
+
+    // =========================================================
+    // SUPPORT
+    // =========================================================
+
+    function openSupport() {
+
+        openContactTelegram();
+    }
+
+
+    // =========================================================
+    // BALANCE BUTTON
+    // =========================================================
+
+    function openBalance() {
+
+        telegramAlert(
+            "Balans to‘ldirish tizimi tez orada ishga tushadi."
+        );
+    }
+
+
+    // =========================================================
+    // NAVIGATION EVENTS
+    // =========================================================
+
+    if (homeNavButton) {
+
+        homeNavButton.addEventListener(
+            "click",
+            showHome
+        );
+    }
+
+
+    if (ordersNavButton) {
+
+        ordersNavButton.addEventListener(
+            "click",
+            showOrders
+        );
+    }
+
+
+    if (profileNavButton) {
+
+        profileNavButton.addEventListener(
+            "click",
+            showProfile
+        );
+    }
+
+
+    // =========================================================
+    // HOME SERVICE EVENTS
+    // =========================================================
 
     if (premiumButton) {
 
         premiumButton.addEventListener(
             "click",
-            function (event) {
+            () => {
 
-                event.preventDefault();
-                event.stopPropagation();
-
-
-                clearCategoryActive();
-
-                premiumButton.classList.add(
-                    "active"
-                );
-
+                haptic("medium");
 
                 showRecipientForm(
                     "premium"
                 );
-
             }
         );
-
     }
 
-
-    // =====================================================
-    // MY ORDERS CATEGORY
-    // =====================================================
-
-    if (myOrdersButton) {
-
-        myOrdersButton.addEventListener(
-            "click",
-            function (event) {
-
-                event.preventDefault();
-                event.stopPropagation();
-
-
-                clearCategoryActive();
-
-                myOrdersButton.classList.add(
-                    "active"
-                );
-
-
-                showMyOrders();
-
-            }
-        );
-
-    }
-
-
-    // =====================================================
-    // STARS CATEGORY
-    // =====================================================
 
     if (starsButton) {
 
         starsButton.addEventListener(
             "click",
-            function (event) {
+            () => {
 
-                event.preventDefault();
-                event.stopPropagation();
-
-
-                clearCategoryActive();
-
-                starsButton.classList.add(
-                    "active"
-                );
-
+                haptic("medium");
 
                 showRecipientForm(
                     "stars"
                 );
-
             }
         );
-
     }
 
 
-    // =====================================================
-    // AI ASSISTANT CATEGORY
-    // =====================================================
+    // =========================================================
+    // PROFILE EVENTS
+    // =========================================================
 
-    if (aiAssistantButton) {
+    if (profileOrdersButton) {
 
-        aiAssistantButton.addEventListener(
+        profileOrdersButton.addEventListener(
             "click",
-            function (event) {
-
-                event.preventDefault();
-                event.stopPropagation();
-
-
-                clearCategoryActive();
-
-                aiAssistantButton.classList.add(
-                    "active"
-                );
-
-
-                showAIAssistant();
-
-            }
+            showOrders
         );
-
     }
 
 
-    // =====================================================
-    // BOSHLANG'ICH HOLAT
-    // =====================================================
+    if (referralButton) {
 
-    clearProducts();
+        referralButton.addEventListener(
+            "click",
+            () => {
 
-    productsSection.style.display =
-        "none";
+                haptic("light");
+
+                openReferral();
+            }
+        );
+    }
+
+
+    if (supportButton) {
+
+        supportButton.addEventListener(
+            "click",
+            () => {
+
+                haptic("light");
+
+                openSupport();
+            }
+        );
+    }
+
+
+    if (addBalanceButton) {
+
+        addBalanceButton.addEventListener(
+            "click",
+            () => {
+
+                haptic("medium");
+
+                openBalance();
+            }
+        );
+    }
+
+
+    // =========================================================
+    // GAMING SERVICES
+    // =========================================================
+
+    document
+        .querySelectorAll(
+            ".service-card.disabled"
+        )
+        .forEach(card => {
+
+            card.addEventListener(
+                "click",
+                () => {
+
+                    haptic("light");
+
+                    showToast(
+                        "Bu xizmat tez orada qo‘shiladi 🚀"
+                    );
+                }
+            );
+
+        });
+
+
+    // =========================================================
+    // INITIALIZATION
+    // =========================================================
+
+    loadUserProfile();
+
+    setBalance(0);
+
+    loadBalance();
+
+    showHome();
 
 });
