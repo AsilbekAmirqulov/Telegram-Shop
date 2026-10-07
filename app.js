@@ -916,7 +916,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="username-input-wrapper">
 
                         <span class="username-at">
-                            @
+
                         </span>
 
                         <input
