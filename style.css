@@ -1,390 +1,269 @@
-=========================================================
+/* =========================================================
    TELEGRAM SHOP — PREMIUM DARK UI
-   Mobile First / Deep Black / Glassmorphism
-=========================================================
+   Mobile First / Telegram Mini App
+   ========================================================= */
 
 :root {
-    --bg: #05080d;
-    --bg-2: #080d14;
-    --surface: rgba(14, 20, 29, 0.88);
-    --surface-2: rgba(18, 25, 35, 0.94);
-    --surface-3: rgba(23, 31, 43, 0.96);
+    --bg: #030507;
+    --bg-soft: #070a0f;
+    --card: #0a0e14;
+    --card-2: #0d1219;
 
     --text: #f5f7fa;
-    --text-soft: #aeb8c5;
-    --text-muted: #687483;
+    --text-soft: #a4acb8;
+    --text-muted: #66707d;
 
-    --blue: #2499ff;
-    --blue-light: #55b7ff;
-    --purple: #795cff;
-    --cyan: #19d3e6;
+    --border: rgba(255, 255, 255, 0.07);
+    --border-soft: rgba(255, 255, 255, 0.045);
+
+    --blue: #2ea6ff;
+    --blue-soft: rgba(46, 166, 255, 0.13);
+
     --gold: #ffc83d;
-    --green: #36d98a;
-    --orange: #ff9d45;
-    --red: #ff5c6c;
+    --gold-soft: rgba(255, 200, 61, 0.12);
 
-    --border: rgba(255, 255, 255, 0.055);
-    --border-light: rgba(255, 255, 255, 0.085);
+    --purple: #8b6cff;
 
-    --shadow:
-        0 18px 55px rgba(0, 0, 0, 0.38);
-
-    --shadow-small:
-        0 8px 28px rgba(0, 0, 0, 0.25);
-
-    --radius-xl: 24px;
-    --radius-lg: 20px;
-    --radius-md: 17px;
-    --radius-sm: 13px;
-
-    --nav-height: 68px;
+    --radius: 20px;
+    --radius-small: 14px;
 }
+
 
 /* =========================================================
    RESET
    ========================================================= */
 
 * {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
 }
 
-html {
-    scroll-behavior: smooth;
+html,
+body {
+    width: 100%;
+    min-height: 100%;
 }
 
 body {
-    min-height: 100vh;
+    margin: 0;
+    background:
+        radial-gradient(
+            circle at 50% -20%,
+            rgba(30, 70, 110, 0.09),
+            transparent 38%
+        ),
+        #030507;
 
     color: var(--text);
 
     font-family:
         -apple-system,
         BlinkMacSystemFont,
+        "SF Pro Display",
+        "SF Pro Text",
         "Segoe UI",
         Roboto,
-        Helvetica,
         Arial,
         sans-serif;
-
-    background:
-        radial-gradient(
-            500px circle at -10% -5%,
-            rgba(36, 153, 255, 0.075),
-            transparent 65%
-        ),
-        radial-gradient(
-            450px circle at 110% 25%,
-            rgba(121, 92, 255, 0.045),
-            transparent 65%
-        ),
-        linear-gradient(
-            180deg,
-            #04070b 0%,
-            #060a10 50%,
-            #05080d 100%
-        );
 
     overflow-x: hidden;
 }
 
-button,
-input {
-    font: inherit;
-}
-
-button {
-    border: none;
-    outline: none;
-    cursor: pointer;
-}
-
-a {
-    color: inherit;
-    text-decoration: none;
-}
 
 /* =========================================================
    APP
    ========================================================= */
 
-.app {
-    position: relative;
-    z-index: 2;
-
+#app {
     width: 100%;
-    max-width: 540px;
-
     min-height: 100vh;
+    padding-bottom: 90px;
+}
+
+
+/* =========================================================
+   MAIN CONTAINER
+   ========================================================= */
+
+.container {
+    width: 100%;
+    max-width: 520px;
     margin: 0 auto;
-
-    padding:
-        calc(12px + env(safe-area-inset-top))
-        15px
-        calc(var(--nav-height) + 28px + env(safe-area-inset-bottom));
+    padding: 16px 15px 30px;
 }
+
 
 /* =========================================================
-   BACKGROUND
+   HEADER
    ========================================================= */
 
-.animated-bg {
-    position: fixed;
-    inset: 0;
-
-    overflow: hidden;
-    pointer-events: none;
-
-    z-index: 0;
+header {
+    margin-bottom: 18px;
 }
 
-.bg-orb {
-    position: absolute;
-
-    border-radius: 50%;
-
-    filter: blur(100px);
-
-    opacity: 0.10;
+header h1 {
+    font-size: 22px;
+    line-height: 1.15;
+    font-weight: 800;
+    letter-spacing: -0.5px;
 }
 
-.bg-orb-1 {
-    width: 260px;
-    height: 260px;
-
-    top: -150px;
-    left: -130px;
-
-    background: #087ee8;
-
-    animation: floatOrb 12s ease-in-out infinite;
+header p {
+    margin-top: 5px;
+    font-size: 12px;
+    color: var(--text-muted);
 }
 
-.bg-orb-2 {
-    width: 230px;
-    height: 230px;
-
-    top: 40%;
-    right: -150px;
-
-    background: #684cff;
-
-    animation: floatOrb 15s ease-in-out infinite reverse;
-}
-
-.bg-orb-3 {
-    width: 200px;
-    height: 200px;
-
-    bottom: -100px;
-    left: -130px;
-
-    background: #00a9bd;
-
-    animation: floatOrb 17s ease-in-out infinite;
-}
-
-@keyframes floatOrb {
-    0%,
-    100% {
-        transform: translate3d(0, 0, 0);
-    }
-
-    50% {
-        transform: translate3d(20px, -25px, 0);
-    }
-}
 
 /* =========================================================
-   PAGES
+   PROFILE / USER HEADER
    ========================================================= */
 
-.page {
-    position: relative;
-    z-index: 2;
+.user-header,
+.profile-header,
+.user-card {
+    display: flex;
+    align-items: center;
 
     width: 100%;
-}
 
-.page:not(.active-page) {
-    display: none;
-}
-
-.products-page {
-    display: none;
-}
-
-/* =========================================================
-   TOP HEADER
-   ========================================================= */
-
-.top-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    gap: 10px;
-
-    margin-bottom: 15px;
-}
-
-.profile-mini {
-    display: flex;
-    align-items: center;
-
-    gap: 9px;
-
-    min-width: 0;
-}
-
-/* SMALLER AVATAR */
-
-.avatar {
-    width: 38px;
-    height: 38px;
-
-    min-width: 38px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    overflow: hidden;
-
-    border-radius: 50%;
+    padding: 10px 12px;
 
     background:
         linear-gradient(
-            135deg,
-            #188dff,
-            #735bff
+            145deg,
+            rgba(15, 19, 26, 0.96),
+            rgba(7, 10, 14, 0.98)
         );
 
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    border: 1px solid var(--border);
+    border-radius: 18px;
 
     box-shadow:
-        0 5px 18px rgba(36, 153, 255, 0.18);
-
-    font-size: 16px;
-    font-weight: 700;
+        0 12px 35px rgba(0, 0, 0, 0.32),
+        inset 0 1px rgba(255, 255, 255, 0.025);
 }
 
-.avatar img {
-    width: 100%;
-    height: 100%;
-
-    object-fit: cover;
-}
-
-.user-info {
-    min-width: 0;
-}
-
-.user-info span {
-    display: block;
-
-    margin-bottom: 1px;
-
-    color: var(--text-muted);
-
-    font-size: 10px;
-}
-
-.user-info strong {
-    display: block;
-
-    max-width: 190px;
-
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-
-    color: #eef2f6;
-
-    font-size: 14px;
-    font-weight: 700;
-}
-
-.icon-button {
-    width: 38px;
-    height: 38px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 12px;
-
-    color: #b8c3d0;
-
-    background:
-        rgba(255, 255, 255, 0.035);
-
-    border: 1px solid var(--border);
-
-    backdrop-filter: blur(12px);
-
-    transition:
-        transform 0.18s ease,
-        background 0.18s ease,
-        color 0.18s ease;
-}
-
-.icon-button:active {
-    transform: scale(0.92);
-
-    color: #fff;
-
-    background:
-        rgba(255, 255, 255, 0.075);
-}
 
 /* =========================================================
-   WALLET
+   AVATAR — SMALL
+   ========================================================= */
+
+.user-header img,
+.profile-header img,
+.user-card img,
+.user-avatar {
+    width: 42px;
+    height: 42px;
+
+    min-width: 42px;
+    min-height: 42px;
+
+    border-radius: 13px;
+
+    object-fit: cover;
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    box-shadow:
+        0 5px 16px rgba(0, 0, 0, 0.35);
+}
+
+
+/* Agar old CSS avatarni katta qilib qo'ygan bo'lsa */
+.profile-page .user-avatar,
+.profile-page .profile-avatar {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+}
+
+
+/* =========================================================
+   USER INFO
+   ========================================================= */
+
+.user-info,
+.profile-info {
+    min-width: 0;
+    margin-left: 11px;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+}
+
+.user-info h2,
+.user-info h3,
+.profile-info h2,
+.profile-info h3 {
+    font-size: 14px;
+    line-height: 17px;
+
+    font-weight: 800;
+
+    color: #f5f7fa;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-info p,
+.profile-info p {
+    margin-top: 2px;
+
+    font-size: 11px;
+    line-height: 14px;
+
+    color: #727c89;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* =========================================================
+   HERO / WALLET
    ========================================================= */
 
 .wallet-card {
     position: relative;
-
     overflow: hidden;
 
-    padding: 17px 18px;
+    margin-top: 14px;
 
-    margin-bottom: 15px;
+    padding: 18px;
 
-    border-radius: var(--radius-xl);
+    border-radius: 21px;
 
     background:
+        radial-gradient(
+            circle at 90% 10%,
+            rgba(46, 166, 255, 0.20),
+            transparent 38%
+        ),
+        radial-gradient(
+            circle at 10% 100%,
+            rgba(139, 108, 255, 0.12),
+            transparent 42%
+        ),
         linear-gradient(
-            135deg,
-            rgba(16, 91, 159, 0.96),
-            rgba(27, 73, 145, 0.94) 50%,
-            rgba(74, 52, 150, 0.96)
+            145deg,
+            #0d1722,
+            #080c12
         );
 
-    border: 1px solid rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(46, 166, 255, 0.14);
 
     box-shadow:
-        0 16px 45px rgba(25, 101, 190, 0.17);
-}
-
-.wallet-card::before {
-    content: "";
-
-    position: absolute;
-
-    width: 190px;
-    height: 190px;
-
-    top: -110px;
-    right: -70px;
-
-    border-radius: 50%;
-
-    background:
-        rgba(255, 255, 255, 0.075);
+        0 18px 45px rgba(0, 0, 0, 0.38),
+        inset 0 1px rgba(255, 255, 255, 0.035);
 }
 
 .wallet-card::after {
@@ -395,275 +274,116 @@ a {
     width: 130px;
     height: 130px;
 
-    right: 35px;
-    bottom: -95px;
+    right: -55px;
+    bottom: -65px;
 
     border-radius: 50%;
 
-    background:
-        rgba(255, 255, 255, 0.045);
-}
+    background: rgba(46, 166, 255, 0.10);
 
-.wallet-top {
-    position: relative;
-    z-index: 2;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    filter: blur(25px);
 }
 
 .wallet-label {
-    color: rgba(255, 255, 255, 0.62);
+    font-size: 10px;
+    color: #738091;
 
-    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
 }
 
 .wallet-balance {
-    position: relative;
-    z-index: 2;
-
     margin-top: 5px;
 
-    color: #fff;
-
     font-size: 25px;
-    font-weight: 800;
+    font-weight: 850;
 
-    letter-spacing: -0.7px;
+    letter-spacing: -0.8px;
+
+    color: #ffffff;
 }
 
-.wallet-currency {
-    font-size: 14px;
-
-    font-weight: 600;
-
-    opacity: 0.72;
-}
-
-.add-balance-button {
-    position: relative;
-    z-index: 3;
-
+.wallet-actions {
     display: flex;
-    align-items: center;
+    gap: 8px;
 
-    gap: 5px;
-
-    padding: 8px 11px;
-
-    color: #fff;
-
-    border-radius: 11px;
-
-    background:
-        rgba(255, 255, 255, 0.12);
-
-    border: 1px solid rgba(255, 255, 255, 0.13);
-
-    backdrop-filter: blur(12px);
-
-    font-size: 11px;
-    font-weight: 700;
-
-    transition:
-        transform 0.18s ease,
-        background 0.18s ease;
+    margin-top: 14px;
 }
 
-.add-balance-button:active {
-    transform: scale(0.95);
+.wallet-action {
+    flex: 1;
 
-    background:
-        rgba(255, 255, 255, 0.18);
-}
+    padding: 9px 10px;
 
-/* =========================================================
-   HERO
-   ========================================================= */
+    border-radius: 12px;
 
-.hero-card {
-    position: relative;
+    background: rgba(255, 255, 255, 0.045);
 
-    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.06);
 
-    min-height: 155px;
-
-    padding: 20px;
-
-    margin-bottom: 21px;
-
-    border-radius: var(--radius-xl);
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(13, 20, 29, 0.96),
-            rgba(8, 13, 20, 0.94)
-        );
-
-    border: 1px solid var(--border);
-
-    box-shadow:
-        0 15px 45px rgba(0, 0, 0, 0.30);
-}
-
-.hero-card::after {
-    content: "";
-
-    position: absolute;
-
-    width: 180px;
-    height: 180px;
-
-    right: -100px;
-    top: -90px;
-
-    border-radius: 50%;
-
-    background:
-        radial-gradient(
-            circle,
-            rgba(36, 153, 255, 0.14),
-            transparent 70%
-        );
-}
-
-.hero-content {
-    position: relative;
-    z-index: 2;
-
-    max-width: 78%;
-}
-
-.hero-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-
-    padding: 5px 9px;
-
-    margin-bottom: 10px;
-
-    border-radius: 999px;
-
-    color: #65bcff;
-
-    background:
-        rgba(36, 153, 255, 0.085);
-
-    border: 1px solid rgba(36, 153, 255, 0.12);
+    color: #c8d0da;
 
     font-size: 10px;
     font-weight: 700;
 }
 
-.hero-title {
-    margin-bottom: 7px;
-
-    color: #f5f8fb;
-
-    font-size: 23px;
-
-    line-height: 1.12;
-
-    letter-spacing: -0.7px;
-}
-
-.hero-text {
-    color: #8995a3;
-
-    font-size: 12px;
-
-    line-height: 1.5;
-}
-
-.hero-decoration {
-    position: absolute;
-
-    right: -12px;
-    bottom: -24px;
-
-    font-size: 105px;
-
-    opacity: 0.09;
-
-    transform: rotate(-12deg);
-}
 
 /* =========================================================
-   SECTION HEADINGS
+   SECTION TITLE
    ========================================================= */
 
-.section-heading {
+.section-title {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
 
-    margin-bottom: 11px;
+    margin: 22px 2px 10px;
 }
 
-.section-heading h2,
-.section-title {
-    color: #edf2f7;
-
-    font-size: 17px;
+.section-title h2 {
+    font-size: 13px;
     font-weight: 800;
 
-    letter-spacing: -0.35px;
+    color: #e8ebef;
 }
 
-.section-heading p,
-.section-subtitle {
-    margin-top: 3px;
-
-    color: var(--text-muted);
-
-    font-size: 11px;
-
-    line-height: 1.4;
+.section-title span {
+    font-size: 10px;
+    color: #596370;
 }
+
 
 /* =========================================================
-   SERVICE GRID
+   SERVICES
    ========================================================= */
 
-.service-grid {
-    display: grid;
-
-    grid-template-columns: repeat(2, 1fr);
-
+.services {
+    display: flex;
+    flex-direction: column;
     gap: 10px;
-
-    margin-bottom: 21px;
 }
+
+
+/* =========================================================
+   SERVICE CARD — BASE
+   ========================================================= */
 
 .service-card {
     position: relative;
-
     overflow: hidden;
 
-    min-height: 138px;
+    display: flex;
+    align-items: center;
 
-    padding: 15px;
+    width: 100%;
 
-    text-align: left;
+    min-height: 72px;
 
-    color: var(--text);
+    padding: 10px 12px;
 
-    border-radius: var(--radius-lg);
+    border-radius: 19px;
 
-    background:
-        linear-gradient(
-            145deg,
-            rgba(15, 22, 31, 0.98),
-            rgba(9, 14, 21, 0.98)
-        );
-
-    border: 1px solid rgba(255, 255, 255, 0.055);
-
-    box-shadow:
-        0 9px 28px rgba(0, 0, 0, 0.24);
+    cursor: pointer;
 
     transition:
         transform 0.18s ease,
@@ -671,7 +391,119 @@ a {
         box-shadow 0.18s ease;
 }
 
-.service-card::after {
+.service-card:active {
+    transform: scale(0.975);
+}
+
+
+/* =========================================================
+   SERVICE ICON
+   ========================================================= */
+
+.service-icon {
+    width: 48px;
+    height: 48px;
+
+    min-width: 48px;
+    min-height: 48px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 15px;
+
+    font-size: 22px;
+
+    position: relative;
+    z-index: 2;
+}
+
+
+/* =========================================================
+   SERVICE CONTENT
+   ========================================================= */
+
+.service-content {
+    min-width: 0;
+    flex: 1;
+
+    margin-left: 11px;
+
+    position: relative;
+    z-index: 2;
+}
+
+.service-content h3,
+.service-card h3 {
+    font-size: 14px;
+    font-weight: 800;
+
+    line-height: 17px;
+}
+
+.service-content p,
+.service-card p {
+    margin-top: 3px;
+
+    font-size: 10px;
+    line-height: 13px;
+
+    color: #6d7784;
+}
+
+
+/* =========================================================
+   SERVICE ARROW
+   ========================================================= */
+
+.service-arrow {
+    width: 28px;
+    height: 28px;
+
+    min-width: 28px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 10px;
+
+    font-size: 15px;
+
+    position: relative;
+    z-index: 2;
+}
+
+
+/* =========================================================
+   TELEGRAM PREMIUM
+   ========================================================= */
+
+#premiumButton {
+    position: relative;
+    overflow: hidden;
+
+    background:
+        radial-gradient(
+            circle at 100% 0%,
+            rgba(42, 166, 255, 0.19),
+            transparent 42%
+        ),
+        linear-gradient(
+            145deg,
+            rgba(14, 29, 44, 0.98),
+            rgba(6, 12, 19, 0.99)
+        );
+
+    border: 1px solid rgba(64, 175, 255, 0.14);
+
+    box-shadow:
+        0 12px 34px rgba(0, 0, 0, 0.32),
+        inset 0 1px rgba(255, 255, 255, 0.035);
+}
+
+#premiumButton::before {
     content: "";
 
     position: absolute;
@@ -679,1177 +511,155 @@ a {
     width: 100px;
     height: 100px;
 
-    right: -55px;
-    bottom: -60px;
+    right: -45px;
+    top: -45px;
 
     border-radius: 50%;
 
-    opacity: 0.12;
+    background: rgba(46, 166, 255, 0.12);
 
-    filter: blur(20px);
+    filter: blur(22px);
 }
-
-/* PREMIUM */
 
 #premiumButton::after {
-    background: #239eff;
-}
-
-/* STARS */
-
-#starsButton::after {
-    background: #ffc72c;
-}
-
-.service-card.active:active {
-    transform: scale(0.975);
-}
-
-.service-card.active:hover {
-    border-color: rgba(65, 170, 255, 0.22);
-
-    box-shadow:
-        0 13px 35px rgba(0, 0, 0, 0.32),
-        0 0 25px rgba(36, 153, 255, 0.045);
-}
-
-.service-card.disabled {
-    opacity: 0.55;
-}
-
-.service-icon {
-    position: relative;
-    z-index: 2;
-
-    width: 43px;
-    height: 43px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    margin-bottom: 12px;
-
-    border-radius: 14px;
-
-    background:
-        rgba(255, 255, 255, 0.045);
-
-    border: 1px solid rgba(255, 255, 255, 0.045);
-
-    font-size: 21px;
-
-    box-shadow:
-        inset 0 1px rgba(255, 255, 255, 0.035);
-}
-
-.service-card h3 {
-    position: relative;
-    z-index: 2;
-
-    margin-bottom: 4px;
-
-    font-size: 14px;
-    font-weight: 750;
-}
-
-.service-card p {
-    position: relative;
-    z-index: 2;
-
-    max-width: 145px;
-
-    color: #6e7b89;
-
-    font-size: 10px;
-
-    line-height: 1.4;
-}
-
-.service-arrow {
-    position: absolute;
-
-    z-index: 3;
-
-    top: 15px;
-    right: 13px;
-
-    color: #586574;
-
-    font-size: 14px;
-}
-
-.coming-soon {
-    position: absolute;
-
-    right: 11px;
-    bottom: 10px;
-
-    padding: 4px 7px;
-
-    border-radius: 999px;
-
-    color: #65717f;
-
-    background:
-        rgba(255, 255, 255, 0.035);
-
-    border: 1px solid rgba(255, 255, 255, 0.035);
-
-    font-size: 8px;
-    font-weight: 700;
-}
-
-/* =========================================================
-   TRUST
-   ========================================================= */
-
-.trust-card {
-    display: grid;
-
-    grid-template-columns: repeat(3, 1fr);
-
-    gap: 5px;
-
-    padding: 13px 8px;
-
-    margin-bottom: 20px;
-
-    border-radius: var(--radius-lg);
-
-    background:
-        rgba(255, 255, 255, 0.022);
-
-    border: 1px solid rgba(255, 255, 255, 0.045);
-}
-
-.trust-item {
-    text-align: center;
-}
-
-.trust-icon {
-    margin-bottom: 4px;
-
-    font-size: 17px;
-}
-
-.trust-item strong {
-    display: block;
-
-    color: #cdd5de;
-
-    font-size: 10px;
-    font-weight: 700;
-}
-
-.trust-item span {
-    display: block;
-
-    margin-top: 2px;
-
-    color: #5f6b78;
-
-    font-size: 8px;
-}
-
-/* =========================================================
-   PRODUCTS
-   ========================================================= */
-
-.products-page {
-    position: relative;
-    z-index: 5;
-}
-
-.products-page .section-title {
-    margin-bottom: 4px;
-}
-
-.products-page .section-subtitle {
-    margin-bottom: 16px;
-}
-
-/* =========================================================
-   BACK BUTTON
-   ========================================================= */
-
-.back-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-
-    margin-bottom: 15px;
-
-    padding: 8px 11px;
-
-    color: #a8b4c1;
-
-    background:
-        rgba(255, 255, 255, 0.035);
-
-    border: 1px solid var(--border);
-
-    border-radius: 11px;
-
-    font-size: 11px;
-    font-weight: 700;
-
-    transition:
-        background 0.18s ease,
-        transform 0.18s ease;
-}
-
-.back-button:active {
-    transform: scale(0.95);
-
-    background:
-        rgba(255, 255, 255, 0.07);
-}
-
-/* =========================================================
-   USERNAME FORM
-   ========================================================= */
-
-.gift-form {
-    margin-bottom: 18px;
-}
-
-.form-description {
-    margin-bottom: 10px;
-
-    color: #909ca9;
-
-    font-size: 12px;
-
-    line-height: 1.5;
-}
-
-.username-input-wrapper {
-    position: relative;
-}
-
-.username-input {
-    width: 100%;
-
-    padding: 14px;
-
-    color: #eef3f8;
-
-    background:
-        rgba(255, 255, 255, 0.035);
-
-    border: 1px solid rgba(255, 255, 255, 0.065);
-
-    border-radius: 14px;
-
-    outline: none;
-
-    font-size: 13px;
-
-    transition:
-        border-color 0.18s ease,
-        background 0.18s ease,
-        box-shadow 0.18s ease;
-}
-
-.username-input::placeholder {
-    color: #505d6b;
-}
-
-.username-input:focus {
-    background:
-        rgba(255, 255, 255, 0.045);
-
-    border-color:
-        rgba(36, 153, 255, 0.42);
-
-    box-shadow:
-        0 0 0 3px rgba(36, 153, 255, 0.055);
-}
-
-.username-status {
-    min-height: 17px;
-
-    margin-top: 7px;
-
-    font-size: 10px;
-}
-
-.username-status.success {
-    color: var(--green);
-}
-
-.username-status.error {
-    color: var(--red);
-}
-
-.username-status.loading {
-    color: #687483;
-}
-
-/* =========================================================
-   CONTINUE BUTTON
-   ========================================================= */
-
-.continue-button {
-    width: 100%;
-
-    margin-top: 10px;
-
-    padding: 13px 15px;
-
-    color: #fff;
-
-    border-radius: 14px;
-
-    background:
-        linear-gradient(
-            135deg,
-            #168cf5,
-            #5367ff
-        );
-
-    box-shadow:
-        0 9px 24px rgba(36, 129, 220, 0.18);
-
-    font-size: 13px;
-    font-weight: 750;
-
-    transition:
-        transform 0.18s ease,
-        filter 0.18s ease;
-}
-
-.continue-button:active {
-    transform: scale(0.98);
-}
-
-.continue-button:disabled {
-    opacity: 0.45;
-}
-
-/* =========================================================
-   PRODUCTS LIST
-   ========================================================= */
-
-#products {
-    display: grid;
-
-    grid-template-columns: 1fr;
-
-    gap: 9px;
-}
-
-.product-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    gap: 10px;
-
-    padding: 14px;
-
-    border-radius: var(--radius-md);
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(16, 23, 32, 0.98),
-            rgba(10, 15, 22, 0.98)
-        );
-
-    border: 1px solid rgba(255, 255, 255, 0.05);
-
-    box-shadow:
-        0 7px 24px rgba(0, 0, 0, 0.20);
-}
-
-.product-info {
-    min-width: 0;
-}
-
-.product-info h3 {
-    margin-bottom: 3px;
-
-    color: #e8edf2;
-
-    font-size: 13px;
-}
-
-.product-info p {
-    color: #687483;
-
-    font-size: 10px;
-}
-
-.product-price {
-    white-space: nowrap;
-
-    color: #61baff;
-
-    font-size: 13px;
-    font-weight: 800;
-}
-
-.buy-button {
-    flex-shrink: 0;
-
-    padding: 9px 12px;
-
-    color: #fff;
-
-    border-radius: 11px;
-
-    background:
-        linear-gradient(
-            135deg,
-            #178df6,
-            #4e70ff
-        );
-
-    box-shadow:
-        0 5px 15px rgba(38, 132, 225, 0.14);
-
-    font-size: 10px;
-    font-weight: 750;
-
-    transition:
-        transform 0.18s ease,
-        filter 0.18s ease;
-}
-
-.buy-button:active {
-    transform: scale(0.94);
-}
-
-/* =========================================================
-   ORDERS
-   ========================================================= */
-
-.orders-page {
-    padding-top: 3px;
-}
-
-.orders-header {
-    margin-bottom: 16px;
-}
-
-.orders-header h1,
-.profile-header h1 {
-    color: #f0f4f8;
-
-    font-size: 23px;
-
-    letter-spacing: -0.55px;
-}
-
-.orders-header p,
-.profile-header p {
-    margin-top: 4px;
-
-    color: #667382;
-
-    font-size: 11px;
-}
-
-#ordersContent {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 9px;
-}
-
-.order-card {
-    padding: 14px;
-
-    border-radius: var(--radius-md);
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(16, 23, 32, 0.98),
-            rgba(9, 14, 21, 0.98)
-        );
-
-    border: 1px solid rgba(255, 255, 255, 0.05);
-
-    box-shadow:
-        0 7px 24px rgba(0, 0, 0, 0.20);
-}
-
-.order-top {
-    display: flex;
-
-    align-items: center;
-    justify-content: space-between;
-
-    gap: 8px;
-
-    margin-bottom: 10px;
-}
-
-.order-product {
-    color: #e7edf3;
-
-    font-size: 13px;
-    font-weight: 750;
-}
-
-.order-status {
-    padding: 4px 7px;
-
-    border-radius: 999px;
-
-    background:
-        rgba(255, 255, 255, 0.04);
-
-    font-size: 8px;
-    font-weight: 750;
-}
-
-.status-pending {
-    color: var(--orange);
-}
-
-.status-paid,
-.status-processing {
-    color: #5ebaff;
-}
-
-.status-completed {
-    color: var(--green);
-}
-
-.status-cancelled {
-    color: var(--red);
-}
-
-.order-info {
-    display: grid;
-
-    gap: 6px;
-}
-
-.order-row {
-    display: flex;
-
-    align-items: center;
-    justify-content: space-between;
-
-    gap: 8px;
-
-    font-size: 10px;
-}
-
-.order-row span:first-child {
-    color: #596675;
-}
-
-.order-row span:last-child {
-    color: #9da8b5;
-
-    text-align: right;
-}
-
-/* =========================================================
-   PROFILE
-   ========================================================= */
-
-.profile-header {
-    display: flex;
-
-    align-items: center;
-
-    gap: 12px;
-
-    margin-bottom: 17px;
-}
-
-.profile-header .profile-avatar {
-    width: 52px;
-    height: 52px;
-
-    min-width: 52px;
-
-    border-radius: 17px;
-
-    border: 1px solid rgba(255, 255, 255, 0.08);
-
-    box-shadow:
-        0 8px 25px rgba(36, 153, 255, 0.13);
-}
-
-.profile-header-info {
-    min-width: 0;
-}
-
-.profile-header-info h1 {
-    max-width: 245px;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-
-    white-space: nowrap;
-}
-
-.profile-username {
-    margin-top: 3px;
-
-    color: #64717f;
-
-    font-size: 10px;
-}
-
-/* =========================================================
-   PROFILE BALANCE
-   ========================================================= */
-
-.profile-balance-card {
-    position: relative;
-
-    overflow: hidden;
-
-    padding: 17px;
-
-    margin-bottom: 15px;
-
-    border-radius: var(--radius-lg);
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(22, 97, 164, 0.13),
-            rgba(104, 78, 190, 0.10)
-        );
-
-    border: 1px solid rgba(255, 255, 255, 0.055);
-}
-
-.profile-balance-label {
-    color: #65717e;
-
-    font-size: 10px;
-}
-
-.profile-balance-value {
-    margin-top: 4px;
-
-    color: #eef3f8;
-
-    font-size: 23px;
-    font-weight: 800;
-}
-
-.profile-menu {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 8px;
-}
-
-.profile-menu-item {
-    width: 100%;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 11px;
-
-    padding: 13px;
-
-    color: var(--text);
-
-    text-align: left;
-
-    background:
-        rgba(255, 255, 255, 0.025);
-
-    border: 1px solid rgba(255, 255, 255, 0.05);
-
-    border-radius: 15px;
-
-    transition:
-        transform 0.18s ease,
-        background 0.18s ease,
-        border-color 0.18s ease;
-}
-
-.profile-menu-item:active {
-    transform: scale(0.985);
-
-    background:
-        rgba(255, 255, 255, 0.055);
-}
-
-.menu-icon {
-    width: 36px;
-    height: 36px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    flex-shrink: 0;
-
-    border-radius: 11px;
-
-    background:
-        rgba(255, 255, 255, 0.045);
-
-    border: 1px solid rgba(255, 255, 255, 0.04);
-
-    font-size: 16px;
-}
-
-.menu-text {
-    flex: 1;
-}
-
-.menu-text strong {
-    display: block;
-
-    color: #dce3ea;
-
-    font-size: 12px;
-}
-
-.menu-text span {
-    display: block;
-
-    margin-top: 2px;
-
-    color: #606d7b;
-
-    font-size: 9px;
-}
-
-.menu-arrow {
-    color: #4f5c6a;
-
-    font-size: 14px;
-}
-
-/* =========================================================
-   BOTTOM NAV
-   ========================================================= */
-
-.bottom-navigation {
-    position: fixed;
-
-    z-index: 100;
-
-    left: 50%;
-    bottom: 0;
-
-    transform: translateX(-50%);
-
-    width: 100%;
-    max-width: 540px;
-
-    padding:
-        6px 10px
-        calc(6px + env(safe-area-inset-bottom));
-
-    background:
-        rgba(5, 8, 13, 0.91);
-
-    border-top:
-        1px solid rgba(255, 255, 255, 0.045);
-
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-}
-
-.nav-inner {
-    display: grid;
-
-    grid-template-columns: repeat(3, 1fr);
-
-    max-width: 390px;
-
-    margin: 0 auto;
-}
-
-.nav-button {
-    position: relative;
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
-    justify-content: center;
-
-    gap: 3px;
-
-    min-height: 52px;
-
-    color: #5d6977;
-
-    background: transparent;
-
-    border-radius: 13px;
-
-    transition:
-        color 0.18s ease,
-        background 0.18s ease,
-        transform 0.18s ease;
-}
-
-.nav-button span:first-child {
-    font-size: 18px;
-
-    line-height: 1;
-}
-
-.nav-button span:last-child {
-    font-size: 8px;
-
-    font-weight: 650;
-}
-
-.nav-button.active {
-    color: #51b4ff;
-
-    background:
-        rgba(36, 153, 255, 0.055);
-}
-
-.nav-button.active::before {
     content: "";
 
     position: absolute;
 
-    top: 0;
-    left: 50%;
+    left: 18px;
+    right: 18px;
+    bottom: 0;
 
-    width: 18px;
-    height: 2px;
-
-    transform: translateX(-50%);
-
-    border-radius: 99px;
+    height: 1px;
 
     background:
         linear-gradient(
             90deg,
-            #2499ff,
-            #67c2ff
+            transparent,
+            rgba(46, 166, 255, 0.5),
+            transparent
+        );
+}
+
+#premiumButton .service-icon {
+    background:
+        linear-gradient(
+            145deg,
+            rgba(46, 166, 255, 0.20),
+            rgba(46, 166, 255, 0.055)
         );
 
-    box-shadow:
-        0 0 10px rgba(36, 153, 255, 0.35);
-}
-
-/* =========================================================
-   EMPTY STATE
-   ========================================================= */
-
-.empty-state {
-    padding: 40px 18px;
-
-    text-align: center;
-
-    border-radius: var(--radius-lg);
-
-    background:
-        rgba(255, 255, 255, 0.022);
-
-    border: 1px solid rgba(255, 255, 255, 0.045);
-}
-
-.empty-icon {
-    margin-bottom: 10px;
-
-    font-size: 38px;
-}
-
-.empty-state h3 {
-    margin-bottom: 5px;
-
-    color: #dfe6ed;
-
-    font-size: 15px;
-}
-
-.empty-state p {
-    color: #64717f;
-
-    font-size: 11px;
-
-    line-height: 1.5;
-}
-
-/* =========================================================
-   FOOTER
-   ========================================================= */
-
-.footer {
-    margin-top: 24px;
-
-    padding: 12px 0;
-
-    color: #46515e;
-
-    text-align: center;
-
-    font-size: 9px;
-}
-
-/* =========================================================
-   TOAST
-   ========================================================= */
-
-.toast {
-    position: fixed;
-
-    z-index: 999;
-
-    left: 50%;
-    bottom: calc(var(--nav-height) + 15px);
-
-    width: max-content;
-
-    max-width: calc(100% - 30px);
-
-    padding: 10px 13px;
-
-    transform:
-        translate(-50%, 12px);
-
-    opacity: 0;
-
-    pointer-events: none;
-
-    color: #edf2f7;
-
-    background:
-        rgba(16, 23, 32, 0.96);
-
-    border:
-        1px solid rgba(255, 255, 255, 0.07);
-
-    border-radius: 12px;
+    border: 1px solid rgba(46, 166, 255, 0.14);
 
     box-shadow:
-        0 12px 35px rgba(0, 0, 0, 0.38);
-
-    backdrop-filter: blur(18px);
-
-    font-size: 11px;
-    font-weight: 650;
-
-    transition:
-        opacity 0.22s ease,
-        transform 0.22s ease;
+        inset 0 1px rgba(255, 255, 255, 0.05),
+        0 5px 20px rgba(46, 166, 255, 0.08);
 }
 
-.toast.show {
-    opacity: 1;
-
-    transform:
-        translate(-50%, 0);
+#premiumButton h3 {
+    color: #eef8ff;
 }
+
+#premiumButton p {
+    color: #708ba3;
+}
+
+#premiumButton .service-arrow {
+    color: #5fc0ff;
+
+    background: rgba(46, 166, 255, 0.10);
+
+    border: 1px solid rgba(46, 166, 255, 0.12);
+}
+
 
 /* =========================================================
-   LOADING
+   TELEGRAM STARS
    ========================================================= */
 
-.loading {
-    display: flex;
+#starsButton {
+    position: relative;
+    overflow: hidden;
 
-    align-items: center;
-    justify-content: center;
+    background:
+        radial-gradient(
+            circle at 100% 0%,
+            rgba(255, 202, 58, 0.18),
+            transparent 42%
+        ),
+        linear-gradient(
+            145deg,
+            rgba(34, 29, 17, 0.98),
+            rgba(12, 11, 8, 0.99)
+        );
 
-    min-height: 90px;
+    border: 1px solid rgba(255, 203, 67, 0.14);
 
-    color: #64717f;
-
-    font-size: 11px;
+    box-shadow:
+        0 12px 34px rgba(0, 0, 0, 0.32),
+        inset 0 1px rgba(255, 255, 255, 0.035);
 }
 
-.spinner {
-    width: 18px;
-    height: 18px;
+#starsButton::before {
+    content: "";
 
-    margin-right: 7px;
+    position: absolute;
 
-    border:
-        2px solid rgba(255, 255, 255, 0.08);
+    width: 100px;
+    height: 100px;
 
-    border-top-color:
-        #2499ff;
+    right: -45px;
+    top: -45px;
 
     border-radius: 50%;
 
-    animation:
-        spin 0.8s linear infinite;
+    background: rgba(255, 202, 58, 0.12);
+
+    filter: blur(22px);
 }
 
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
+#starsButton::after {
+    content: "";
+
+    position: absolute;
+
+    left: 18px;
+    right: 18px;
+    bottom: 0;
+
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 202, 58, 0.5),
+            transparent
+        );
 }
 
-/* =========================================================
-   DESKTOP HOVER
-   ========================================================= */
+#starsButton .service-icon {
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255, 202, 58, 0.19),
+            rgba(255, 202, 58, 0.045)
+        );
 
-@media (hover: hover) {
+    border: 1px solid rgba(255, 202, 58, 0.14);
 
-    .service-card.active:hover {
-        transform: translateY(-2px);
-    }
-
-    .profile-menu-item:hover {
-        background:
-            rgba(255, 255, 255, 0.045);
-
-        border-color:
-            rgba(255, 255, 255, 0.075);
-    }
-
-    .nav-button:hover {
-        color: #66bdff;
-    }
-
-    .buy-button:hover,
-    .continue-button:hover {
-        filter: brightness(1.08);
-    }
+    box-shadow:
+        inset 0 1px rgba(255, 255, 255, 0.05),
+        0 5px 20px rgba(255, 202, 58, 0.07);
 }
 
-/* =========================================================
-   SMALL PHONES
-   ========================================================= */
-
-@media (max-width: 380px) {
-
-    .app {
-        padding-left: 12px;
-        padding-right: 12px;
-    }
-
-    .avatar {
-        width: 36px;
-        height: 36px;
-        min-width: 36px;
-    }
-
-    .hero-card {
-        padding: 18px;
-    }
-
-    .hero-title {
-        font-size: 21px;
-    }
-
-    .service-grid {
-        gap: 8px;
-    }
-
-    .service-card {
-        min-height: 132px;
-        padding: 13px;
-    }
-
-    .service-icon {
-        width: 40px;
-        height: 40px;
-
-        font-size: 20px;
-    }
-
-    .service-card h3 {
-        font-size: 13px;
-    }
-
-    .wallet-balance {
-        font-size: 23px;
-    }
+#starsButton h3 {
+    color: #fff7df;
 }
 
-/* =========================================================
-   VERY SMALL PHONES
-   ========================================================= */
-
-@media (max-width: 330px) {
-
-    .service-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .trust-card {
-        grid-template-columns: 1fr;
-
-        gap: 12px;
-    }
-
-    .trust-item {
-        display: flex;
-
-        align-items: center;
-
-        gap: 8px;
-
-        text-align: left;
-    }
-
-    .trust-icon {
-        margin-bottom: 0;
-    }
+#starsButton p {
+    color: #a0926c;
 }
 
-/* =========================================================
-   LIGHT THEME
-   ========================================================= */
-
-@media (prefers-color-scheme: light) {
-
-    :root {
-        --bg: #f4f7fb;
-        --surface: rgba(255, 255, 255, 0.92);
-
-        --text: #17212b;
-        --text-soft: #52606d;
-        --text-muted: #84909c;
-
-        --border: rgba(20, 30, 40, 0.07);
-    }
-
-    body {
-        background:
-            radial-gradient(
-                500px circle at -10% -5%,
-                rgba(36, 153, 255, 0.10),
-                transparent 65%
-            ),
-            #f4f7fb;
-    }
-
-    .bottom-navigation {
-        background:
-            rgba(255, 255, 255, 0.90);
-
-        border-top-color:
-            rgba(0, 0, 0, 0.06);
-    }
-
-    .service-card,
-    .product-card,
-    .order-card,
-    .profile-menu-item,
-    .hero-card {
-        background:
-            rgba(255, 255, 255, 0.90);
-    }
-
-    .wallet-card {
-        color: #fff;
-    }
-}
+#starsButton .service-arrow {
+    color: #ffd
