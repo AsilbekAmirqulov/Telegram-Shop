@@ -1,643 +1,437 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-
 import os
 import json
 import urllib.request
-import psycopg2
-import base64
-import tempfile
+import urllib.error
 import re
+import secrets
+from datetime import datetime
+
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 from telethon import TelegramClient
-from telethon.tl.types import User
 from telethon.tl.functions.contacts import ResolveUsernameRequest
-from telethon.errors import (
-    UsernameInvalidError,
-    UsernameNotOccupiedError,
-    RPCError
-)
 
 
-# ============================================================
-# TELEGRAM SETTINGS
-# ============================================================
+# =========================================================
+# APP
+# =========================================================
 
-TG_API_ID = os.getenv("TG_API_ID")
-TG_API_HASH = os.getenv("TG_API_HASH")
-TG_SESSION = os.getenv("TG_SESSION")
+app = FastAPI(title="Telegram Shop API")
 
-telegram_client = None
-telegram_session_path = None
-
-
-# ============================================================
-# FASTAPI
-# ============================================================
-
-app = FastAPI()
-
-ADMIN_KEY = os.getenv("ADMIN_KEY")
-
-
-# ============================================================
-# CORS
-# ============================================================
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://asilbekamirqulov.github.io"
-    ],
-    allow_credentials=False,
+    allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
 
-# ============================================================
-# TELEGRAM CLIENT STARTUP
-# ============================================================
+# =========================================================
+# ENV
+# =========================================================
 
-@app.on_event("startup")
-async def startup_telegram():
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-    global telegram_client
-    global telegram_session_path
+ADMIN_KEY = os.getenv("ADMIN_KEY", "")
 
-    if not TG_API_ID or not TG_API_HASH or not TG_SESSION:
+RESELLCODES_API_KEY = os.getenv("RESELLCODES_API_KEY", "")
+RESELLCODES_BASE_URL = "https://api.resellcodes.com"
 
-        print(
-            "WARNING: TG_API_ID, TG_API_HASH yoki TG_SESSION topilmadi."
-        )
+TG_API_ID = os.getenv("TG_API_ID")
+TG_API_HASH = os.getenv("TG_API_HASH")
+TG_SESSION = os.getenv("TG_SESSION", "telegram_shop")
 
-        return
 
+# =========================================================
+# TELEGRAM CLIENT
+# =========================================================
+
+telegram_client = None
+
+
+if TG_API_ID and TG_API_HASH:
     try:
-
-        session_bytes = base64.b64decode(TG_SESSION)
-
-        session_file = tempfile.NamedTemporaryFile(
-            prefix="telegram_shop_",
-            suffix=".session",
-            delete=False
-        )
-
-        session_file.write(session_bytes)
-        session_file.close()
-
-        telegram_session_path = session_file.name
-
         telegram_client = TelegramClient(
-            telegram_session_path,
+            TG_SESSION,
             int(TG_API_ID),
             TG_API_HASH
         )
-
-        await telegram_client.connect()
-
-        if not await telegram_client.is_user_authorized():
-
-            print(
-                "WARNING: Telegram session is not authorized."
-            )
-
-            await telegram_client.disconnect()
-
-            telegram_client = None
-
-            return
-
-        print(
-            "Telegram session is authorized."
-        )
-
-        print(
-            "Telegram username checker is ready."
-        )
-
     except Exception as e:
-
-        print(
-            f"WARNING: Telegram client ishga tushmadi: {e}"
-        )
-
+        print("Telegram client yaratishda xato:", e)
         telegram_client = None
 
 
-# ============================================================
-# TELEGRAM CLIENT SHUTDOWN
-# ============================================================
+# =========================================================
+# STARTUP / SHUTDOWN
+# =========================================================
 
-@app.on_event("shutdown")
-async def shutdown_telegram():
-
+@app.on_event("startup")
+async def startup_event():
     global telegram_client
 
-    if telegram_client is not None:
-
-        try:
-
-            await telegram_client.disconnect()
-
-            print(
-                "Telegram client disconnected."
-            )
-
-        except Exception as e:
-
-            print(
-                f"Telegram disconnect error: {e}"
-            )
-
-
-# ============================================================
-# TELEGRAM USERNAME CHECK
-# ============================================================
-
-async def check_telegram_username(username: str):
-
-    if telegram_client is None:
-
-        print(
-            "USERNAME_CHECK ERROR: Telegram client mavjud emas"
-        )
-
-        return (
-            False,
-            None,
-            "Telegram username tekshiruvi hozircha ishlamayapti"
-        )
+    print("Telegram Shop server starting...")
 
     try:
-
-        username = (
-            username
-            .strip()
-            .lstrip("@")
-        )
-
-        print(
-            f"USERNAME_CHECK: @{username}"
-        )
-
-        result = await telegram_client(
-            ResolveUsernameRequest(username)
-        )
-
-        for entity in result.users:
-
-            if not isinstance(entity, User):
-                continue
-
-            if getattr(entity, "bot", False):
-
-                print(
-                    f"USERNAME_CHECK BOT: @{username}"
-                )
-
-                return (
-                    False,
-                    None,
-                    "Bot username'iga Premium sovg'a qilib bo'lmaydi"
-                )
-
-            real_username = getattr(
-                entity,
-                "username",
-                None
-            )
-
-            if real_username:
-
-                print(
-                    f"USERNAME_CHECK OK: @{real_username}"
-                )
-
-                return (
-                    True,
-                    real_username,
-                    None
-                )
-
-        return (
-            False,
-            None,
-            "Bunday username mavjud emas"
-        )
-
-    except UsernameNotOccupiedError:
-
-        return (
-            False,
-            None,
-            "Bunday username mavjud emas"
-        )
-
-    except UsernameInvalidError:
-
-        return (
-            False,
-            None,
-            "Telegram username noto'g'ri"
-        )
-
-    except RPCError as e:
-
-        print(
-            f"USERNAME_CHECK RPC_ERROR: {e}"
-        )
-
-        return (
-            False,
-            None,
-            "Telegram username'ni tekshirib bo'lmadi"
-        )
-
+        init_db()
+        print("Database initialized.")
     except Exception as e:
+        print("Database init xatosi:", e)
 
-        print(
-            f"USERNAME_CHECK ERROR: {type(e).__name__}: {e}"
-        )
+    if telegram_client:
+        try:
+            if not telegram_client.is_connected():
+                await telegram_client.connect()
 
-        return (
-            False,
-            None,
-            "Telegram username'ni tekshirib bo'lmadi"
-        )
+            print("Telegram client connected.")
+        except Exception as e:
+            print("Telegram client connection xatosi:", e)
 
 
-# ============================================================
+@app.on_event("shutdown")
+async def shutdown_event():
+    global telegram_client
+
+    if telegram_client:
+        try:
+            await telegram_client.disconnect()
+            print("Telegram client disconnected.")
+        except Exception as e:
+            print("Telegram disconnect xatosi:", e)
+
+
+# =========================================================
 # DATABASE
-# ============================================================
+# =========================================================
 
 def get_db():
-
-    database_url = os.getenv("DATABASE_URL")
-
-    if not database_url:
-
-        raise RuntimeError(
-            "DATABASE_URL topilmadi"
-        )
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL environment variable topilmadi.")
 
     return psycopg2.connect(
-        database_url,
-        sslmode="require"
+        DATABASE_URL,
+        cursor_factory=RealDictCursor
     )
 
 
-# ============================================================
-# DATABASE INITIALIZATION
-# ============================================================
-
 def init_db():
-
     conn = get_db()
-    cursor = conn.cursor()
+    cur = conn.cursor()
 
     try:
-
-        # ----------------------------------------------------
+        # -------------------------------------------------
         # ORDERS
-        # ----------------------------------------------------
+        # -------------------------------------------------
 
-        cursor.execute("""
+        cur.execute("""
             CREATE TABLE IF NOT EXISTS orders (
                 id SERIAL PRIMARY KEY,
                 user_id BIGINT NOT NULL,
                 product TEXT NOT NULL,
                 amount INTEGER NOT NULL,
-                status TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
                 telegram_username TEXT,
                 months INTEGER,
-                price_usd TEXT,
+                stars INTEGER,
+                price_usd NUMERIC(12, 4),
                 supplier_order_id TEXT,
-                stars INTEGER
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
 
-        cursor.execute("""
+        # Eski database uchun kerak bo‘lishi mumkin
+        cur.execute("""
             ALTER TABLE orders
             ADD COLUMN IF NOT EXISTS stars INTEGER
         """)
 
-        cursor.execute("""
+        cur.execute("""
             ALTER TABLE orders
-            ADD COLUMN IF NOT EXISTS price_usd TEXT
+            ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         """)
 
-        cursor.execute("""
-            ALTER TABLE orders
-            ADD COLUMN IF NOT EXISTS supplier_order_id TEXT
-        """)
-
-
-        # ----------------------------------------------------
+        # -------------------------------------------------
         # WALLETS
-        # ----------------------------------------------------
+        # -------------------------------------------------
 
-        cursor.execute("""
+        cur.execute("""
             CREATE TABLE IF NOT EXISTS wallets (
                 user_id BIGINT PRIMARY KEY,
-                balance BIGINT NOT NULL DEFAULT 0,
+                balance INTEGER NOT NULL DEFAULT 0,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
 
-
-        # ----------------------------------------------------
+        # -------------------------------------------------
         # WALLET TRANSACTIONS
-        # ----------------------------------------------------
+        # -------------------------------------------------
 
-        cursor.execute("""
+        cur.execute("""
             CREATE TABLE IF NOT EXISTS wallet_transactions (
                 id SERIAL PRIMARY KEY,
                 user_id BIGINT NOT NULL,
-                amount BIGINT NOT NULL,
-                transaction_type TEXT NOT NULL,
+                amount INTEGER NOT NULL,
+                type TEXT NOT NULL,
                 description TEXT,
                 order_id INTEGER,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
 
-
-        # ----------------------------------------------------
+        # -------------------------------------------------
         # REFERRALS
-        # ----------------------------------------------------
+        # -------------------------------------------------
 
-        cursor.execute("""
+        cur.execute("""
             CREATE TABLE IF NOT EXISTS referrals (
                 id SERIAL PRIMARY KEY,
                 referrer_id BIGINT NOT NULL,
                 referred_id BIGINT NOT NULL UNIQUE,
-                bonus_paid BOOLEAN NOT NULL DEFAULT FALSE,
+                bonus_amount INTEGER NOT NULL DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
 
-
         conn.commit()
 
-        print("Database initialization completed.")
-
-    except Exception:
-
-        conn.rollback()
-
-        raise
-
     finally:
-
-        cursor.close()
+        cur.close()
         conn.close()
 
 
-init_db()
-
-
-# ============================================================
+# =========================================================
 # MODELS
-# ============================================================
+# =========================================================
 
 class OrderRequest(BaseModel):
-
     user_id: int
     product: str
     amount: int
     recipient_username: str
-
     months: int | None = None
-
     stars: int | None = None
 
 
 class StatusRequest(BaseModel):
-
     status: str
 
 
-class PremiumTestRequest(BaseModel):
-
-    telegram_username: str
-    months: int
-    admin_key: str
-
-
 class AdminBalanceRequest(BaseModel):
-
     user_id: int
     amount: int
     description: str | None = None
 
 
 class ReferralRequest(BaseModel):
-
     user_id: int
-    referral_code: str
+    referrer_id: int
 
 
-# ============================================================
-# HOME
-# ============================================================
+class PremiumTestRequest(BaseModel):
+    username: str
+    months: int = 3
+
+
+# =========================================================
+# BASIC HELPERS
+# =========================================================
+
+def normalize_username(username: str) -> str:
+    username = (username or "").strip()
+
+    if username.startswith("@"):
+        username = username[1:]
+
+    return username
+
+
+def get_wallet_balance(cur, user_id: int) -> int:
+    cur.execute(
+        """
+        SELECT balance
+        FROM wallets
+        WHERE user_id = %s
+        """,
+        (user_id,)
+    )
+
+    row = cur.fetchone()
+
+    if not row:
+        cur.execute(
+            """
+            INSERT INTO wallets (user_id, balance)
+            VALUES (%s, 0)
+            ON CONFLICT (user_id) DO NOTHING
+            """,
+            (user_id,)
+        )
+
+        return 0
+
+    return int(row["balance"])
+
+
+def ensure_wallet(cur, user_id: int):
+    cur.execute(
+        """
+        INSERT INTO wallets (user_id, balance)
+        VALUES (%s, 0)
+        ON CONFLICT (user_id) DO NOTHING
+        """,
+        (user_id,)
+    )
+
+
+def format_username(username: str) -> str:
+    username = normalize_username(username)
+
+    if not username:
+        return ""
+
+    return "@" + username
+
+
+# =========================================================
+# TELEGRAM USERNAME CHECK
+# =========================================================
+
+async def check_telegram_username(username: str):
+    username = normalize_username(username)
+
+    if not username:
+        return False, None, "Username kiritilmagan."
+
+    if not re.fullmatch(r"[A-Za-z0-9_]{5,32}", username):
+        return False, None, "Username noto‘g‘ri formatda."
+
+    # Telegram client mavjud bo‘lmasa,
+    # format tekshiruvidan o‘tkazamiz.
+    if not telegram_client:
+        return True, username, None
+
+    try:
+        if not telegram_client.is_connected():
+            await telegram_client.connect()
+
+        result = await telegram_client(
+            ResolveUsernameRequest(username)
+        )
+
+        if result and result.peer:
+            return True, username, None
+
+        return False, None, "Bunday Telegram username topilmadi."
+
+    except Exception as e:
+        error_text = str(e).lower()
+
+        if "username not occupied" in error_text:
+            return False, None, "Bunday username mavjud emas."
+
+        if "username_invalid" in error_text:
+            return False, None, "Username noto‘g‘ri."
+
+        print("Username tekshirish xatosi:", e)
+
+        # Telegram API vaqtincha ishlamasa,
+        # foydalanuvchini bloklab qo‘ymaslik uchun
+        # format valid bo‘lsa davom etamiz.
+        return True, username, None
+
+
+# =========================================================
+# ROOT
+# =========================================================
 
 @app.get("/")
-def home():
-
+def root():
     return {
         "ok": True,
         "message": "Telegram Shop server is running!"
     }
 
 
-# ============================================================
+# =========================================================
+# HEALTH
+# =========================================================
+
+@app.get("/health")
+def health():
+    return {
+        "ok": True,
+        "service": "telegram-shop"
+    }
+
+
+# =========================================================
 # CHECK USERNAME
-# ============================================================
+# =========================================================
 
 @app.get("/check-username")
 async def check_username(username: str):
-
-    username = (
-        username
-        .strip()
-        .lstrip("@")
-    )
-
-    if not username:
-
-        return {
-            "ok": False,
-            "message": "❗ Username kiriting"
-        }
-
-    if not re.fullmatch(
-        r"[A-Za-z0-9_]{5,32}",
-        username
-    ):
-
-        return {
-            "ok": False,
-            "message":
-            "❗ Username noto'g'ri. Masalan: @qwerty123"
-        }
-
-    valid, real_username, error = (
-        await check_telegram_username(username)
-    )
+    valid, real_username, error = await check_telegram_username(username)
 
     if not valid:
-
         return {
             "ok": False,
-            "message": error
+            "valid": False,
+            "message": error or "Username topilmadi."
         }
 
     return {
         "ok": True,
+        "valid": True,
         "username": real_username,
-        "message":
-        f"👤 Telegram foydalanuvchisi: @{real_username}"
+        "message": "Username topildi."
     }
-    # ============================================================
-# WALLET HELPERS
-# ============================================================
-
-def ensure_wallet(cursor, user_id: int):
-
-    cursor.execute(
-        """
-        INSERT INTO wallets (
-            user_id,
-            balance
-        )
-        VALUES (%s, 0)
-        ON CONFLICT (user_id)
-        DO NOTHING
-        """,
-        (user_id,)
-    )
-
-
-def get_wallet_balance(cursor, user_id: int):
-
-    ensure_wallet(
-        cursor,
-        user_id
-    )
-
-    cursor.execute(
-        """
-        SELECT balance
-        FROM wallets
-        WHERE user_id = %s
-        FOR UPDATE
-        """,
-        (user_id,)
-    )
-
-    row = cursor.fetchone()
-
-    if not row:
-        return 0
-
-    return int(row[0])
-
-
-# ============================================================
-# GET BALANCE
-# ============================================================
+    # =========================================================
+# BALANCE
+# =========================================================
 
 @app.get("/balance")
-def get_balance(user_id: int):
-
-    if not user_id:
-
-        return {
-            "ok": False,
-            "message":
-            "Telegram foydalanuvchisi aniqlanmadi"
-        }
-
+def balance(user_id: int):
     conn = get_db()
-    cursor = conn.cursor()
+    cur = conn.cursor()
 
     try:
-
-        ensure_wallet(
-            cursor,
-            user_id
-        )
-
-        cursor.execute(
-            """
-            SELECT balance
-            FROM wallets
-            WHERE user_id = %s
-            """,
-            (user_id,)
-        )
-
-        row = cursor.fetchone()
-
-        balance = int(row[0]) if row else 0
-
+        ensure_wallet(cur, user_id)
         conn.commit()
+
+        current_balance = get_wallet_balance(cur, user_id)
 
         return {
             "ok": True,
             "user_id": user_id,
-            "balance": balance,
-            "currency": "UZS"
-        }
-
-    except Exception as e:
-
-        conn.rollback()
-
-        print(
-            f"BALANCE ERROR: {type(e).__name__}: {e}"
-        )
-
-        return {
-            "ok": False,
-            "message":
-            "Balansni olishda xatolik yuz berdi"
+            "balance": current_balance
         }
 
     finally:
-
-        cursor.close()
+        cur.close()
         conn.close()
 
 
-# ============================================================
+# =========================================================
 # WALLET TRANSACTIONS
-# ============================================================
+# =========================================================
 
 @app.get("/wallet/transactions")
 def wallet_transactions(user_id: int):
-
-    if not user_id:
-
-        return {
-            "ok": False,
-            "message":
-            "Telegram foydalanuvchisi aniqlanmadi"
-        }
-
     conn = get_db()
-    cursor = conn.cursor()
+    cur = conn.cursor()
 
     try:
-
-        cursor.execute(
+        cur.execute(
             """
             SELECT
                 id,
                 amount,
-                transaction_type,
+                type,
                 description,
                 order_id,
                 created_at
@@ -649,28 +443,22 @@ def wallet_transactions(user_id: int):
             (user_id,)
         )
 
-        rows = cursor.fetchall()
+        rows = cur.fetchall()
 
         transactions = []
 
         for row in rows:
-
             transactions.append({
-
-                "id": row[0],
-
-                "amount": row[1],
-
-                "type": row[2],
-
-                "description": row[3],
-
-                "order_id": row[4],
-
-                "created_at":
-                    row[5].isoformat()
-                    if row[5]
+                "id": row["id"],
+                "amount": int(row["amount"]),
+                "type": row["type"],
+                "description": row["description"],
+                "order_id": row["order_id"],
+                "created_at": (
+                    row["created_at"].isoformat()
+                    if row["created_at"]
                     else None
+                )
             })
 
         return {
@@ -678,74 +466,45 @@ def wallet_transactions(user_id: int):
             "transactions": transactions
         }
 
-    except Exception as e:
-
-        print(
-            f"WALLET TRANSACTIONS ERROR: "
-            f"{type(e).__name__}: {e}"
-        )
-
-        return {
-            "ok": False,
-            "message":
-            "Tranzaksiyalarni olishda xatolik yuz berdi"
-        }
-
     finally:
-
-        cursor.close()
+        cur.close()
         conn.close()
 
 
-# ============================================================
-# ADMIN ADD BALANCE
-# ============================================================
+# =========================================================
+# ADMIN - ADD BALANCE
+# =========================================================
 
 @app.post("/admin/add-balance")
 def admin_add_balance(
     request: AdminBalanceRequest,
     admin_key: str
 ):
-
-    if admin_key != ADMIN_KEY:
-
-        return {
-            "ok": False,
-            "message": "Ruxsat yo'q"
-        }
-
-    if request.user_id <= 0:
-
-        return {
-            "ok": False,
-            "message": "user_id noto'g'ri"
-        }
-
-    if request.amount <= 0:
-
-        return {
-            "ok": False,
-            "message": "Summa 0 dan katta bo'lishi kerak"
-        }
-
-    conn = get_db()
-    cursor = conn.cursor()
-
-    try:
-
-        ensure_wallet(
-            cursor,
-            request.user_id
+    if not ADMIN_KEY or admin_key != ADMIN_KEY:
+        raise HTTPException(
+            status_code=403,
+            detail="Admin key noto‘g‘ri."
         )
 
-        cursor.execute(
+    if request.amount <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Amount 0 dan katta bo‘lishi kerak."
+        )
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    try:
+        ensure_wallet(cur, request.user_id)
+
+        cur.execute(
             """
             UPDATE wallets
             SET
                 balance = balance + %s,
                 updated_at = CURRENT_TIMESTAMP
             WHERE user_id = %s
-            RETURNING balance
             """,
             (
                 request.amount,
@@ -753,26 +512,85 @@ def admin_add_balance(
             )
         )
 
-        row = cursor.fetchone()
-
-        new_balance = int(row[0])
-
-        cursor.execute(
+        cur.execute(
             """
-            INSERT INTO wallet_transactions (
-                user_id,
-                amount,
-                transaction_type,
-                description
-            )
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO wallet_transactions
+                (user_id, amount, type, description)
+            VALUES
+                (%s, %s, %s, %s)
             """,
             (
                 request.user_id,
                 request.amount,
                 "deposit",
-                request.description
-                or "Admin tomonidan balans to'ldirildi"
+                request.description or "Admin tomonidan balans qo‘shildi"
+            )
+        )
+
+        conn.commit()
+
+        new_balance = get_wallet_balance(cur, request.user_id)
+
+        return {
+            "ok": True,
+            "message": "Balans muvaffaqiyatli to‘ldirildi.",
+            "balance": new_balance
+        }
+
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        cur.close()
+        conn.close()
+
+
+# =========================================================
+# REFERRAL
+# =========================================================
+
+@app.post("/referral")
+def referral(request: ReferralRequest):
+    if request.user_id == request.referrer_id:
+        raise HTTPException(
+            status_code=400,
+            detail="O‘zingizni referal sifatida ishlata olmaysiz."
+        )
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    try:
+        cur.execute(
+            """
+            SELECT id
+            FROM referrals
+            WHERE referred_id = %s
+            """,
+            (request.user_id,)
+        )
+
+        existing = cur.fetchone()
+
+        if existing:
+            return {
+                "ok": True,
+                "message": "Referal allaqachon mavjud."
+            }
+
+        # Hozircha bonusni 0 qoldiramiz.
+        # Keyinchalik referral shartlariga qarab bonus beramiz.
+        cur.execute(
+            """
+            INSERT INTO referrals
+                (referrer_id, referred_id, bonus_amount)
+            VALUES
+                (%s, %s, 0)
+            """,
+            (
+                request.referrer_id,
+                request.user_id
             )
         )
 
@@ -780,223 +598,108 @@ def admin_add_balance(
 
         return {
             "ok": True,
-            "user_id": request.user_id,
-            "added": request.amount,
-            "balance": new_balance
+            "message": "Referal muvaffaqiyatli saqlandi."
         }
 
-    except Exception as e:
-
+    except Exception:
         conn.rollback()
-
-        print(
-            f"ADMIN BALANCE ERROR: "
-            f"{type(e).__name__}: {e}"
-        )
-
-        return {
-            "ok": False,
-            "message":
-            "Balansni to'ldirishda xatolik yuz berdi"
-        }
+        raise
 
     finally:
-
-        cursor.close()
+        cur.close()
         conn.close()
 
 
-# ============================================================
+# =========================================================
 # CREATE ORDER
-# ============================================================
+# =========================================================
 
 @app.post("/create-order")
 async def create_order(order: OrderRequest):
-    allowed_products = [
-        "Telegram Premium",
-        "Telegram Stars"
-    ]
-
-    if order.product not in allowed_products:
-
-        return {
-            "ok": False,
-            "message": "Noma'lum mahsulot"
-        }
-
-
-    # --------------------------------------------------------
-    # AMOUNT
-    # --------------------------------------------------------
 
     if order.amount <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Mahsulot narxi noto‘g‘ri."
+        )
 
-        return {
-            "ok": False,
-            "message": "Narx noto'g'ri"
-        }
-
-
-    # --------------------------------------------------------
-    # USER ID
-    # --------------------------------------------------------
-
-    if order.user_id <= 0:
-
-        return {
-            "ok": False,
-            "message":
-            "Telegram foydalanuvchisi aniqlanmadi"
-        }
-
-
-    # --------------------------------------------------------
-    # USERNAME
-    # --------------------------------------------------------
-
-    username = (
+    username = normalize_username(
         order.recipient_username
-        .strip()
-        .lstrip("@")
     )
 
-    if not username:
-
-        return {
-            "ok": False,
-            "message":
-            "Qabul qiluvchi username kiritilmagan"
-        }
-
-    if not re.fullmatch(
-        r"[A-Za-z0-9_]{5,32}",
-        username
-    ):
-
-        return {
-            "ok": False,
-            "message":
-            "Telegram username noto'g'ri"
-        }
-
-
-    # --------------------------------------------------------
+    # -----------------------------------------------------
     # TELEGRAM USERNAME CHECK
-    # --------------------------------------------------------
+    # -----------------------------------------------------
 
-    # Username allaqachon frontendda tekshirilgan bo'lishi
-    # mumkin, lekin backend ham tekshiradi.
-    #
-    # Agar Telegram client vaqtincha mavjud bo'lmasa,
-    # buyurtmani yaratmaymiz.
-
-valid_username, real_username, username_error = (
-    await check_telegram_username(username)
-)
+    valid_username, real_username, username_error = (
+        await check_telegram_username(username)
+    )
 
     if not valid_username:
+        raise HTTPException(
+            status_code=400,
+            detail=username_error or "Username noto‘g‘ri."
+        )
 
-        return {
-            "ok": False,
-            "message": username_error
-        }
+    username = real_username
 
-    username = real_username or username
-
-
-    # --------------------------------------------------------
-    # PRODUCT VALIDATION
-    # --------------------------------------------------------
-
-    stars = None
-
-    if order.product == "Telegram Premium":
-
-        if order.months not in [3, 6, 12]:
-
-            return {
-                "ok": False,
-                "message":
-                "Premium muddati 3, 6 yoki 12 oy bo'lishi kerak"
-            }
-
-
-    elif order.product == "Telegram Stars":
-
-        allowed_stars = [
-            50,
-            100,
-            150,
-            250,
-            350,
-            500,
-            750,
-            1000,
-            1500,
-            2500,
-            5000
-        ]
-
-        if order.stars not in allowed_stars:
-
-            return {
-                "ok": False,
-                "message":
-                "Stars paketi noto'g'ri"
-            }
-
-        stars = order.stars
-
-
-    # --------------------------------------------------------
-    # DATABASE TRANSACTION
-    # --------------------------------------------------------
+    # -----------------------------------------------------
+    # DATABASE
+    # -----------------------------------------------------
 
     conn = get_db()
-    cursor = conn.cursor()
+    cur = conn.cursor()
 
     try:
 
-        # ----------------------------------------------------
-        # WALLET
-        # ----------------------------------------------------
+        # Wallet mavjudligini ta'minlaymiz
+        ensure_wallet(cur, order.user_id)
 
+        # Balans
         balance = get_wallet_balance(
-            cursor,
+            cur,
             order.user_id
         )
 
+        # -------------------------------------------------
+        # BALANCE CHECK
+        # -------------------------------------------------
+
         if balance < order.amount:
-
-            conn.rollback()
-
-            return {
-                "ok": False,
-                "message":
-                "Balansingiz yetarli emas",
-                "balance": balance,
-                "required": order.amount,
-                "shortage":
-                    order.amount - balance
-            }
-
-
-        # ----------------------------------------------------
-        # CREATE ORDER
-        # ----------------------------------------------------
-
-        cursor.execute(
-            """
-            INSERT INTO orders (
-                user_id,
-                product,
-                amount,
-                status,
-                telegram_username,
-                months,
-                stars
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Balans yetarli emas. "
+                    f"Balansingiz: {balance} so'm"
+                )
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+
+        # -------------------------------------------------
+        # ORDER
+        # -------------------------------------------------
+
+        cur.execute(
+            """
+            INSERT INTO orders
+                (
+                    user_id,
+                    product,
+                    amount,
+                    status,
+                    telegram_username,
+                    months,
+                    stars
+                )
+            VALUES
+                (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s
+                )
             RETURNING id
             """,
             (
@@ -1006,138 +709,126 @@ valid_username, real_username, username_error = (
                 "paid",
                 username,
                 order.months,
-                stars
+                order.stars
             )
         )
 
-        order_id = cursor.fetchone()[0]
+        order_row = cur.fetchone()
 
+        if not order_row:
+            raise Exception(
+                "Buyurtma yaratilmadi."
+            )
 
-        # ----------------------------------------------------
-        # DEDUCT BALANCE
-        # ----------------------------------------------------
+        order_id = order_row["id"]
 
-        cursor.execute(
+        # -------------------------------------------------
+        # BALANCE DEDUCT
+        # -------------------------------------------------
+
+        cur.execute(
             """
             UPDATE wallets
             SET
                 balance = balance - %s,
                 updated_at = CURRENT_TIMESTAMP
             WHERE user_id = %s
-            RETURNING balance
+              AND balance >= %s
             """,
             (
                 order.amount,
-                order.user_id
+                order.user_id,
+                order.amount
             )
         )
 
-        new_balance = int(
-            cursor.fetchone()[0]
-        )
+        if cur.rowcount != 1:
+            raise HTTPException(
+                status_code=400,
+                detail="Balansdan pul yechib bo‘lmadi."
+            )
 
+        # -------------------------------------------------
+        # TRANSACTION
+        # -------------------------------------------------
 
-        # ----------------------------------------------------
-        # TRANSACTION RECORD
-        # ----------------------------------------------------
-
-        description = (
-            f"{order.product} uchun to'lov"
-        )
-
-        cursor.execute(
+        cur.execute(
             """
-            INSERT INTO wallet_transactions (
-                user_id,
-                amount,
-                transaction_type,
-                description,
-                order_id
-            )
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO wallet_transactions
+                (
+                    user_id,
+                    amount,
+                    type,
+                    description,
+                    order_id
+                )
+            VALUES
+                (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s
+                )
             """,
             (
                 order.user_id,
                 -order.amount,
                 "purchase",
-                description,
+                f"{order.product} buyurtmasi",
                 order_id
             )
         )
 
-
-        # ----------------------------------------------------
-        # COMMIT
-        # ----------------------------------------------------
-
         conn.commit()
 
-
-        return {
-
-            "ok": True,
-
-            "order_id": order_id,
-
-            "status": "paid",
-
-            "buyer_user_id": order.user_id,
-
-            "recipient_username": username,
-
-            "product": order.product,
-
-            "months": order.months,
-
-            "stars": stars,
-
-            "amount": order.amount,
-
-            "remaining_balance": new_balance
-        }
-
-    except Exception as e:
-
-        conn.rollback()
-
-        print(
-            f"CREATE ORDER ERROR: "
-            f"{type(e).__name__}: {e}"
+        new_balance = get_wallet_balance(
+            cur,
+            order.user_id
         )
 
         return {
-            "ok": False,
-            "message":
-            "Buyurtma yaratishda xatolik yuz berdi"
+            "ok": True,
+            "message": "Buyurtma muvaffaqiyatli yaratildi.",
+            "order_id": order_id,
+            "status": "paid",
+            "username": username,
+            "balance": new_balance
         }
 
-    finally:
+    except HTTPException:
+        conn.rollback()
+        raise
 
-        cursor.close()
+    except Exception as e:
+        conn.rollback()
+
+        print(
+            "CREATE ORDER ERROR:",
+            repr(e)
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Buyurtma yaratishda server xatosi."
+        )
+
+    finally:
+        cur.close()
         conn.close()
 
 
-# ============================================================
+# =========================================================
 # MY ORDERS
-# ============================================================
+# =========================================================
 
 @app.get("/my-orders")
-def get_my_orders(user_id: int):
-
-    if not user_id:
-
-        return {
-            "ok": False,
-            "message":
-            "Telegram foydalanuvchisi aniqlanmadi"
-        }
-
+def my_orders(user_id: int):
     conn = get_db()
-    cursor = conn.cursor()
+    cur = conn.cursor()
 
     try:
-
-        cursor.execute(
+        cur.execute(
             """
             SELECT
                 id,
@@ -1149,200 +840,71 @@ def get_my_orders(user_id: int):
                 months,
                 stars,
                 price_usd,
-                supplier_order_id
+                supplier_order_id,
+                created_at
             FROM orders
             WHERE user_id = %s
             ORDER BY id DESC
+            LIMIT 100
             """,
             (user_id,)
         )
 
-        rows = cursor.fetchall()
+        rows = cur.fetchall()
 
         orders = []
 
         for row in rows:
-
             orders.append({
-
-                "id": row[0],
-
-                "user_id": row[1],
-
-                "product": row[2],
-
-                "amount": row[3],
-
-                "status": row[4],
-
-                "telegram_username": row[5],
-
-                "months": row[6],
-
-                "stars": row[7],
-
-                "price_usd": row[8],
-
-                "supplier_order_id": row[9]
+                "id": row["id"],
+                "user_id": row["user_id"],
+                "product": row["product"],
+                "amount": int(row["amount"]),
+                "status": row["status"],
+                "telegram_username": row["telegram_username"],
+                "months": row["months"],
+                "stars": row["stars"],
+                "price_usd": (
+                    float(row["price_usd"])
+                    if row["price_usd"] is not None
+                    else None
+                ),
+                "supplier_order_id": row["supplier_order_id"],
+                "created_at": (
+                    row["created_at"].isoformat()
+                    if row["created_at"]
+                    else None
+                )
             })
 
-
         return {
-
             "ok": True,
-
             "orders": orders
         }
 
     finally:
-
-        cursor.close()
-        conn.close()
-        # ============================================================
-# REFERRAL
-# ============================================================
-
-@app.post("/referral")
-def add_referral(request: ReferralRequest):
-
-    if request.user_id <= 0:
-
-        return {
-            "ok": False,
-            "message": "user_id noto'g'ri"
-        }
-
-    referral_code = (
-        request.referral_code
-        .strip()
-        .replace("ref_", "")
-    )
-
-    if not referral_code.isdigit():
-
-        return {
-            "ok": False,
-            "message":
-            "Referral kodi noto'g'ri"
-        }
-
-    referrer_id = int(referral_code)
-
-    if referrer_id == request.user_id:
-
-        return {
-            "ok": False,
-            "message":
-            "O'zingizni referral qilishingiz mumkin emas"
-        }
-
-    conn = get_db()
-    cursor = conn.cursor()
-
-    try:
-
-        cursor.execute(
-            """
-            SELECT id
-            FROM referrals
-            WHERE referred_id = %s
-            """,
-            (request.user_id,)
-        )
-
-        if cursor.fetchone():
-
-            return {
-                "ok": False,
-                "message":
-                "Referral allaqachon mavjud"
-            }
-
-
-        cursor.execute(
-            """
-            INSERT INTO referrals (
-                referrer_id,
-                referred_id
-            )
-            VALUES (%s, %s)
-            RETURNING id
-            """,
-            (
-                referrer_id,
-                request.user_id
-            )
-        )
-
-        referral_id = cursor.fetchone()[0]
-
-        conn.commit()
-
-        return {
-
-            "ok": True,
-
-            "referral_id":
-                referral_id,
-
-            "referrer_id":
-                referrer_id,
-
-            "referred_id":
-                request.user_id
-        }
-
-    except psycopg2.errors.UniqueViolation:
-
-        conn.rollback()
-
-        return {
-            "ok": False,
-            "message":
-            "Referral allaqachon mavjud"
-        }
-
-    except Exception as e:
-
-        conn.rollback()
-
-        print(
-            f"REFERRAL ERROR: "
-            f"{type(e).__name__}: {e}"
-        )
-
-        return {
-            "ok": False,
-            "message":
-            "Referralni saqlashda xatolik"
-        }
-
-    finally:
-
-        cursor.close()
+        cur.close()
         conn.close()
 
 
-# ============================================================
-# ADMIN — ALL ORDERS
-# ============================================================
+# =========================================================
+# ADMIN - ALL ORDERS
+# =========================================================
 
 @app.get("/orders")
-def get_orders(admin_key: str):
-
-    if admin_key != ADMIN_KEY:
-
-        return {
-            "ok": False,
-            "message": "Ruxsat yo'q"
-        }
+def all_orders(admin_key: str):
+    if not ADMIN_KEY or admin_key != ADMIN_KEY:
+        raise HTTPException(
+            status_code=403,
+            detail="Admin key noto‘g‘ri."
+        )
 
     conn = get_db()
-    cursor = conn.cursor()
+    cur = conn.cursor()
 
     try:
-
-        cursor.execute("""
+        cur.execute(
+            """
             SELECT
                 id,
                 user_id,
@@ -1353,73 +915,66 @@ def get_orders(admin_key: str):
                 months,
                 stars,
                 price_usd,
-                supplier_order_id
+                supplier_order_id,
+                created_at
             FROM orders
             ORDER BY id DESC
-        """)
+            LIMIT 500
+            """
+        )
 
-        orders = cursor.fetchall()
+        rows = cur.fetchall()
+
+        result = []
+
+        for row in rows:
+            result.append(dict(row))
 
         return {
-
             "ok": True,
-
-            "orders": [
-
-                {
-                    "id": order[0],
-                    "user_id": order[1],
-                    "product": order[2],
-                    "amount": order[3],
-                    "status": order[4],
-                    "telegram_username": order[5],
-                    "months": order[6],
-                    "stars": order[7],
-                    "price_usd": order[8],
-                    "supplier_order_id": order[9]
-                }
-
-                for order in orders
-            ]
+            "orders": result
         }
 
     finally:
-
-        cursor.close()
+        cur.close()
         conn.close()
 
 
-# ============================================================
-# UPDATE ORDER STATUS
-# ============================================================
+# =========================================================
+# ADMIN - UPDATE ORDER STATUS
+# =========================================================
 
-@app.put("/orders/{order_id}/status")
+@app.post("/orders/{order_id}/status")
 def update_order_status(
     order_id: int,
-    request: StatusRequest
+    request: StatusRequest,
+    admin_key: str
 ):
+    if not ADMIN_KEY or admin_key != ADMIN_KEY:
+        raise HTTPException(
+            status_code=403,
+            detail="Admin key noto‘g‘ri."
+        )
 
-    allowed_statuses = [
+    allowed_statuses = {
         "pending",
         "paid",
         "processing",
         "completed",
         "cancelled"
-    ]
+    }
 
     if request.status not in allowed_statuses:
-
-        return {
-            "ok": False,
-            "message": "Noto'g'ri status"
-        }
+        raise HTTPException(
+            status_code=400,
+            detail="Status noto‘g‘ri."
+        )
 
     conn = get_db()
-    cursor = conn.cursor()
+    cur = conn.cursor()
 
     try:
-
-        cursor.execute(
+        cur.execute(
             """
             UPDATE orders
             SET status = %s
@@ -1431,325 +986,245 @@ def update_order_status(
             )
         )
 
-        if cursor.rowcount == 0:
-
-            conn.rollback()
-
-            return {
-                "ok": False,
-                "message": "Buyurtma topilmadi"
-            }
+        if cur.rowcount == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="Buyurtma topilmadi."
+            )
 
         conn.commit()
 
         return {
-
             "ok": True,
-
-            "order_id": order_id,
-
-            "status": request.status
+            "message": "Buyurtma statusi yangilandi."
         }
 
+    except HTTPException:
+        conn.rollback()
+        raise
+
+    except Exception:
+        conn.rollback()
+        raise
+
     finally:
-
-        cursor.close()
+        cur.close()
         conn.close()
+        # =========================================================
+# RESELLCODES REQUEST HELPER
+# =========================================================
+
+def resellcodes_request(
+    endpoint: str,
+    method: str = "GET",
+    payload: dict | None = None
+):
+    if not RESELLCODES_API_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="RESELLCODES_API_KEY sozlanmagan."
+        )
+
+    url = RESELLCODES_BASE_URL.rstrip("/") + endpoint
+
+    headers = {
+        "Authorization": f"Bearer {RESELLCODES_API_KEY}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+
+    data = None
+
+    if payload is not None:
+        data = json.dumps(payload).encode("utf-8")
+
+    request = urllib.request.Request(
+        url,
+        data=data,
+        headers=headers,
+        method=method
+    )
+
+    try:
+        with urllib.request.urlopen(
+            request,
+            timeout=30
+        ) as response:
+
+            raw = response.read().decode(
+                "utf-8",
+                errors="ignore"
+            )
+
+            try:
+                return json.loads(raw)
+
+            except json.JSONDecodeError:
+                return {
+                    "raw": raw
+                }
+
+    except urllib.error.HTTPError as e:
+        body = e.read().decode(
+            "utf-8",
+            errors="ignore"
+        )
+
+        raise HTTPException(
+            status_code=e.code,
+            detail=body or "Supplier API xatosi."
+        )
+
+    except urllib.error.URLError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Supplier API bilan aloqa xatosi: {e}"
+        )
 
 
-# ============================================================
-# RESELLCODES ACCOUNT
-# ============================================================
+# =========================================================
+# SUPPLIER ACCOUNT
+# =========================================================
 
 @app.get("/supplier-account")
 def supplier_account():
-
-    api_key = os.getenv(
-        "RESELLCODES_API_KEY"
-    )
-
-    if not api_key:
-
-        return {
-            "ok": False,
-            "message":
-            "RESELLCODES_API_KEY topilmadi"
-        }
-
     try:
-
-        request = urllib.request.Request(
-
-            "https://resell.codes/api/v1/me",
-
-            headers={
-                "Authorization":
-                f"Bearer {api_key}"
-            },
-
-            method="GET"
+        result = resellcodes_request(
+            "/account",
+            "GET"
         )
 
-        with urllib.request.urlopen(
-            request,
-            timeout=15
-        ) as response:
-
-            data = json.loads(
-                response.read().decode()
-            )
-
         return {
-
             "ok": True,
-
-            "supplier":
-            "ReSellCodes",
-
-            "data": data
+            "data": result
         }
+
+    except HTTPException:
+        raise
 
     except Exception as e:
-
-        return {
-
-            "ok": False,
-
-            "message": str(e)
-        }
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 
 
-# ============================================================
-# RESELLCODES PREMIUM PRICES
-# ============================================================
+# =========================================================
+# SUPPLIER PREMIUM PRICES
+# =========================================================
 
 @app.get("/supplier-premium-prices")
 def supplier_premium_prices():
-
-    api_key = os.getenv(
-        "RESELLCODES_API_KEY"
-    )
-
-    if not api_key:
-
-        return {
-            "ok": False,
-            "message":
-            "RESELLCODES_API_KEY topilmadi"
-        }
-
     try:
-
-        request = urllib.request.Request(
-
-            "https://resell.codes/api/v1/telegram/premium",
-
-            headers={
-                "Authorization":
-                f"Bearer {api_key}"
-            },
-
-            method="GET"
+        result = resellcodes_request(
+            "/products",
+            "GET"
         )
 
-        with urllib.request.urlopen(
-            request,
-            timeout=15
-        ) as response:
-
-            data = json.loads(
-                response.read().decode()
-            )
-
         return {
-
             "ok": True,
-
-            "supplier":
-            "ReSellCodes",
-
-            "data": data
+            "data": result
         }
+
+    except HTTPException:
+        raise
 
     except Exception as e:
-
-        return {
-
-            "ok": False,
-
-            "message": str(e)
-        }
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 
 
-# ============================================================
-# REAL PREMIUM BUY / ADMIN TEST
-# ============================================================
+# =========================================================
+# TEST PREMIUM BUY
+# =========================================================
 
 @app.post("/test-premium-buy")
 async def test_premium_buy(
     request: PremiumTestRequest
 ):
-
-    if request.admin_key != ADMIN_KEY:
-
-        return {
-            "ok": False,
-            "message": "Ruxsat yo'q"
-        }
-
-    if request.months not in [3, 6, 12]:
-
-        return {
-            "ok": False,
-            "message":
-            "months faqat 3, 6 yoki 12 bo'lishi mumkin"
-        }
-
-    username = (
-        request.telegram_username
-        .strip()
-        .lstrip("@")
+    username = normalize_username(
+        request.username
     )
 
     if not username:
+        raise HTTPException(
+            status_code=400,
+            detail="Username kiritilmagan."
+        )
 
-        return {
-            "ok": False,
-            "message":
-            "Telegram username kiritilmagan"
-        }
+    if request.months not in [1, 3, 6, 12]:
+        raise HTTPException(
+            status_code=400,
+            detail="Premium muddati noto‘g‘ri."
+        )
 
-    if not re.fullmatch(
-        r"[A-Za-z0-9_]{5,32}",
-        username
-    ):
-
-        return {
-            "ok": False,
-            "message":
-            "Telegram username noto'g'ri"
-        }
-
-    valid_username, real_username, username_error = (
+    valid, real_username, error = (
         await check_telegram_username(username)
     )
 
-    if not valid_username:
-
-        return {
-            "ok": False,
-            "message": username_error
-        }
-
-    username = real_username
-
-    api_key = os.getenv(
-        "RESELLCODES_API_KEY"
-    )
-
-    if not api_key:
-
-        return {
-            "ok": False,
-            "message":
-            "RESELLCODES_API_KEY topilmadi"
-        }
-
-    try:
-
-        payload = json.dumps({
-
-            "telegram_username":
-            username,
-
-            "months":
-            request.months
-
-        }).encode("utf-8")
-
-        api_request = urllib.request.Request(
-
-            "https://resell.codes/api/v1/telegram/premium/buy",
-
-            data=payload,
-
-            headers={
-
-                "Authorization":
-                f"Bearer {api_key}",
-
-                "Content-Type":
-                "application/json"
-            },
-
-            method="POST"
+    if not valid:
+        raise HTTPException(
+            status_code=400,
+            detail=error or "Username noto‘g‘ri."
         )
 
-        with urllib.request.urlopen(
-            api_request,
-            timeout=30
-        ) as response:
+    # Hozircha supplier orqali haqiqiy xarid qilmaymiz.
+    # Bu endpoint faqat username va parametrlarni tekshiradi.
 
-            data = json.loads(
-                response.read().decode()
-            )
-
-        return {
-
-            "ok": True,
-
-            "supplier":
-            "ReSellCodes",
-
-            "order":
-            data
-        }
-
-    except Exception as e:
-
-        return {
-
-            "ok": False,
-
-            "message":
-            str(e)
-        }
+    return {
+        "ok": True,
+        "test": True,
+        "message": "Premium test ma'lumotlari qabul qilindi.",
+        "username": real_username,
+        "months": request.months
+    }
 
 
-# ============================================================
-# HEALTH CHECK
-# ============================================================
+# =========================================================
+# DATABASE TEST
+# =========================================================
 
-@app.get("/health")
-def health():
+@app.get("/database-test")
+def database_test():
+    conn = get_db()
+    cur = conn.cursor()
 
     try:
-
-        conn = get_db()
-        cursor = conn.cursor()
-
-        cursor.execute(
-            "SELECT 1"
-        )
-
-        cursor.fetchone()
-
-        cursor.close()
-        conn.close()
+        cur.execute("SELECT NOW() AS current_time")
+        row = cur.fetchone()
 
         return {
             "ok": True,
             "database": "connected",
-            "telegram":
-                "connected"
-                if telegram_client
-                else "not_connected"
+            "time": (
+                row["current_time"].isoformat()
+                if row and row["current_time"]
+                else None
+            )
         }
 
-    except Exception as e:
+    finally:
+        cur.close()
+        conn.close()
 
-        return {
-            "ok": False,
-            "database": "error",
-            "message": str(e)
-        }
+
+# =========================================================
+# SERVER INFO
+# =========================================================
+
+@app.get("/info")
+def server_info():
+    return {
+        "ok": True,
+        "name": "Telegram Shop",
+        "version": "wallet-v1",
+        "features": [
+            "Telegram Premium",
+            "Telegram Stars",
+            "Wallet",
+            "Orders",
+            "Referral"
+        ]
+    }
