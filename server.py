@@ -1281,3 +1281,48 @@ async def buy_premium(data: dict):
 
     except Exception as e:
         return {"success": False, "error": str(e)}
+# ==========================================
+# FRAGMENT STARS SOTIB OLISH ENDPOINTI
+# ==========================================
+@app.post("/api/buy-stars")
+async def buy_stars(data: dict):
+    username = data.get("username")
+    stars_amount = data.get("amount", 50)  # Masalan: 50, 100, 250, 500 ta Stars
+
+    if not username:
+        raise HTTPException(status_code=400, detail="Foydalanuvchi nomi (username) kiritilmagan!")
+
+    try:
+        # 1. Fragment'dan Stars so'rovini initsializatsiya qilamiz
+        init_res = fragment_api.init_buy_stars(username, stars_amount)
+        
+        if not init_res.get("ok"):
+            return {"success": False, "error": init_res.get("error", "Stars init request xatoligi")}
+
+        req_id = init_res.get("req_id")
+        
+        # 2. Stars to'lov rekvizitlarini olamiz
+        link_res = fragment_api.get_buy_stars_link(req_id)
+        
+        if not link_res.get("ok"):
+            return {"success": False, "error": "Stars to'lov havolasini olib bo'lmadi"}
+
+        transaction_data = link_res.get("transaction", {})
+        dest_addr = transaction_data.get("address")
+        amount = transaction_data.get("amount")
+        payload_boc = transaction_data.get("payload")
+
+        # 3. TON Hamyoningizdan avtomatik to'lovni bajaramiz
+        await fragment_api.send_ton_payment(
+            destination_address=dest_addr,
+            amount_nano=amount,
+            payload_boc=payload_boc
+        )
+
+        return {
+            "success": True,
+            "message": f"@{username} foydalanuvchisi uchun {stars_amount} ta Telegram Stars muvaffaqiyatli sotib olindi!"
+        }
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
