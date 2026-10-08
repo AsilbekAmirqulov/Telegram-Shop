@@ -1,13 +1,21 @@
+import os
+import json
+import re
+import secrets
+import urllib.request
+import urllib.error
+from datetime import datetime
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import os
-import json
-import urllib.request
-import urllib.error
-import re
-import secrets
-from datetime import datetime
+
+# Biz yaratgan Fragment xizmati importi
+from fragment import FragmentService
+
+# App va Fragment obyekti
+app = FastAPI()
+fragment_api = FragmentService()
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
