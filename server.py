@@ -1236,3 +1236,48 @@ def server_info():
             "Referral"
         ]
     }
+# ==========================================
+# FRAGMENT PREMIUM SOTIB OLISH ENDPOINTI
+# ==========================================
+@app.post("/api/buy-premium")
+async def buy_premium(data: dict):
+    username = data.get("username")
+    months = data.get("months", 3)
+
+    if not username:
+        raise HTTPException(status_code=400, detail="Foydalanuvchi nomi (username) kiritilmagan!")
+
+    try:
+        # 1. Fragment'dan so'rovni initsializatsiya qilamiz
+        init_res = fragment_api.init_gift_request(username, months)
+        
+        if not init_res.get("ok"):
+            return {"success": False, "error": init_res.get("error", "Init request xatoligi")}
+
+        req_id = init_res.get("req_id")
+        
+        # 2. To'lov rekvizitlarini olamiz
+        link_res = fragment_api.get_gift_link(req_id)
+        
+        if not link_res.get("ok"):
+            return {"success": False, "error": "To'lov havolasini olib bo'lmadi"}
+
+        transaction_data = link_res.get("transaction", {})
+        dest_addr = transaction_data.get("address")
+        amount = transaction_data.get("amount")
+        payload_boc = transaction_data.get("payload")
+
+        # 3. TON Hamyoningizdan avtomatik to'lovni bajaramiz
+        await fragment_api.send_ton_payment(
+            destination_address=dest_addr,
+            amount_nano=amount,
+            payload_boc=payload_boc
+        )
+
+        return {
+            "success": True,
+            "message": f"@{username} foydalanuvchisi uchun {months} oylik Telegram Premium muvaffaqiyatli sotib olindi!"
+        }
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
