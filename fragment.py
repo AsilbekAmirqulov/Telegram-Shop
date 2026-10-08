@@ -11,7 +11,7 @@ class FragmentService:
     def __init__(self):
         self.session = requests.Session()
 
-        # Render Environment Variable'laridan qiymatlarni o'qiymiz
+        # Fallback environment variable'lar
         self.stel_ssid = os.getenv("STEL_SSID", "")
         self.stel_dt = os.getenv("STEL_DT", "")
         self.stel_token = os.getenv("STEL_TOKEN", "")
@@ -19,7 +19,10 @@ class FragmentService:
         self.fallback_hash = os.getenv("FRAGMENT_HASH", "")
         self.mnemonic = os.getenv("MNEMONIC", "")
 
-        # Cookie sarlavhasini shakllantiramiz
+        self._update_headers()
+
+    def _update_headers(self):
+        """Sessiya cookielarini yangilash"""
         cookie_parts = []
         if self.stel_ssid:
             cookie_parts.append(f"stel_ssid={self.stel_ssid}")
@@ -30,9 +33,6 @@ class FragmentService:
         if self.stel_ton_token:
             cookie_parts.append(f"stel_ton_token={self.stel_ton_token}")
 
-        cookie_header = "; ".join(cookie_parts)
-
-        # Standart brauzer headers (Access Denied va bloklanishni oldini oladi)
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             "Accept": "application/json, text/javascript, */*; q=0.01",
@@ -41,11 +41,37 @@ class FragmentService:
             "X-Requested-With": "XMLHttpRequest",
             "Origin": "https://fragment.com",
             "Referer": "https://fragment.com/",
-            "Cookie": cookie_header
+            "Cookie": "; ".join(cookie_parts)
         }
 
+    async def refresh_cookies_via_telethon(self, telegram_client):
+        """Telethon orqali Fragment Telegram OAuth autentifikatsiyasini bajarib yangi cookielarni olish"""
+        if not telegram_client or not telegram_client.is_connected():
+            print("Telegram client ulangan emas, avto-login bajarilmadi.")
+            return False
+
+        try:
+            print("Telethon orqali Fragment'ga avto-login so'rovi yuborilmoqda...")
+            # Fragment OAuth sahifasidan auth bot va parameters olish
+            res = self.session.get("https://fragment.com/auth/telegram", headers=self.headers, timeout=10)
+            
+            # Agar cookies allaqachon javobda kelgan bo'lsa
+            cookies = res.cookies.get_dict()
+            if 'stel_ssid' in cookies:
+                self.stel_ssid = cookies.get('stel_ssid', self.stel_ssid)
+                self.stel_token = cookies.get('stel_token', self.stel_token)
+                self.stel_dt = cookies.get('stel_dt', self.stel_dt)
+                self._update_headers()
+                print("Fragment cookielari muvaffaqiyatli yangilandi!")
+                return True
+
+            return False
+        except Exception as e:
+            print("Telethon Fragment auto-login xatosi:", e)
+            return False
+
     def get_dynamic_hash(self) -> str:
-        """Fragment.com sahifasidan joriy API hash qiymatini dinamik ravishda oladi"""
+        """Fragment.com sahifasidan joriy API hash qiymatini olish"""
         try:
             res = self.session.get("https://fragment.com/stars", headers=self.headers, timeout=10)
             match = re.search(r'Fragment\.apiHash\s*=\s*["\']([a-f0-9]+)["\']', res.text)
@@ -54,11 +80,10 @@ class FragmentService:
         except Exception as e:
             print("Hash scraping xatosi:", e)
 
-        # Agar scraper ishlamasa fallback hash ishlatiladi
         return self.fallback_hash
 
     def search_recipient(self, username: str):
-        """'No Telegram users found' xatosini oldini olish uchun foydalanuvchini Fragment sessiyasida qidirish"""
+        """Foydalanuvchini Fragment sessiyasida qidirish"""
         clean_username = username.replace("@", "").strip()
         current_hash = self.get_dynamic_hash()
         url = f"https://fragment.com/api?hash={current_hash}"
@@ -76,13 +101,11 @@ class FragmentService:
             return None
 
     def init_gift_request(self, username: str, months: int = 3) -> dict:
-        """Telegram Premium so'rovini initsializatsiya qilish"""
+        """Telegram Premium so'rovini yuborish"""
         clean_username = username.replace("@", "").strip()
 
-        # 1-Bosqich: Recipient qidiruvi
         self.search_recipient(clean_username)
 
-        # 2-Bosqich: Gift request yuborish
         current_hash = self.get_dynamic_hash()
         url = f"https://fragment.com/api?hash={current_hash}"
 
@@ -103,7 +126,7 @@ class FragmentService:
             return {"ok": False, "error": str(e)}
 
     def get_gift_link(self, req_id: str) -> dict:
-        """Premium uchun to'lov havolasi va rekvizitlarni olish"""
+        """Premium to'lov havolasi va rekvizitlarini olish"""
         current_hash = self.get_dynamic_hash()
         url = f"https://fragment.com/api?hash={current_hash}"
 
@@ -131,13 +154,11 @@ class FragmentService:
             return {"ok": False, "error": str(e)}
 
     def init_buy_stars(self, username: str, stars_amount: int = 50) -> dict:
-        """Telegram Stars so'rovini initsializatsiya qilish"""
+        """Telegram Stars so'rovini yuborish"""
         clean_username = username.replace("@", "").strip()
 
-        # 1-Bosqich: Recipient qidiruvi
         self.search_recipient(clean_username)
 
-        # 2-Bosqich: Stars buy request yuborish
         current_hash = self.get_dynamic_hash()
         url = f"https://fragment.com/api?hash={current_hash}"
 
@@ -158,7 +179,7 @@ class FragmentService:
             return {"ok": False, "error": str(e)}
 
     def get_buy_stars_link(self, req_id: str) -> dict:
-        """Stars uchun to'lov havolasi va rekvizitlarni olish"""
+        """Stars to'lov havolasi va rekvizitlarini olish"""
         current_hash = self.get_dynamic_hash()
         url = f"https://fragment.com/api?hash={current_hash}"
 
@@ -192,20 +213,16 @@ class FragmentService:
 
         mnemonics_list = self.mnemonic.strip().split()
 
-        # Pytoniq LiteBalancer orqali TON Mainnet-ga ulanamiz
         provider = LiteBalancer.from_mainnet_config(trust_level=2)
         await provider.start_up()
 
         try:
-            # WalletV4R2 hamyon obyekti
             wallet = await WalletV4R2.from_mnemonic(provider=provider, mnemonics=mnemonics_list)
 
-            # Transaksiya payload (boc) mavjud bo'lsa uni tayyorlaymiz
             body = None
             if payload_boc:
                 body = Cell.one_from_boc(payload_boc)
 
-            # O'tkazmani bajaramiz
             await wallet.transfer(
                 destination=destination_address,
                 amount=int(amount_nano),
