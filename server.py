@@ -10,26 +10,20 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# Biz yaratgan Fragment xizmati importi
-from fragment import FragmentService
-
-# App va Fragment obyekti
-app = FastAPI()
-fragment_api = FragmentService()
-
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
 from telethon import TelegramClient
 from telethon.tl.functions.contacts import ResolveUsernameRequest
 
+# Biz yaratgan Fragment xizmati importi
+from fragment import FragmentService
 
 # =========================================================
-# APP
+# APP & MIDDLEWARE
 # =========================================================
 
 app = FastAPI(title="Telegram Shop API")
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -39,13 +33,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+fragment_api = FragmentService()
 
 # =========================================================
 # ENV
 # =========================================================
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-
 ADMIN_KEY = os.getenv("ADMIN_KEY", "")
 
 RESELLCODES_API_KEY = os.getenv("RESELLCODES_API_KEY", "")
@@ -55,13 +49,11 @@ TG_API_ID = os.getenv("TG_API_ID")
 TG_API_HASH = os.getenv("TG_API_HASH")
 TG_SESSION = os.getenv("TG_SESSION", "telegram_shop")
 
-
 # =========================================================
 # TELEGRAM CLIENT
 # =========================================================
 
 telegram_client = None
-
 
 if TG_API_ID and TG_API_HASH:
     try:
@@ -73,7 +65,6 @@ if TG_API_ID and TG_API_HASH:
     except Exception as e:
         print("Telegram client yaratishda xato:", e)
         telegram_client = None
-
 
 # =========================================================
 # STARTUP / SHUTDOWN
@@ -95,7 +86,6 @@ async def startup_event():
         try:
             if not telegram_client.is_connected():
                 await telegram_client.connect()
-
             print("Telegram client connected.")
         except Exception as e:
             print("Telegram client connection xatosi:", e)
@@ -111,7 +101,6 @@ async def shutdown_event():
             print("Telegram client disconnected.")
         except Exception as e:
             print("Telegram disconnect xatosi:", e)
-
 
 # =========================================================
 # DATABASE
@@ -132,10 +121,7 @@ def init_db():
     cur = conn.cursor()
 
     try:
-        # -------------------------------------------------
         # ORDERS
-        # -------------------------------------------------
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS orders (
                 id SERIAL PRIMARY KEY,
@@ -152,7 +138,6 @@ def init_db():
             )
         """)
 
-        # Eski database uchun kerak bo‘lishi mumkin
         cur.execute("""
             ALTER TABLE orders
             ADD COLUMN IF NOT EXISTS stars INTEGER
@@ -163,10 +148,7 @@ def init_db():
             ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         """)
 
-        # -------------------------------------------------
         # WALLETS
-        # -------------------------------------------------
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS wallets (
                 user_id BIGINT PRIMARY KEY,
@@ -175,10 +157,7 @@ def init_db():
             )
         """)
 
-        # -------------------------------------------------
         # WALLET TRANSACTIONS
-        # -------------------------------------------------
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS wallet_transactions (
                 id SERIAL PRIMARY KEY,
@@ -191,10 +170,7 @@ def init_db():
             )
         """)
 
-        # -------------------------------------------------
         # REFERRALS
-        # -------------------------------------------------
-
         cur.execute("""
             CREATE TABLE IF NOT EXISTS referrals (
                 id SERIAL PRIMARY KEY,
@@ -210,7 +186,6 @@ def init_db():
     finally:
         cur.close()
         conn.close()
-
 
 # =========================================================
 # MODELS
@@ -244,17 +219,14 @@ class PremiumTestRequest(BaseModel):
     username: str
     months: int = 3
 
-
 # =========================================================
 # BASIC HELPERS
 # =========================================================
 
 def normalize_username(username: str) -> str:
     username = (username or "").strip()
-
     if username.startswith("@"):
         username = username[1:]
-
     return username
 
 
@@ -279,7 +251,6 @@ def get_wallet_balance(cur, user_id: int) -> int:
             """,
             (user_id,)
         )
-
         return 0
 
     return int(row["balance"])
@@ -298,12 +269,9 @@ def ensure_wallet(cur, user_id: int):
 
 def format_username(username: str) -> str:
     username = normalize_username(username)
-
     if not username:
         return ""
-
     return "@" + username
-
 
 # =========================================================
 # TELEGRAM USERNAME CHECK
@@ -318,8 +286,6 @@ async def check_telegram_username(username: str):
     if not re.fullmatch(r"[A-Za-z0-9_]{5,32}", username):
         return False, None, "Username noto‘g‘ri formatda."
 
-    # Telegram client mavjud bo‘lmasa,
-    # format tekshiruvidan o‘tkazamiz.
     if not telegram_client:
         return True, username, None
 
@@ -346,15 +312,10 @@ async def check_telegram_username(username: str):
             return False, None, "Username noto‘g‘ri."
 
         print("Username tekshirish xatosi:", e)
-
-        # Telegram API vaqtincha ishlamasa,
-        # foydalanuvchini bloklab qo‘ymaslik uchun
-        # format valid bo‘lsa davom etamiz.
         return True, username, None
 
-
 # =========================================================
-# ROOT
+# ROOT & HEALTH
 # =========================================================
 
 @app.get("/")
@@ -365,17 +326,12 @@ def root():
     }
 
 
-# =========================================================
-# HEALTH
-# =========================================================
-
 @app.get("/health")
 def health():
     return {
         "ok": True,
         "service": "telegram-shop"
     }
-
 
 # =========================================================
 # CHECK USERNAME
@@ -398,8 +354,9 @@ async def check_username(username: str):
         "username": real_username,
         "message": "Username topildi."
     }
-    # =========================================================
-# BALANCE
+
+# =========================================================
+# BALANCE & TRANSACTIONS
 # =========================================================
 
 @app.get("/balance")
@@ -423,10 +380,6 @@ def balance(user_id: int):
         cur.close()
         conn.close()
 
-
-# =========================================================
-# WALLET TRANSACTIONS
-# =========================================================
 
 @app.get("/wallet/transactions")
 def wallet_transactions(user_id: int):
@@ -452,7 +405,6 @@ def wallet_transactions(user_id: int):
         )
 
         rows = cur.fetchall()
-
         transactions = []
 
         for row in rows:
@@ -477,7 +429,6 @@ def wallet_transactions(user_id: int):
     finally:
         cur.close()
         conn.close()
-
 
 # =========================================================
 # ADMIN - ADD BALANCE
@@ -553,7 +504,6 @@ def admin_add_balance(
         cur.close()
         conn.close()
 
-
 # =========================================================
 # REFERRAL
 # =========================================================
@@ -587,8 +537,6 @@ def referral(request: ReferralRequest):
                 "message": "Referal allaqachon mavjud."
             }
 
-        # Hozircha bonusni 0 qoldiramiz.
-        # Keyinchalik referral shartlariga qarab bonus beramiz.
         cur.execute(
             """
             INSERT INTO referrals
@@ -617,9 +565,8 @@ def referral(request: ReferralRequest):
         cur.close()
         conn.close()
 
-
 # =========================================================
-# CREATE ORDER
+# CREATE ORDER (ASOSIY DO'KON + FRAGMENT AVTO-YETKAZISH)
 # =========================================================
 
 @app.post("/create-order")
@@ -631,14 +578,9 @@ async def create_order(order: OrderRequest):
             detail="Mahsulot narxi noto‘g‘ri."
         )
 
-    username = normalize_username(
-        order.recipient_username
-    )
+    username = normalize_username(order.recipient_username)
 
-    # -----------------------------------------------------
-    # TELEGRAM USERNAME CHECK
-    # -----------------------------------------------------
-
+    # Username tekshirish
     valid_username, real_username, username_error = (
         await check_telegram_username(username)
     )
@@ -651,63 +593,27 @@ async def create_order(order: OrderRequest):
 
     username = real_username
 
-    # -----------------------------------------------------
-    # DATABASE
-    # -----------------------------------------------------
-
     conn = get_db()
     cur = conn.cursor()
 
     try:
-
-        # Wallet mavjudligini ta'minlaymiz
         ensure_wallet(cur, order.user_id)
+        balance = get_wallet_balance(cur, order.user_id)
 
-        # Balans
-        balance = get_wallet_balance(
-            cur,
-            order.user_id
-        )
-
-        # -------------------------------------------------
-        # BALANCE CHECK
-        # -------------------------------------------------
-
+        # Balans yetarlimi?
         if balance < order.amount:
             raise HTTPException(
                 status_code=400,
-                detail=(
-                    f"Balans yetarli emas. "
-                    f"Balansingiz: {balance} so'm"
-                )
+                detail=f"Balans yetarli emas. Balansingiz: {balance} so'm"
             )
 
-        # -------------------------------------------------
-        # ORDER
-        # -------------------------------------------------
-
+        # 1. Buyurtmani bazaga yaratamiz (status='paid')
         cur.execute(
             """
             INSERT INTO orders
-                (
-                    user_id,
-                    product,
-                    amount,
-                    status,
-                    telegram_username,
-                    months,
-                    stars
-                )
+                (user_id, product, amount, status, telegram_username, months, stars)
             VALUES
-                (
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s
-                )
+                (%s, %s, %s, %s, %s, %s, %s)
             RETURNING id
             """,
             (
@@ -722,32 +628,19 @@ async def create_order(order: OrderRequest):
         )
 
         order_row = cur.fetchone()
-
         if not order_row:
-            raise Exception(
-                "Buyurtma yaratilmadi."
-            )
+            raise Exception("Buyurtma yaratilmadi.")
 
         order_id = order_row["id"]
 
-        # -------------------------------------------------
-        # BALANCE DEDUCT
-        # -------------------------------------------------
-
+        # 2. Balansdan yechish
         cur.execute(
             """
             UPDATE wallets
-            SET
-                balance = balance - %s,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE user_id = %s
-              AND balance >= %s
+            SET balance = balance - %s, updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = %s AND balance >= %s
             """,
-            (
-                order.amount,
-                order.user_id,
-                order.amount
-            )
+            (order.amount, order.user_id, order.amount)
         )
 
         if cur.rowcount != 1:
@@ -756,28 +649,13 @@ async def create_order(order: OrderRequest):
                 detail="Balansdan pul yechib bo‘lmadi."
             )
 
-        # -------------------------------------------------
-        # TRANSACTION
-        # -------------------------------------------------
-
+        # 3. Tranzaksiya yozish
         cur.execute(
             """
             INSERT INTO wallet_transactions
-                (
-                    user_id,
-                    amount,
-                    type,
-                    description,
-                    order_id
-                )
+                (user_id, amount, type, description, order_id)
             VALUES
-                (
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s
-                )
+                (%s, %s, %s, %s, %s)
             """,
             (
                 order.user_id,
@@ -790,16 +668,66 @@ async def create_order(order: OrderRequest):
 
         conn.commit()
 
-        new_balance = get_wallet_balance(
-            cur,
-            order.user_id
-        )
+        new_balance = get_wallet_balance(cur, order.user_id)
+
+        # 4. FRAGMENT AVTOMATIK YETKAZIB BERISH (DELIVERY)
+        delivery_status = "paid"
+        delivery_message = "Buyurtma qabul qilindi."
+
+        try:
+            prod_lower = (order.product or "").lower()
+            is_premium = "premium" in prod_lower or (order.months and order.months > 0)
+            is_stars = "stars" in prod_lower or (order.stars and order.stars > 0)
+
+            if is_premium:
+                months_cnt = order.months or 3
+                init_res = fragment_api.init_gift_request(username, months=int(months_cnt))
+                if init_res.get("ok"):
+                    req_id = init_res.get("req_id")
+                    link_res = fragment_api.get_gift_link(req_id)
+                    if link_res.get("ok"):
+                        tx_data = link_res.get("transaction", {})
+                        await fragment_api.send_ton_payment(
+                            destination_address=tx_data.get("address"),
+                            amount_nano=tx_data.get("amount"),
+                            payload_boc=tx_data.get("payload")
+                        )
+                        delivery_status = "completed"
+                        delivery_message = f"@{username} hisobiga {months_cnt} oylik Premium yetkazildi!"
+
+            elif is_stars:
+                stars_cnt = order.stars or 50
+                init_res = fragment_api.init_buy_stars(username, stars_amount=int(stars_cnt))
+                if init_res.get("ok"):
+                    req_id = init_res.get("req_id")
+                    link_res = fragment_api.get_buy_stars_link(req_id)
+                    if link_res.get("ok"):
+                        tx_data = link_res.get("transaction", {})
+                        await fragment_api.send_ton_payment(
+                            destination_address=tx_data.get("address"),
+                            amount_nano=tx_data.get("amount"),
+                            payload_boc=tx_data.get("payload")
+                        )
+                        delivery_status = "completed"
+                        delivery_message = f"@{username} hisobiga {stars_cnt} ta Stars yetkazildi!"
+
+            # Agar Fragment yetkazib berishi muvaffaqiyatli bo'lsa, statusni 'completed' qilamiz
+            if delivery_status == "completed":
+                cur.execute(
+                    "UPDATE orders SET status = 'completed' WHERE id = %s",
+                    (order_id,)
+                )
+                conn.commit()
+
+        except Exception as frag_err:
+            print("Fragment avto-yetkazib berishda xatolik:", frag_err)
+            delivery_message = f"Buyurtma olindi, lekin Fragment yetkazib berishda xatolik: {str(frag_err)}"
 
         return {
             "ok": True,
-            "message": "Buyurtma muvaffaqiyatli yaratildi.",
+            "message": delivery_message,
             "order_id": order_id,
-            "status": "paid",
+            "status": delivery_status,
             "username": username,
             "balance": new_balance
         }
@@ -810,12 +738,7 @@ async def create_order(order: OrderRequest):
 
     except Exception as e:
         conn.rollback()
-
-        print(
-            "CREATE ORDER ERROR:",
-            repr(e)
-        )
-
+        print("CREATE ORDER ERROR:", repr(e))
         raise HTTPException(
             status_code=500,
             detail="Buyurtma yaratishda server xatosi."
@@ -824,7 +747,6 @@ async def create_order(order: OrderRequest):
     finally:
         cur.close()
         conn.close()
-
 
 # =========================================================
 # MY ORDERS
@@ -859,7 +781,6 @@ def my_orders(user_id: int):
         )
 
         rows = cur.fetchall()
-
         orders = []
 
         for row in rows:
@@ -894,9 +815,8 @@ def my_orders(user_id: int):
         cur.close()
         conn.close()
 
-
 # =========================================================
-# ADMIN - ALL ORDERS
+# ADMIN - ALL ORDERS & UPDATE STATUS
 # =========================================================
 
 @app.get("/orders")
@@ -932,11 +852,7 @@ def all_orders(admin_key: str):
         )
 
         rows = cur.fetchall()
-
-        result = []
-
-        for row in rows:
-            result.append(dict(row))
+        result = [dict(row) for row in rows]
 
         return {
             "ok": True,
@@ -947,10 +863,6 @@ def all_orders(admin_key: str):
         cur.close()
         conn.close()
 
-
-# =========================================================
-# ADMIN - UPDATE ORDER STATUS
-# =========================================================
 
 @app.post("/orders/{order_id}/status")
 def update_order_status(
@@ -1018,7 +930,8 @@ def update_order_status(
     finally:
         cur.close()
         conn.close()
-        # =========================================================
+
+# =========================================================
 # RESELLCODES REQUEST HELPER
 # =========================================================
 
@@ -1042,7 +955,6 @@ def resellcodes_request(
     }
 
     data = None
-
     if payload is not None:
         data = json.dumps(payload).encode("utf-8")
 
@@ -1054,30 +966,15 @@ def resellcodes_request(
     )
 
     try:
-        with urllib.request.urlopen(
-            request,
-            timeout=30
-        ) as response:
-
-            raw = response.read().decode(
-                "utf-8",
-                errors="ignore"
-            )
-
+        with urllib.request.urlopen(request, timeout=30) as response:
+            raw = response.read().decode("utf-8", errors="ignore")
             try:
                 return json.loads(raw)
-
             except json.JSONDecodeError:
-                return {
-                    "raw": raw
-                }
+                return {"raw": raw}
 
     except urllib.error.HTTPError as e:
-        body = e.read().decode(
-            "utf-8",
-            errors="ignore"
-        )
-
+        body = e.read().decode("utf-8", errors="ignore")
         raise HTTPException(
             status_code=e.code,
             detail=body or "Supplier API xatosi."
@@ -1090,96 +987,42 @@ def resellcodes_request(
         )
 
 
-# =========================================================
-# SUPPLIER ACCOUNT
-# =========================================================
-
 @app.get("/supplier-account")
 def supplier_account():
     try:
-        result = resellcodes_request(
-            "/account",
-            "GET"
-        )
-
-        return {
-            "ok": True,
-            "data": result
-        }
-
+        result = resellcodes_request("/account", "GET")
+        return {"ok": True, "data": result}
     except HTTPException:
         raise
-
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-# =========================================================
-# SUPPLIER PREMIUM PRICES
-# =========================================================
 
 @app.get("/supplier-premium-prices")
 def supplier_premium_prices():
     try:
-        result = resellcodes_request(
-            "/products",
-            "GET"
-        )
-
-        return {
-            "ok": True,
-            "data": result
-        }
-
+        result = resellcodes_request("/products", "GET")
+        return {"ok": True, "data": result}
     except HTTPException:
         raise
-
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-# =========================================================
-# TEST PREMIUM BUY
-# =========================================================
 
 @app.post("/test-premium-buy")
-async def test_premium_buy(
-    request: PremiumTestRequest
-):
-    username = normalize_username(
-        request.username
-    )
+async def test_premium_buy(request: PremiumTestRequest):
+    username = normalize_username(request.username)
 
     if not username:
-        raise HTTPException(
-            status_code=400,
-            detail="Username kiritilmagan."
-        )
+        raise HTTPException(status_code=400, detail="Username kiritilmagan.")
 
     if request.months not in [1, 3, 6, 12]:
-        raise HTTPException(
-            status_code=400,
-            detail="Premium muddati noto‘g‘ri."
-        )
+        raise HTTPException(status_code=400, detail="Premium muddati noto‘g‘ri.")
 
-    valid, real_username, error = (
-        await check_telegram_username(username)
-    )
+    valid, real_username, error = await check_telegram_username(username)
 
     if not valid:
-        raise HTTPException(
-            status_code=400,
-            detail=error or "Username noto‘g‘ri."
-        )
-
-    # Hozircha supplier orqali haqiqiy xarid qilmaymiz.
-    # Bu endpoint faqat username va parametrlarni tekshiradi.
+        raise HTTPException(status_code=400, detail=error or "Username noto‘g‘ri.")
 
     return {
         "ok": True,
@@ -1189,9 +1032,8 @@ async def test_premium_buy(
         "months": request.months
     }
 
-
 # =========================================================
-# DATABASE TEST
+# DATABASE TEST & INFO
 # =========================================================
 
 @app.get("/database-test")
@@ -1218,10 +1060,6 @@ def database_test():
         conn.close()
 
 
-# =========================================================
-# SERVER INFO
-# =========================================================
-
 @app.get("/info")
 def server_info():
     return {
@@ -1233,12 +1071,15 @@ def server_info():
             "Telegram Stars",
             "Wallet",
             "Orders",
-            "Referral"
+            "Referral",
+            "Fragment Auto Delivery"
         ]
     }
+
 # ==========================================
-# FRAGMENT PREMIUM SOTIB OLISH ENDPOINTI
+# FRAGMENT STANDALONE ENDPOINTS
 # ==========================================
+
 @app.post("/api/buy-premium")
 async def buy_premium(data: dict):
     username = data.get("username")
@@ -1247,18 +1088,15 @@ async def buy_premium(data: dict):
     if not username:
         raise HTTPException(status_code=400, detail="Foydalanuvchi nomi (username) kiritilmagan!")
 
+    clean_username = normalize_username(username)
+
     try:
-        # 1. Fragment'dan so'rovni initsializatsiya qilamiz
-        init_res = fragment_api.init_gift_request(username, months)
-        
+        init_res = fragment_api.init_gift_request(clean_username, months)
         if not init_res.get("ok"):
             return {"success": False, "error": init_res.get("error", "Init request xatoligi")}
 
         req_id = init_res.get("req_id")
-        
-        # 2. To'lov rekvizitlarini olamiz
         link_res = fragment_api.get_gift_link(req_id)
-        
         if not link_res.get("ok"):
             return {"success": False, "error": "To'lov havolasini olib bo'lmadi"}
 
@@ -1267,7 +1105,6 @@ async def buy_premium(data: dict):
         amount = transaction_data.get("amount")
         payload_boc = transaction_data.get("payload")
 
-        # 3. TON Hamyoningizdan avtomatik to'lovni bajaramiz
         await fragment_api.send_ton_payment(
             destination_address=dest_addr,
             amount_nano=amount,
@@ -1276,34 +1113,30 @@ async def buy_premium(data: dict):
 
         return {
             "success": True,
-            "message": f"@{username} foydalanuvchisi uchun {months} oylik Telegram Premium muvaffaqiyatli sotib olindi!"
+            "message": f"@{clean_username} foydalanuvchisi uchun {months} oylik Telegram Premium muvaffaqiyatli sotib olindi!"
         }
 
     except Exception as e:
         return {"success": False, "error": str(e)}
-# ==========================================
-# FRAGMENT STARS SOTIB OLISH ENDPOINTI
-# ==========================================
+
+
 @app.post("/api/buy-stars")
 async def buy_stars(data: dict):
     username = data.get("username")
-    stars_amount = data.get("amount", 50)  # Masalan: 50, 100, 250, 500 ta Stars
+    stars_amount = data.get("amount", 50)
 
     if not username:
         raise HTTPException(status_code=400, detail="Foydalanuvchi nomi (username) kiritilmagan!")
 
+    clean_username = normalize_username(username)
+
     try:
-        # 1. Fragment'dan Stars so'rovini initsializatsiya qilamiz
-        init_res = fragment_api.init_buy_stars(username, stars_amount)
-        
+        init_res = fragment_api.init_buy_stars(clean_username, stars_amount)
         if not init_res.get("ok"):
             return {"success": False, "error": init_res.get("error", "Stars init request xatoligi")}
 
         req_id = init_res.get("req_id")
-        
-        # 2. Stars to'lov rekvizitlarini olamiz
         link_res = fragment_api.get_buy_stars_link(req_id)
-        
         if not link_res.get("ok"):
             return {"success": False, "error": "Stars to'lov havolasini olib bo'lmadi"}
 
@@ -1312,7 +1145,6 @@ async def buy_stars(data: dict):
         amount = transaction_data.get("amount")
         payload_boc = transaction_data.get("payload")
 
-        # 3. TON Hamyoningizdan avtomatik to'lovni bajaramiz
         await fragment_api.send_ton_payment(
             destination_address=dest_addr,
             amount_nano=amount,
@@ -1321,7 +1153,7 @@ async def buy_stars(data: dict):
 
         return {
             "success": True,
-            "message": f"@{username} foydalanuvchisi uchun {stars_amount} ta Telegram Stars muvaffaqiyatli sotib olindi!"
+            "message": f"@{clean_username} foydalanuvchisi uchun {stars_amount} ta Telegram Stars muvaffaqiyatli sotib olindi!"
         }
 
     except Exception as e:
