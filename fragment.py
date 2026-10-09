@@ -2,14 +2,15 @@ import os
 import re
 import json
 import asyncio
-import requests
+from curl_cffi import requests
 from pytoniq import WalletV4R2, LiteBalancer
 from pytoniq_core import Cell
 
 
 class FragmentService:
     def __init__(self):
-        self.session = requests.Session()
+        # Requests o'rniga Chrome 124 TLS barmoq izini soxtalashtiruvchi curl_cffi sessiyasi
+        self.session = requests.Session(impersonate="chrome124")
 
         # Render Environment Variable'lardan yuklash
         self.stel_ssid = os.getenv("STEL_SSID", "")
@@ -19,8 +20,7 @@ class FragmentService:
         self.fallback_hash = os.getenv("FRAGMENT_HASH", "")
         self.mnemonic = os.getenv("MNEMONIC", "")
         
-        # Datacenter IP blokini aylanib o'tish uchun Proxy (Ixtiyoriy, lekin tavsiya etiladi)
-        # Format: http://user:pass@ip:port yoki http://ip:port
+        # Proxy qo'llab-quvvatlash (agar Render IP bloki bo'lsa)
         self.proxy = os.getenv("FRAGMENT_PROXY", "")
         if self.proxy:
             self.session.proxies = {
@@ -32,7 +32,7 @@ class FragmentService:
         self._apply_cookies()
 
     def _apply_cookies(self):
-        """Sessiyaga cookielarni biriktirish"""
+        """Sessiyaga Fragment cookie-fayllarini biriktirish"""
         self.session.cookies.clear()
         cookies_dict = {
             "stel_ssid": self.stel_ssid,
@@ -46,9 +46,8 @@ class FragmentService:
                 self.session.cookies.set(k, v, domain=".fragment.com")
 
     def get_headers(self) -> dict:
-        """Fragment API uchun mukammal Chrome 124+ sarlavhalarini shakllantirish"""
+        """Haqiqiy Chrome 124 brauzerining HTTP sarlavhalari"""
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             "Accept": "application/json, text/javascript, */*; q=0.01",
             "Accept-Language": "en-US,en;q=0.9",
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -79,7 +78,7 @@ class FragmentService:
         return headers
 
     def get_dynamic_hash(self) -> str:
-        """Fragment.com sahifasidan joriy API hash qiymatini aniq olib berish"""
+        """Fragment.com sahifasidan dinamik apiHash qiymatini ajratib olish"""
         urls_to_try = [
             "https://fragment.com/premium",
             "https://fragment.com/stars",
@@ -98,7 +97,7 @@ class FragmentService:
                     match = re.search(pat, res.text, re.IGNORECASE)
                     if match:
                         extracted_hash = match.group(1)
-                        print(f"Scraped Hash ({url}):", extracted_hash)
+                        print(f"curl_cffi bilan scraped hash ({url}):", extracted_hash)
                         return extracted_hash
             except Exception as e:
                 print(f"Hash scraping xatosi ({url}):", e)
@@ -126,7 +125,7 @@ class FragmentService:
             return None
 
     async def init_gift_request(self, username: str, months: int = 3, telegram_client=None) -> dict:
-        """Telegram Premium so'rovini yuborish"""
+        """Telegram Premium xarid so'rovini boshlash"""
         clean_username = username.replace("@", "").strip()
 
         search_res = self.search_recipient(clean_username)
@@ -165,7 +164,7 @@ class FragmentService:
             return {"ok": False, "error": str(e)}
 
     def get_gift_link(self, req_id: str) -> dict:
-        """Premium to'lov havolasi va rekvizitlarini olish"""
+        """Premium to'lov rekvizitlari va payload olib berish"""
         current_hash = self.get_dynamic_hash()
         url = f"https://fragment.com/api?hash={current_hash}"
 
@@ -193,7 +192,7 @@ class FragmentService:
             return {"ok": False, "error": str(e)}
 
     async def init_buy_stars(self, username: str, stars_amount: int = 50, telegram_client=None) -> dict:
-        """Telegram Stars so'rovini yuborish"""
+        """Telegram Stars xarid so'rovini boshlash"""
         clean_username = username.replace("@", "").strip()
 
         search_res = self.search_recipient(clean_username)
@@ -226,7 +225,7 @@ class FragmentService:
             return {"ok": False, "error": str(e)}
 
     def get_buy_stars_link(self, req_id: str) -> dict:
-        """Stars to'lov havolasi va rekvizitlarini olish"""
+        """Stars to'lov rekvizitlarini olib berish"""
         current_hash = self.get_dynamic_hash()
         url = f"https://fragment.com/api?hash={current_hash}"
 
