@@ -23,12 +23,14 @@ from telethon.tl.functions.contacts import ResolveUsernameRequest
 from fragment import FragmentService
 
 # =========================================================
-# FRAGMENT API PATCH (12-so'zli Seed / W5 Hamyon mosligi)
+# FRAGMENT API OFFICIAL PATCH (slightbasebo/fragment-api-dev)
+# 12-so'zli Seed + W5 WALLET_ADDRESS birgalikda ta'minlanadi
 # =========================================================
 try:
     from fragment_api import FragmentAPI
 
-    # FragmentAPI metodlarini account_index=0 bilan avtomatik ta'minlash
+    TARGET_WALLET = os.getenv("WALLET_ADDRESS", "UQAOh0qjvQWkLk99DGpUdW-lHbfJeu5TKRFLHIg2v63gWIzm")
+
     patch_methods = [
         "resolve_wallet", 
         "buy_stars", 
@@ -43,12 +45,16 @@ try:
             async def async_patched(self, *args, **kwargs):
                 if "account_index" not in kwargs:
                     kwargs["account_index"] = 0
+                if "wallet_address" not in kwargs or not kwargs["wallet_address"]:
+                    kwargs["wallet_address"] = TARGET_WALLET
                 return await orig_fn(self, *args, **kwargs)
             return async_patched
         else:
             def sync_patched(self, *args, **kwargs):
                 if "account_index" not in kwargs:
                     kwargs["account_index"] = 0
+                if "wallet_address" not in kwargs or not kwargs["wallet_address"]:
+                    kwargs["wallet_address"] = TARGET_WALLET
                 return orig_fn(self, *args, **kwargs)
             return sync_patched
 
@@ -57,7 +63,7 @@ try:
             orig_method = getattr(FragmentAPI, method_name)
             setattr(FragmentAPI, method_name, _make_patched_method(orig_method))
             
-    print("FragmentAPI account_index=0 patch muvaffaqiyatli o'rnatildi.")
+    print(f"FragmentAPI patch o'rnatildi! W5 Target: {TARGET_WALLET}")
 except Exception as patch_err:
     print("FragmentAPI patch xatoligi:", patch_err)
 
@@ -1225,17 +1231,15 @@ def check_sdk_wallet():
         
         resolved_sdk_address = "Aniqlanmadi"
         
-        # 1-urinish: 12-so'zli seed va account_index=0 bilan
         try:
-            res = test_api.resolve_wallet(seed=fragment_api.mnemonic, account_index=0)
+            res = test_api.resolve_wallet(
+                seed=fragment_api.mnemonic, 
+                wallet_address=fragment_api.wallet_address,
+                account_index=0
+            )
             resolved_sdk_address = getattr(res, "address", None) or getattr(res, "wallet_address", None) or str(res)
         except Exception as e1:
-            # 2-urinish: seed va wallet_address bilan
-            try:
-                res = test_api.resolve_wallet(seed=fragment_api.mnemonic, wallet_address=fragment_api.wallet_address)
-                resolved_sdk_address = getattr(res, "address", None) or getattr(res, "wallet_address", None) or str(res)
-            except Exception as e2:
-                resolved_sdk_address = f"E1: {e1} | E2: {e2}"
+            resolved_sdk_address = f"E1: {e1}"
 
         return {
             "ok": True,
