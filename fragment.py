@@ -7,12 +7,10 @@ logger = logging.getLogger(__name__)
 
 
 def sanitize_seed(raw_seed: str) -> str:
-    """Seed frazani tozalash: kichik harflarga o'tkazish, yangi qator va ortiqcha probellarni olib tashlash"""
+    """Seed frazani tozalash"""
     if not raw_seed:
         return ""
-    # Yangi qatorlar, vergullar va tirnoqlarni probel bilan almashtirish
     cleaned = re.sub(r'[\n\r,"]', ' ', raw_seed).lower()
-    # Faqat so'zlarni ajratib olib bitta probel bilan biriktirish
     words = [w.strip() for w in cleaned.split() if w.strip()]
     return " ".join(words)
 
@@ -21,16 +19,13 @@ class FragmentService:
     def __init__(self):
         self.api = FragmentAPI()
         
-        # Raw seed
         raw_mnemonic = (
             os.getenv("MNEMONIC") or 
             os.getenv("TON_WALLET_SEED") or 
             os.getenv("SEED") or ""
         )
-        # Tozalangan seed
         self.mnemonic = sanitize_seed(raw_mnemonic)
         
-        # 12-so'zli seed uchun Hamyon manzili
         self.wallet_address = (
             os.getenv("WALLET_ADDRESS") or 
             os.getenv("TON_WALLET_ADDRESS") or ""
@@ -45,7 +40,8 @@ class FragmentService:
         formatted_username = f"@{clean_username}"
 
         try:
-            check = self.api.check_stars_availability(formatted_username, amount, "gram")
+            # "gram" o'rniga "ton" ishlatiladi
+            check = self.api.check_stars_availability(formatted_username, amount, "ton")
             return {
                 "available": getattr(check, "available", False),
                 "code": getattr(check, "code", "UNKNOWN"),
@@ -69,17 +65,15 @@ class FragmentService:
         formatted_username = f"@{clean_username}"
 
         try:
-            # 1. Mavjudlikni tekshirish
             check = self.check_recipient_stars(clean_username, stars_amount)
             if not check.get("available"):
                 err_msg = check.get("message") or check.get("error") or "Foydalanuvchiga Stars yuborib bo'lmaydi"
                 return {"ok": False, "error": f"Mavjud emas: {err_msg}"}
 
-            # 2. Parameters tayyorlash
             buy_params = {
                 "username": formatted_username,
                 "amount": stars_amount,
-                "payment_method": "gram",
+                "payment_method": "ton",  # "gram" o'rniga "ton" o'rnatildi
                 "seed": self.mnemonic
             }
             if self.wallet_address:
@@ -89,7 +83,6 @@ class FragmentService:
 
             purchase = self.api.buy_stars(**buy_params)
 
-            # 3. Transaksiya yakunlanishini kutish
             result = self.api.wait(purchase.purchase_id)
             status = getattr(result, "status", "")
 
@@ -113,11 +106,10 @@ class FragmentService:
         formatted_username = f"@{clean_username}"
 
         try:
-            # 1. Parameters tayyorlash
             buy_params = {
                 "username": formatted_username,
                 "months": months,
-                "payment_method": "gram",
+                "payment_method": "ton",  # "gram" o'rniga "ton" o'rnatildi
                 "seed": self.mnemonic
             }
             if self.wallet_address:
@@ -127,7 +119,6 @@ class FragmentService:
 
             purchase = self.api.buy_premium(**buy_params)
 
-            # 2. Transaksiya yakunlanishini kutish
             result = self.api.wait(purchase.purchase_id)
             status = getattr(result, "status", "")
 
