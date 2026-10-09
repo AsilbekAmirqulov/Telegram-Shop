@@ -2,9 +2,11 @@ import os
 import re
 import json
 import asyncio
+import base64
 import requests
 from pytoniq import WalletV4R2, LiteBalancer
 from pytoniq_core import Cell
+from telethon.tl.functions.auth import AcceptLoginTokenRequest
 
 
 class FragmentService:
@@ -19,20 +21,22 @@ class FragmentService:
         self.fallback_hash = os.getenv("FRAGMENT_HASH", "")
         self.mnemonic = os.getenv("MNEMONIC", "")
 
+        self._init_session_cookies()
         self._update_headers()
 
-    def _update_headers(self):
-        """Sessiya cookielarini yangilash"""
-        cookie_parts = []
+    def _init_session_cookies(self):
+        """Cookielarni requests.Session obyektiga to'g'ri joylash"""
         if self.stel_ssid:
-            cookie_parts.append(f"stel_ssid={self.stel_ssid}")
+            self.session.cookies.set("stel_ssid", self.stel_ssid, domain="fragment.com")
         if self.stel_dt:
-            cookie_parts.append(f"stel_dt={self.stel_dt}")
+            self.session.cookies.set("stel_dt", self.stel_dt, domain="fragment.com")
         if self.stel_token:
-            cookie_parts.append(f"stel_token={self.stel_token}")
+            self.session.cookies.set("stel_token", self.stel_token, domain="fragment.com")
         if self.stel_ton_token:
-            cookie_parts.append(f"stel_ton_token={self.stel_ton_token}")
+            self.session.cookies.set("stel_ton_token", self.stel_ton_token, domain="fragment.com")
 
+    def _update_headers(self):
+        """Sessiya sarlavhalarini yangilash (Cookie hardcode qilmasdan)"""
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             "Accept": "application/json, text/javascript, */*; q=0.01",
@@ -40,28 +44,65 @@ class FragmentService:
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "X-Requested-With": "XMLHttpRequest",
             "Origin": "https://fragment.com",
-            "Referer": "https://fragment.com/",
-            "Cookie": "; ".join(cookie_parts)
+            "Referer": "https://fragment.com/"
         }
 
     async def refresh_cookies_via_telethon(self, telegram_client):
-        """Telethon orqali Fragment Telegram OAuth autentifikatsiyasini bajarib yangi cookielarni olish"""
+        """Telethon va Telegram OAuth orqali Fragment cookielarini avtomatik yangilash"""
         if not telegram_client or not telegram_client.is_connected():
             print("Telegram client ulangan emas, avto-login bajarilmadi.")
             return False
 
         try:
-            print("Telethon orqali Fragment'ga avto-login so'rovi yuborilmoqda...")
-            # Fragment OAuth sahifasidan auth bot va parameters olish
-            res = self.session.get("https://fragment.com/auth/telegram", headers=self.headers, timeout=10)
+            print("Telethon orqali Fragment Telegram OAuth boshlandi...")
             
-            # Agar cookies allaqachon javobda kelgan bo'lsa
-            cookies = res.cookies.get_dict()
-            if 'stel_ssid' in cookies:
-                self.stel_ssid = cookies.get('stel_ssid', self.stel_ssid)
-                self.stel_token = cookies.get('stel_token', self.stel_token)
-                self.stel_dt = cookies.get('stel_dt', self.stel_dt)
-                self._update_headers()
+            # 1. Telegram OAuth so'rovi
+            oauth_req_url = "https://oauth.telegram.org/auth/request?bot_id=5444323279&origin=https%3A%2F%2Ffragment.com&embed=1"
+            res = self.session.post(oauth_req_url, headers={"X-Requested-With": "XMLHttpRequest"}, timeout=10)
+            
+            if res.status_code != 200 or not res.text:
+                self.session.get("https://oauth.telegram.org/auth?bot_id=5444323279&origin=https%3A%2F%2Ffragment.com&embed=1", timeout=10)
+                res = self.session.post(oauth_req_url, headers={"X-Requested-With": "XMLHttpRequest"}, timeout=10)
+
+            try:
+                data = res.json()
+            except Exception:
+                data = {}
+
+            # 2. Telethon orqali login tokenini tasdiqlash
+            token_b64 = data.get("token") or data.get("req_id")
+            if token_b64:
+                try:
+                    padded = token_b64 + "=" * (-len(token_b64) % 4)
+                    token_bytes = base64.b64decode(padded)
+                    await telegram_client(AcceptLoginTokenRequest(token=token_bytes))
+                    print("Telethon: Login token tasdiqlandi!")
+                except Exception as t_err:
+                    print("Telethon AcceptLoginToken xatosi:", t_err)
+
+            # 3. Autentifikatsiya holatini tekshirish
+            req_id = data.get("req_id")
+            if req_id:
+                status_url = f"https://oauth.telegram.org/auth/status?req_id={req_id}"
+                for _ in range(5):
+                    await asyncio.sleep(1)
+                    s_res = self.session.post(status_url, headers={"X-Requested-With": "XMLHttpRequest"}, timeout=10)
+                    try:
+                        s_data = s_res.json()
+                        if s_data.get("status") == "grant":
+                            auth_data = s_data.get("user", {})
+                            self.session.post("https://fragment.com/auth/login", data=auth_data, timeout=10)
+                            print("Fragment OAuth login yakunlandi!")
+                            break
+                    except Exception:
+                        pass
+
+            # 4. Yangi cookielar kelganini tekshirish
+            sess_cookies = self.session.cookies.get_dict()
+            if "stel_ssid" in sess_cookies:
+                self.stel_ssid = sess_cookies.get("stel_ssid", self.stel_ssid)
+                self.stel_token = sess_cookies.get("stel_token", self.stel_token)
+                self.stel_dt = sess_cookies.get("stel_dt", self.stel_dt)
                 print("Fragment cookielari muvaffaqiyatli yangilandi!")
                 return True
 
