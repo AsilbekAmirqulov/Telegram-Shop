@@ -5,25 +5,26 @@ from fragment_api import FragmentAPI
 
 class FragmentService:
     def __init__(self):
-        self.mnemonic = os.getenv("MNEMONIC", "")
-        self.wallet_address = os.getenv("WALLET_ADDRESS", "UQAOh0qjvQWkLk99DGpUdW-lHbfJeu5TKRFLHIg2v63gWIzm")
+        self.mnemonic = os.getenv("MNEMONIC", "").strip()
+        self.wallet_address = os.getenv("WALLET_ADDRESS", "UQAOh0qjvQWkLk99DGpUdW-lHbfJeu5TKRFLHIg2v63gWIzm").strip()
         self.api = FragmentAPI()
+
+    async def _run_sync_or_async(self, fn, *args, **kwargs):
+        """Metod async bo'lsa await qiladi, sync bo'lsa ThreadPoolExecutor'da xavfsiz bajaradi."""
+        if inspect.iscoroutinefunction(fn):
+            return await fn(*args, **kwargs)
+        else:
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(None, lambda: fn(*args, **kwargs))
 
     async def _call_api_method(self, method_name: str, **kwargs):
         if not hasattr(self.api, method_name):
-            return {"ok": False, "error": f"FragmentAPI da {method_name} me'dodi topilmadi."}
+            return {"ok": False, "error": f"FragmentAPI da '{method_name}' metodi topilmadi."}
 
         fn = getattr(self.api, method_name)
-        
+
         try:
-            if inspect.iscoroutinefunction(fn):
-                res = await fn(**kwargs)
-            else:
-                raw = fn(**kwargs)
-                if inspect.isawaitable(raw):
-                    res = await raw
-                else:
-                    res = raw
+            res = await self._run_sync_or_async(fn, **kwargs)
         except Exception as call_err:
             print(f"API EXCEPTION ({method_name}):", repr(call_err))
             return {"ok": False, "error": str(call_err)}
@@ -42,21 +43,18 @@ class FragmentService:
             tx_hash = tx_hash or res.get("transaction_hash") or res.get("tx_hash") or res.get("hash")
             err = err or res.get("error")
 
-        # Gar xarid navbatda (queued/pending) bo'lsa, holatni tekshirib (polling) kutamiz
+        # Gar xarid navbatda (queued/pending/processing) bo'lsa, polling bilan tekshiramiz
         if purchase_id and (not tx_hash or status in ["queued", "pending", "processing"]):
-            print(f"Xarid navbatda ({purchase_id}). Tranzaksiya yakunlanishi kutilmoqda...")
-            
+            print(f"Xarid navbatga tushdi (ID: {purchase_id}). Tranzaksiya kutilmoqda...")
+
             check_fn = getattr(self.api, "get_purchase", None) or getattr(self.api, "get_purchase_status", None)
-            
+
             for _ in range(15):  # Max 45 soniya kutamiz (15 * 3s)
                 await asyncio.sleep(3)
-                
+
                 if check_fn:
                     try:
-                        if inspect.iscoroutinefunction(check_fn):
-                            check_res = await check_fn(purchase_id)
-                        else:
-                            check_res = check_fn(purchase_id)
+                        check_res = await self._run_sync_or_async(check_fn, purchase_id)
 
                         c_status = getattr(check_res, "status", None) or (check_res.get("status") if isinstance(check_res, dict) else None)
                         c_tx = getattr(check_res, "transaction_hash", None) or getattr(check_res, "tx_hash", None) or (check_res.get("tx_hash") if isinstance(check_res, dict) else None)
