@@ -22,23 +22,24 @@ class FragmentService:
         self.mnemonic = os.getenv("MNEMONIC", "")
 
         self._init_session_cookies()
-        self._update_headers()
 
     def _init_session_cookies(self):
-        """Cookielarni requests.Session obyektiga domen cheklovisiz to'g'ri joylash"""
+        """Cookielarni requests.Session va domenlarga to'g'ri joylash"""
         self.session.cookies.clear()
-        for key, val in [
-            ("stel_ssid", self.stel_ssid),
-            ("stel_dt", self.stel_dt),
-            ("stel_token", self.stel_token),
-            ("stel_ton_token", self.stel_ton_token),
-        ]:
+        cookies_map = {
+            "stel_ssid": self.stel_ssid,
+            "stel_dt": self.stel_dt,
+            "stel_token": self.stel_token,
+            "stel_ton_token": self.stel_ton_token,
+        }
+        for key, val in cookies_map.items():
             if val:
-                self.session.cookies.set(key, val)
+                self.session.cookies.set(key, val, domain="fragment.com")
+                self.session.cookies.set(key, val, domain=".fragment.com")
 
-    def _update_headers(self):
-        """Sessiya sarlavhalarini yangilash"""
-        self.headers = {
+    def get_headers(self) -> dict:
+        """Sessiya sarlavhalarini va Cookie sarlavhasini shakllantirish"""
+        headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             "Accept": "application/json, text/javascript, */*; q=0.01",
             "Accept-Language": "en-US,en;q=0.9",
@@ -47,6 +48,22 @@ class FragmentService:
             "Origin": "https://fragment.com",
             "Referer": "https://fragment.com/"
         }
+
+        # Cookielarni kafolatli ravishda Header sifatida ham biriktiramiz
+        cookie_parts = []
+        if self.stel_ssid:
+            cookie_parts.append(f"stel_ssid={self.stel_ssid}")
+        if self.stel_dt:
+            cookie_parts.append(f"stel_dt={self.stel_dt}")
+        if self.stel_token:
+            cookie_parts.append(f"stel_token={self.stel_token}")
+        if self.stel_ton_token:
+            cookie_parts.append(f"stel_ton_token={self.stel_ton_token}")
+
+        if cookie_parts:
+            headers["Cookie"] = "; ".join(cookie_parts)
+
+        return headers
 
     async def refresh_cookies_via_telethon(self, telegram_client):
         """Telethon va Telegram OAuth orqali Fragment cookielarini avtomatik yangilash"""
@@ -116,7 +133,7 @@ class FragmentService:
     def get_dynamic_hash(self) -> str:
         """Fragment.com sahifasidan joriy API hash qiymatini olish"""
         try:
-            res = self.session.get("https://fragment.com/stars", headers=self.headers, timeout=10)
+            res = self.session.get("https://fragment.com/stars", headers=self.get_headers(), timeout=10)
             match = re.search(r'Fragment\.apiHash\s*=\s*["\']([a-f0-9]+)["\']', res.text)
             if match:
                 extracted_hash = match.group(1)
@@ -140,7 +157,7 @@ class FragmentService:
         }
 
         try:
-            res = self.session.post(url, data=payload, headers=self.headers, timeout=10)
+            res = self.session.post(url, data=payload, headers=self.get_headers(), timeout=10)
             print("Search Recipient Javobi:", res.text)
             return res.json()
         except Exception as e:
@@ -172,7 +189,7 @@ class FragmentService:
         }
 
         try:
-            res = self.session.post(url, data=payload, headers=self.headers, timeout=10)
+            res = self.session.post(url, data=payload, headers=self.get_headers(), timeout=10)
             print("Init Gift Request Javobi:", res.text)
             
             try:
@@ -197,7 +214,7 @@ class FragmentService:
         }
 
         try:
-            res = self.session.post(url, data=payload, headers=self.headers, timeout=10)
+            res = self.session.post(url, data=payload, headers=self.get_headers(), timeout=10)
             data = res.json()
             if not data.get("ok"):
                 return {"ok": False, "error": data.get("error", "Gift link olishda xatolik")}
@@ -239,7 +256,7 @@ class FragmentService:
         }
 
         try:
-            res = self.session.post(url, data=payload, headers=self.headers, timeout=10)
+            res = self.session.post(url, data=payload, headers=self.get_headers(), timeout=10)
             data = res.json()
             if not data.get("ok"):
                 return {"ok": False, "error": data.get("error", "Stars init xatosi")}
@@ -258,7 +275,7 @@ class FragmentService:
         }
 
         try:
-            res = self.session.post(url, data=payload, headers=self.headers, timeout=10)
+            res = self.session.post(url, data=payload, headers=self.get_headers(), timeout=10)
             data = res.json()
             if not data.get("ok"):
                 return {"ok": False, "error": data.get("error", "Stars link olishda xatolik")}
