@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 def sanitize_seed(raw_seed: str) -> str:
-    """Seed frazani tozalash"""
+    """Mnemonic (seed) frazani tozalash va to'g'ri formatga keltirish"""
     if not raw_seed:
         return ""
     cleaned = re.sub(r'[\n\r,"]', ' ', raw_seed).lower()
@@ -35,7 +35,7 @@ class FragmentService:
         self.account_index = int(account_idx_str) if account_idx_str.isdigit() else None
 
     def check_recipient_stars(self, username: str, amount: int = 50) -> dict:
-        """To'lovni qabul qilishdan oldin foydalanuvchini tekshirish"""
+        """To'lovni qabul qilishdan oldin foydalanuvchini va imkoniyatni tekshirish"""
         clean_username = username.replace("@", "").strip()
         formatted_username = f"@{clean_username}"
 
