@@ -23,51 +23,6 @@ from telethon.tl.functions.contacts import ResolveUsernameRequest
 from fragment import FragmentService
 
 # =========================================================
-# FRAGMENT API OFFICIAL PATCH (slightbasebo/fragment-api-dev)
-# 12-so'zli Seed + W5 WALLET_ADDRESS birgalikda ta'minlanadi
-# =========================================================
-try:
-    from fragment_api import FragmentAPI
-
-    TARGET_WALLET = os.getenv("WALLET_ADDRESS", "UQAOh0qjvQWkLk99DGpUdW-lHbfJeu5TKRFLHIg2v63gWIzm")
-
-    patch_methods = [
-        "resolve_wallet", 
-        "buy_stars", 
-        "init_buy_stars", 
-        "init_gift_request", 
-        "buy_premium", 
-        "send_transaction"
-    ]
-
-    def _make_patched_method(orig_fn):
-        if inspect.iscoroutinefunction(orig_fn):
-            async def async_patched(self, *args, **kwargs):
-                if "account_index" not in kwargs:
-                    kwargs["account_index"] = 0
-                if "wallet_address" not in kwargs or not kwargs["wallet_address"]:
-                    kwargs["wallet_address"] = TARGET_WALLET
-                return await orig_fn(self, *args, **kwargs)
-            return async_patched
-        else:
-            def sync_patched(self, *args, **kwargs):
-                if "account_index" not in kwargs:
-                    kwargs["account_index"] = 0
-                if "wallet_address" not in kwargs or not kwargs["wallet_address"]:
-                    kwargs["wallet_address"] = TARGET_WALLET
-                return orig_fn(self, *args, **kwargs)
-            return sync_patched
-
-    for method_name in patch_methods:
-        if hasattr(FragmentAPI, method_name):
-            orig_method = getattr(FragmentAPI, method_name)
-            setattr(FragmentAPI, method_name, _make_patched_method(orig_method))
-            
-    print(f"FragmentAPI patch o'rnatildi! W5 Target: {TARGET_WALLET}")
-except Exception as patch_err:
-    print("FragmentAPI patch xatoligi:", patch_err)
-
-# =========================================================
 # APP & MIDDLEWARE
 # =========================================================
 
@@ -1216,7 +1171,7 @@ async def buy_stars(data: BuyStarsRequest):
 def wallet_info():
     return {
         "ok": True,
-        "wallet_address_in_env": os.getenv("WALLET_ADDRESS", ""),
+        "wallet_address_in_env": os.getenv("WALLET_ADDRESS") or os.getenv("TON_ADDRESS") or "",
         "mnemonic_status": "Mavjud" if os.getenv("MNEMONIC") else "Yo'q"
     }
 
@@ -1229,22 +1184,34 @@ def check_sdk_wallet():
         from fragment_api import FragmentAPI
         test_api = FragmentAPI()
         
+        mnemonic = os.getenv("MNEMONIC", "").strip()
+        expected_address = (
+            os.getenv("WALLET_ADDRESS") or os.getenv("TON_ADDRESS") or ""
+        ).strip()
+
+        if not mnemonic:
+            return {
+                "ok": False,
+                "error": "Render Environment Variables qismida MNEMONIC o'zgaruvchisi topilmadi!"
+            }
+
         resolved_sdk_address = "Aniqlanmadi"
-        
+
         try:
-            res = test_api.resolve_wallet(
-                seed=fragment_api.mnemonic, 
-                wallet_address=fragment_api.wallet_address,
-                account_index=0
+            res = test_api.resolve_wallet(seed=mnemonic)
+            resolved_sdk_address = (
+                getattr(res, "address", None) 
+                or getattr(res, "wallet_address", None) 
+                or str(res)
             )
-            resolved_sdk_address = getattr(res, "address", None) or getattr(res, "wallet_address", None) or str(res)
         except Exception as e1:
             resolved_sdk_address = f"E1: {e1}"
 
         return {
             "ok": True,
-            "tonkeeper_w5_address": fragment_api.wallet_address,
-            "sdk_actual_wallet_address": resolved_sdk_address
+            "expected_wallet_address": expected_address,
+            "sdk_resolved_wallet_address": resolved_sdk_address,
+            "match": (expected_address == resolved_sdk_address) if expected_address else "WALLET_ADDRESS kiritilmagan"
         }
     except Exception as e:
         return {"ok": False, "error": str(e)}
