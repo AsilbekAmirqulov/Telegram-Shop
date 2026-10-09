@@ -224,11 +224,13 @@ class PremiumTestRequest(BaseModel):
 class BuyPremiumRequest(BaseModel):
     username: str
     months: int = 3
+    admin_key: str = ""
 
 
 class BuyStarsRequest(BaseModel):
     username: str
     amount: int = 50
+    admin_key: str = ""
 
 # =========================================================
 # BASIC HELPERS
@@ -699,7 +701,7 @@ async def create_order(order: OrderRequest):
                 stars_amount=int(stars_cnt)
             )
 
-        # 5. Xarid natijasini tekshirish va kerek bo'lsa ROLLBACK qilish
+        # 5. Xarid natijasini tekshirish va kerak bo'lsa ROLLBACK qilish
         if frag_res.get("ok"):
             cur.execute(
                 "UPDATE orders SET status = 'completed' WHERE id = %s",
@@ -730,7 +732,7 @@ async def create_order(order: OrderRequest):
                 INSERT INTO wallet_transactions (user_id, amount, type, description, order_id)
                 VALUES (%s, %s, %s, %s, %s)
                 """,
-                (order.user_id, order.amount, "refund", f"Qaytarildi (Xatoliik): {error_msg}", order_id)
+                (order.user_id, order.amount, "refund", f"Qaytarildi (Xatolik): {error_msg}", order_id)
             )
             cur.execute(
                 "UPDATE orders SET status = 'failed' WHERE id = %s",
@@ -1098,8 +1100,8 @@ def server_info():
 # ==========================================
 
 @app.post("/api/buy-premium")
-async def buy_premium(data: BuyPremiumRequest, admin_key: str = ""):
-    if ADMIN_KEY and admin_key != ADMIN_KEY:
+async def buy_premium(data: BuyPremiumRequest):
+    if ADMIN_KEY and data.admin_key != ADMIN_KEY:
         raise HTTPException(status_code=403, detail="Admin key noto‘g‘ri yoki kiritilmagan!")
 
     username = data.username
@@ -1131,8 +1133,8 @@ async def buy_premium(data: BuyPremiumRequest, admin_key: str = ""):
 
 
 @app.post("/api/buy-stars")
-async def buy_stars(data: BuyStarsRequest, admin_key: str = ""):
-    if ADMIN_KEY and admin_key != ADMIN_KEY:
+async def buy_stars(data: BuyStarsRequest):
+    if ADMIN_KEY and data.admin_key != ADMIN_KEY:
         raise HTTPException(status_code=403, detail="Admin key noto‘g‘ri yoki kiritilmagan!")
 
     username = data.username
