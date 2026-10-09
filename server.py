@@ -1181,14 +1181,14 @@ def check_sdk_wallet():
         
         resolved_sdk_address = "Aniqlanmadi"
         
-        # 1. Seed orqali SDK hosil qilgan manzilni olish
+        # 1-urinish: 12-so'zli seed va account_index=0 bilan
         try:
-            res = test_api.resolve_wallet(seed=fragment_api.mnemonic)
+            res = test_api.resolve_wallet(seed=fragment_api.mnemonic, account_index=0)
             resolved_sdk_address = getattr(res, "address", None) or getattr(res, "wallet_address", None) or str(res)
         except Exception as e1:
-            # 2. Agar wallet_address bilan chaqirilsa
+            # 2-urinish: seed va wallet_address bilan
             try:
-                res = test_api.resolve_wallet(wallet_address=fragment_api.wallet_address)
+                res = test_api.resolve_wallet(seed=fragment_api.mnemonic, wallet_address=fragment_api.wallet_address)
                 resolved_sdk_address = getattr(res, "address", None) or getattr(res, "wallet_address", None) or str(res)
             except Exception as e2:
                 resolved_sdk_address = f"E1: {e1} | E2: {e2}"
