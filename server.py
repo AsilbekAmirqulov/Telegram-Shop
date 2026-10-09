@@ -4,6 +4,8 @@ import re
 import secrets
 import urllib.request
 import urllib.error
+import inspect
+import asyncio
 from datetime import datetime
 
 from fastapi import FastAPI, HTTPException, Header, Depends
@@ -19,6 +21,45 @@ from telethon.tl.functions.contacts import ResolveUsernameRequest
 
 # Fragment xizmati importi
 from fragment import FragmentService
+
+# =========================================================
+# FRAGMENT API PATCH (12-so'zli Seed / W5 Hamyon mosligi)
+# =========================================================
+try:
+    from fragment_api import FragmentAPI
+
+    # FragmentAPI metodlarini account_index=0 bilan avtomatik ta'minlash
+    patch_methods = [
+        "resolve_wallet", 
+        "buy_stars", 
+        "init_buy_stars", 
+        "init_gift_request", 
+        "buy_premium", 
+        "send_transaction"
+    ]
+
+    def _make_patched_method(orig_fn):
+        if inspect.iscoroutinefunction(orig_fn):
+            async def async_patched(self, *args, **kwargs):
+                if "account_index" not in kwargs:
+                    kwargs["account_index"] = 0
+                return await orig_fn(self, *args, **kwargs)
+            return async_patched
+        else:
+            def sync_patched(self, *args, **kwargs):
+                if "account_index" not in kwargs:
+                    kwargs["account_index"] = 0
+                return orig_fn(self, *args, **kwargs)
+            return sync_patched
+
+    for method_name in patch_methods:
+        if hasattr(FragmentAPI, method_name):
+            orig_method = getattr(FragmentAPI, method_name)
+            setattr(FragmentAPI, method_name, _make_patched_method(orig_method))
+            
+    print("FragmentAPI account_index=0 patch muvaffaqiyatli o'rnatildi.")
+except Exception as patch_err:
+    print("FragmentAPI patch xatoligi:", patch_err)
 
 # =========================================================
 # APP & MIDDLEWARE
@@ -1163,6 +1204,8 @@ async def buy_stars(data: BuyStarsRequest):
 
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
 @app.get("/api/wallet-info")
 def wallet_info():
     return {
@@ -1170,6 +1213,7 @@ def wallet_info():
         "wallet_address_in_env": os.getenv("WALLET_ADDRESS", ""),
         "mnemonic_status": "Mavjud" if os.getenv("MNEMONIC") else "Yo'q"
     }
+
 # ==========================================
 # SDK WALLET CHECK (DEBUG)
 # ==========================================
