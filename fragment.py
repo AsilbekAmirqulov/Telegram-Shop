@@ -13,7 +13,7 @@ class FragmentService:
     def __init__(self):
         self.session = requests.Session()
 
-        # Fallback environment variable'lar
+        # Environment variable'lar
         self.stel_ssid = os.getenv("STEL_SSID", "")
         self.stel_dt = os.getenv("STEL_DT", "")
         self.stel_token = os.getenv("STEL_TOKEN", "")
@@ -24,7 +24,7 @@ class FragmentService:
         self._init_session_cookies()
 
     def _init_session_cookies(self):
-        """Cookielarni requests.Session va domenlarga to'g'ri joylash"""
+        """Cookielarni requests.Session obyektiga joylash"""
         self.session.cookies.clear()
         cookies_map = {
             "stel_ssid": self.stel_ssid,
@@ -49,7 +49,6 @@ class FragmentService:
             "Referer": "https://fragment.com/"
         }
 
-        # Cookielarni kafolatli ravishda Header sifatida ham biriktiramiz
         cookie_parts = []
         if self.stel_ssid:
             cookie_parts.append(f"stel_ssid={self.stel_ssid}")
@@ -66,7 +65,7 @@ class FragmentService:
         return headers
 
     async def refresh_cookies_via_telethon(self, telegram_client):
-        """Telethon va Telegram OAuth orqali Fragment cookielarini avtomatik yangilash"""
+        """Telethon orqali Render IP manzilidan Fragment OAuth avto-login qilish"""
         if not telegram_client or not telegram_client.is_connected():
             print("Telegram client ulangan emas, avto-login bajarilmadi.")
             return False
@@ -75,12 +74,11 @@ class FragmentService:
             print("Telethon orqali Fragment Telegram OAuth boshlandi...")
             self.session.cookies.clear()
 
+            # 1. OAuth sahifasini yuklash va sessiya init qilish
+            self.session.get("https://fragment.com/auth/telegram?auth_type=callback", headers=self.get_headers(), timeout=10)
+
             oauth_req_url = "https://oauth.telegram.org/auth/request?bot_id=5444323279&origin=https%3A%2F%2Ffragment.com&embed=1"
             res = self.session.post(oauth_req_url, headers={"X-Requested-With": "XMLHttpRequest"}, timeout=10)
-            
-            if res.status_code != 200 or not res.text:
-                self.session.get("https://oauth.telegram.org/auth?bot_id=5444323279&origin=https%3A%2F%2Ffragment.com&embed=1", timeout=10)
-                res = self.session.post(oauth_req_url, headers={"X-Requested-With": "XMLHttpRequest"}, timeout=10)
 
             try:
                 data = res.json()
@@ -93,35 +91,38 @@ class FragmentService:
                     padded = token_b64 + "=" * (-len(token_b64) % 4)
                     token_bytes = base64.b64decode(padded)
                     await telegram_client(AcceptLoginTokenRequest(token=token_bytes))
-                    print("Telethon: Login token tasdiqlandi!")
+                    print("Telethon: Login token muvaffaqiyatli tasdiqlandi!")
                 except Exception as t_err:
                     print("Telethon AcceptLoginToken xatosi:", t_err)
 
             req_id = data.get("req_id")
             if req_id:
                 status_url = f"https://oauth.telegram.org/auth/status?req_id={req_id}"
-                for _ in range(5):
+                for _ in range(7):
                     await asyncio.sleep(1)
                     s_res = self.session.post(status_url, headers={"X-Requested-With": "XMLHttpRequest"}, timeout=10)
                     try:
                         s_data = s_res.json()
                         if s_data.get("status") == "grant":
                             auth_data = s_data.get("user", {})
-                            self.session.post("https://fragment.com/auth/login", data=auth_data, timeout=10)
-                            print("Fragment OAuth login yakunlandi!")
-                            break
-                    except Exception:
-                        pass
+                            login_res = self.session.post("https://fragment.com/auth/login", data=auth_data, timeout=10)
+                            print("Fragment auth/login javobi:", login_res.text)
+                            
+                            # Yangi cookielarni saqlash
+                            for cookie in self.session.cookies:
+                                if cookie.name == "stel_token":
+                                    self.stel_token = cookie.value
+                                elif cookie.name == "stel_ssid":
+                                    self.stel_ssid = cookie.value
+                                elif cookie.name == "stel_dt":
+                                    self.stel_dt = cookie.value
+                            
+                            print("Fragment avto-login yakunlandi! Yangi stel_token olindi.")
+                            return True
+                    except Exception as s_err:
+                        print("Status check xatosi:", s_err)
 
-            sess_cookies = self.session.cookies.get_dict()
-            if "stel_token" in sess_cookies and sess_cookies["stel_token"]:
-                self.stel_ssid = sess_cookies.get("stel_ssid", self.stel_ssid)
-                self.stel_token = sess_cookies.get("stel_token")
-                self.stel_dt = sess_cookies.get("stel_dt", self.stel_dt)
-                print("Fragment cookielari (stel_token) muvaffaqiyatli olindi!")
-                return True
-
-            print("Telegram OAuth muvaffaqiyatsiz bo'ldi. Eski cookielar yuklanmoqda...")
+            print("Telegram OAuth orqali stel_token olinmadi. Fallback cookielar tiklanmoqda.")
             self._init_session_cookies()
             return False
 
