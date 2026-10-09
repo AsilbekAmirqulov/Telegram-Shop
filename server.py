@@ -6,7 +6,7 @@ import urllib.request
 import urllib.error
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -17,7 +17,7 @@ from telethon import TelegramClient
 from telethon.sessions import StringSession
 from telethon.tl.functions.contacts import ResolveUsernameRequest
 
-# Biz yaratgan Fragment xizmati importi
+# Fragment xizmati importi
 from fragment import FragmentService
 
 # =========================================================
@@ -679,78 +679,74 @@ async def create_order(order: OrderRequest):
 
         conn.commit()
 
-        new_balance = get_wallet_balance(cur, order.user_id)
+        # 4. FRAGMENT AVTOMATIK YETKAZIB BERISH (SDK orqali)
+        prod_lower = (order.product or "").lower()
+        is_premium = "premium" in prod_lower or (order.months and order.months > 0)
+        is_stars = "stars" in prod_lower or (order.stars and order.stars > 0)
 
-        # 4. FRAGMENT AVTOMATIK YETKAZIB BERISH (DELIVERY)
-        delivery_status = "paid"
-        delivery_message = "Buyurtma qabul qilindi."
+        frag_res = {"ok": False, "error": "Noma'lum mahsulot turi"}
 
-        try:
-            prod_lower = (order.product or "").lower()
-            is_premium = "premium" in prod_lower or (order.months and order.months > 0)
-            is_stars = "stars" in prod_lower or (order.stars and order.stars > 0)
+        if is_premium:
+            months_cnt = order.months or 3
+            frag_res = await fragment_api.init_gift_request(
+                username=username, 
+                months=int(months_cnt)
+            )
+        elif is_stars:
+            stars_cnt = order.stars or 50
+            frag_res = await fragment_api.init_buy_stars(
+                username=username, 
+                stars_amount=int(stars_cnt)
+            )
 
-            if is_premium:
-                months_cnt = order.months or 3
-                init_res = await fragment_api.init_gift_request(
-                    username, 
-                    months=int(months_cnt), 
-                    telegram_client=telegram_client
-                )
+        # 5. Xarid natijasini tekshirish va kerek bo'lsa ROLLBACK qilish
+        if frag_res.get("ok"):
+            cur.execute(
+                "UPDATE orders SET status = 'completed' WHERE id = %s",
+                (order_id,)
+            )
+            conn.commit()
+            new_balance = get_wallet_balance(cur, order.user_id)
 
-                if init_res.get("ok"):
-                    req_id = init_res.get("req_id")
-                    link_res = fragment_api.get_gift_link(req_id)
-                    if link_res.get("ok"):
-                        tx_data = link_res.get("transaction", {})
-                        await fragment_api.send_ton_payment(
-                            destination_address=tx_data.get("address"),
-                            amount_nano=tx_data.get("amount"),
-                            payload_boc=tx_data.get("payload")
-                        )
-                        delivery_status = "completed"
-                        delivery_message = f"@{username} hisobiga {months_cnt} oylik Premium yetkazildi!"
+            return {
+                "ok": True,
+                "message": f"@{username} hisobiga mahsulot muvaffaqiyatli yetkazildi!",
+                "order_id": order_id,
+                "status": "completed",
+                "username": username,
+                "balance": new_balance,
+                "tx_hash": frag_res.get("tx_hash")
+            }
+        else:
+            # XATOLIK: BALANSNI QAYTARISH (ROLLBACK)
+            error_msg = frag_res.get("error", "Fragment yetkazib berishda xatolik")
+            
+            cur.execute(
+                "UPDATE wallets SET balance = balance + %s, updated_at = CURRENT_TIMESTAMP WHERE user_id = %s",
+                (order.amount, order.user_id)
+            )
+            cur.execute(
+                """
+                INSERT INTO wallet_transactions (user_id, amount, type, description, order_id)
+                VALUES (%s, %s, %s, %s, %s)
+                """,
+                (order.user_id, order.amount, "refund", f"Qaytarildi (Xatoliik): {error_msg}", order_id)
+            )
+            cur.execute(
+                "UPDATE orders SET status = 'failed' WHERE id = %s",
+                (order_id,)
+            )
+            conn.commit()
+            
+            new_balance = get_wallet_balance(cur, order.user_id)
 
-            elif is_stars:
-                stars_cnt = order.stars or 50
-                init_res = await fragment_api.init_buy_stars(
-                    username, 
-                    stars_amount=int(stars_cnt), 
-                    telegram_client=telegram_client
-                )
-
-                if init_res.get("ok"):
-                    req_id = init_res.get("req_id")
-                    link_res = fragment_api.get_buy_stars_link(req_id)
-                    if link_res.get("ok"):
-                        tx_data = link_res.get("transaction", {})
-                        await fragment_api.send_ton_payment(
-                            destination_address=tx_data.get("address"),
-                            amount_nano=tx_data.get("amount"),
-                            payload_boc=tx_data.get("payload")
-                        )
-                        delivery_status = "completed"
-                        delivery_message = f"@{username} hisobiga {stars_cnt} ta Stars yetkazildi!"
-
-            if delivery_status == "completed":
-                cur.execute(
-                    "UPDATE orders SET status = 'completed' WHERE id = %s",
-                    (order_id,)
-                )
-                conn.commit()
-
-        except Exception as frag_err:
-            print("Fragment avto-yetkazib berishda xatolik:", frag_err)
-            delivery_message = f"Buyurtma olindi, lekin Fragment yetkazib berishda xatolik: {str(frag_err)}"
-
-        return {
-            "ok": True,
-            "message": delivery_message,
-            "order_id": order_id,
-            "status": delivery_status,
-            "username": username,
-            "balance": new_balance
-        }
+            return {
+                "ok": False,
+                "message": f"Buyurtma bajarilmadi: {error_msg}. Pul balansingizga qaytarildi.",
+                "order_id": order_id,
+                "status": "failed",
+                "balance": new_balance
+            }
 
     except HTTPException:
         conn.rollback()
@@ -901,6 +897,7 @@ def update_order_status(
         "paid",
         "processing",
         "completed",
+        "failed",
         "cancelled"
     }
 
@@ -1101,7 +1098,10 @@ def server_info():
 # ==========================================
 
 @app.post("/api/buy-premium")
-async def buy_premium(data: BuyPremiumRequest):
+async def buy_premium(data: BuyPremiumRequest, admin_key: str = ""):
+    if ADMIN_KEY and admin_key != ADMIN_KEY:
+        raise HTTPException(status_code=403, detail="Admin key noto‘g‘ri yoki kiritilmagan!")
+
     username = data.username
     months = data.months
 
@@ -1111,34 +1111,19 @@ async def buy_premium(data: BuyPremiumRequest):
     clean_username = normalize_username(username)
 
     try:
-        init_res = await fragment_api.init_gift_request(
-            clean_username, 
-            months, 
-            telegram_client=telegram_client
+        res = await fragment_api.init_gift_request(
+            username=clean_username, 
+            months=months
         )
 
-        if not init_res.get("ok"):
-            return {"success": False, "error": init_res.get("error", "Init request xatoligi")}
-
-        req_id = init_res.get("req_id")
-        link_res = fragment_api.get_gift_link(req_id)
-        if not link_res.get("ok"):
-            return {"success": False, "error": "To'lov havolasini olib bo'lmadi"}
-
-        transaction_data = link_res.get("transaction", {})
-        dest_addr = transaction_data.get("address")
-        amount = transaction_data.get("amount")
-        payload_boc = transaction_data.get("payload")
-
-        await fragment_api.send_ton_payment(
-            destination_address=dest_addr,
-            amount_nano=amount,
-            payload_boc=payload_boc
-        )
+        if not res.get("ok"):
+            return {"success": False, "error": res.get("error", "Init request xatoligi")}
 
         return {
             "success": True,
-            "message": f"@{clean_username} foydalanuvchisi uchun {months} oylik Telegram Premium muvaffaqiyatli sotib olindi!"
+            "message": f"@{clean_username} foydalanuvchisi uchun {months} oylik Telegram Premium muvaffaqiyatli sotib olindi!",
+            "tx_hash": res.get("tx_hash"),
+            "purchase_id": res.get("purchase_id")
         }
 
     except Exception as e:
@@ -1146,7 +1131,10 @@ async def buy_premium(data: BuyPremiumRequest):
 
 
 @app.post("/api/buy-stars")
-async def buy_stars(data: BuyStarsRequest):
+async def buy_stars(data: BuyStarsRequest, admin_key: str = ""):
+    if ADMIN_KEY and admin_key != ADMIN_KEY:
+        raise HTTPException(status_code=403, detail="Admin key noto‘g‘ri yoki kiritilmagan!")
+
     username = data.username
     stars_amount = data.amount
 
@@ -1156,34 +1144,19 @@ async def buy_stars(data: BuyStarsRequest):
     clean_username = normalize_username(username)
 
     try:
-        init_res = await fragment_api.init_buy_stars(
-            clean_username, 
-            stars_amount, 
-            telegram_client=telegram_client
+        res = await fragment_api.init_buy_stars(
+            username=clean_username, 
+            stars_amount=stars_amount
         )
 
-        if not init_res.get("ok"):
-            return {"success": False, "error": init_res.get("error", "Stars init request xatoligi")}
-
-        req_id = init_res.get("req_id")
-        link_res = fragment_api.get_buy_stars_link(req_id)
-        if not link_res.get("ok"):
-            return {"success": False, "error": "Stars to'lov havolasini olib bo'lmadi"}
-
-        transaction_data = link_res.get("transaction", {})
-        dest_addr = transaction_data.get("address")
-        amount = transaction_data.get("amount")
-        payload_boc = transaction_data.get("payload")
-
-        await fragment_api.send_ton_payment(
-            destination_address=dest_addr,
-            amount_nano=amount,
-            payload_boc=payload_boc
-        )
+        if not res.get("ok"):
+            return {"success": False, "error": res.get("error", "Stars init request xatoligi")}
 
         return {
             "success": True,
-            "message": f"@{clean_username} foydalanuvchisi uchun {stars_amount} ta Telegram Stars muvaffaqiyatli sotib olindi!"
+            "message": f"@{clean_username} foydalanuvchisi uchun {stars_amount} ta Telegram Stars muvaffaqiyatli sotib olindi!",
+            "tx_hash": res.get("tx_hash"),
+            "purchase_id": res.get("purchase_id")
         }
 
     except Exception as e:
