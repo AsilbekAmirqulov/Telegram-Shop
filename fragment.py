@@ -119,10 +119,13 @@ class FragmentService:
             res = self.session.get("https://fragment.com/stars", headers=self.headers, timeout=10)
             match = re.search(r'Fragment\.apiHash\s*=\s*["\']([a-f0-9]+)["\']', res.text)
             if match:
-                return match.group(1)
+                extracted_hash = match.group(1)
+                print("Scraped Dynamic Hash:", extracted_hash)
+                return extracted_hash
         except Exception as e:
             print("Hash scraping xatosi:", e)
 
+        print("Fallback Hash ishlatilmoqda:", self.fallback_hash)
         return self.fallback_hash
 
     def search_recipient(self, username: str):
@@ -148,8 +151,15 @@ class FragmentService:
         """Telegram Premium so'rovini yuborish"""
         clean_username = username.replace("@", "").strip()
 
-        # Oldin recipient qidiramiz
+        # 1. Recipient qidiramiz va uning maxsus 'recipient' kalitini olamiz
         search_res = self.search_recipient(clean_username)
+        if not search_res or not search_res.get("ok"):
+            err_msg = search_res.get("error") if search_res else "Foydalanuvchi topilmadi"
+            return {"ok": False, "error": f"Search error: {err_msg}"}
+
+        recipient_token = search_res.get("found", {}).get("recipient")
+        if not recipient_token:
+            return {"ok": False, "error": "Recipient token topilmadi"}
 
         current_hash = self.get_dynamic_hash()
         url = f"https://fragment.com/api?hash={current_hash}"
@@ -157,7 +167,7 @@ class FragmentService:
         payload = {
             'mode': 'new',
             'method': 'initGiftPremiumRequest',
-            'recipient': clean_username,
+            'recipient': recipient_token,  # Raw username o'rniga shifrlangan recipient token yuboriladi
             'months': str(months)
         }
 
@@ -208,7 +218,14 @@ class FragmentService:
         """Telegram Stars so'rovini yuborish"""
         clean_username = username.replace("@", "").strip()
 
-        self.search_recipient(clean_username)
+        search_res = self.search_recipient(clean_username)
+        if not search_res or not search_res.get("ok"):
+            err_msg = search_res.get("error") if search_res else "Foydalanuvchi topilmadi"
+            return {"ok": False, "error": f"Search error: {err_msg}"}
+
+        recipient_token = search_res.get("found", {}).get("recipient")
+        if not recipient_token:
+            return {"ok": False, "error": "Recipient token topilmadi"}
 
         current_hash = self.get_dynamic_hash()
         url = f"https://fragment.com/api?hash={current_hash}"
@@ -216,7 +233,7 @@ class FragmentService:
         payload = {
             'mode': 'new',
             'method': 'initBuyStarsRequest',
-            'recipient': clean_username,
+            'recipient': recipient_token,
             'quantity': str(stars_amount)
         }
 
