@@ -56,11 +56,8 @@ class FragmentService:
 
         try:
             print("Telethon orqali Fragment Telegram OAuth boshlandi...")
-            
-            # 1. Eski eskirgan cookielarni tozalaymiz
             self.session.cookies.clear()
 
-            # 2. Telegram OAuth so'rovi
             oauth_req_url = "https://oauth.telegram.org/auth/request?bot_id=5444323279&origin=https%3A%2F%2Ffragment.com&embed=1"
             res = self.session.post(oauth_req_url, headers={"X-Requested-With": "XMLHttpRequest"}, timeout=10)
             
@@ -73,7 +70,6 @@ class FragmentService:
             except Exception:
                 data = {}
 
-            # 3. Telethon orqali login tokenini tasdiqlash
             token_b64 = data.get("token") or data.get("req_id")
             if token_b64:
                 try:
@@ -84,7 +80,6 @@ class FragmentService:
                 except Exception as t_err:
                     print("Telethon AcceptLoginToken xatosi:", t_err)
 
-            # 4. Autentifikatsiya holatini tekshirish
             req_id = data.get("req_id")
             if req_id:
                 status_url = f"https://oauth.telegram.org/auth/status?req_id={req_id}"
@@ -101,7 +96,6 @@ class FragmentService:
                     except Exception:
                         pass
 
-            # 5. Asosiy autentifikatsiya kaliti (stel_token) kelganini qat'iy tekshirish
             sess_cookies = self.session.cookies.get_dict()
             if "stel_token" in sess_cookies and sess_cookies["stel_token"]:
                 self.stel_ssid = sess_cookies.get("stel_ssid", self.stel_ssid)
@@ -144,6 +138,7 @@ class FragmentService:
 
         try:
             res = self.session.post(url, data=payload, headers=self.headers, timeout=10)
+            print("Search Recipient Javobi:", res.text)
             return res.json()
         except Exception as e:
             print("Recipient search xatosi:", e)
@@ -153,7 +148,8 @@ class FragmentService:
         """Telegram Premium so'rovini yuborish"""
         clean_username = username.replace("@", "").strip()
 
-        self.search_recipient(clean_username)
+        # Oldin recipient qidiramiz
+        search_res = self.search_recipient(clean_username)
 
         current_hash = self.get_dynamic_hash()
         url = f"https://fragment.com/api?hash={current_hash}"
@@ -167,7 +163,13 @@ class FragmentService:
 
         try:
             res = self.session.post(url, data=payload, headers=self.headers, timeout=10)
-            data = res.json()
+            print("Init Gift Request Javobi:", res.text)
+            
+            try:
+                data = res.json()
+            except Exception:
+                return {"ok": False, "error": f"JSON bo'lmagan javob: {res.text}"}
+
             if not data.get("ok"):
                 return {"ok": False, "error": data.get("error", "Gift Premium init xatosi")}
             return {"ok": True, "req_id": data.get("req_id")}
