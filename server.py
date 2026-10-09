@@ -1163,3 +1163,10 @@ async def buy_stars(data: BuyStarsRequest):
 
     except Exception as e:
         return {"success": False, "error": str(e)}
+@app.get("/api/wallet-info")
+def wallet_info():
+    return {
+        "ok": True,
+        "wallet_address_in_env": os.getenv("WALLET_ADDRESS", ""),
+        "mnemonic_status": "Mavjud" if os.getenv("MNEMONIC") else "Yo'q"
+    }
