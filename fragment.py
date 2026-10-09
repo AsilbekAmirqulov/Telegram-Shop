@@ -57,7 +57,7 @@ class FragmentService:
         try:
             print("Telethon orqali Fragment Telegram OAuth boshlandi...")
             
-            # 1. Eski eskirgan cookielarni tozalaymiz (soxta true chiqmasligi uchun)
+            # 1. Eski eskirgan cookielarni tozalaymiz
             self.session.cookies.clear()
 
             # 2. Telegram OAuth so'rovi
@@ -101,16 +101,16 @@ class FragmentService:
                     except Exception:
                         pass
 
-            # 5. Yangi cookielar haqiqatan kelganini tekshirish
+            # 5. Asosiy autentifikatsiya kaliti (stel_token) kelganini qat'iy tekshirish
             sess_cookies = self.session.cookies.get_dict()
-            if "stel_ssid" in sess_cookies and sess_cookies["stel_ssid"]:
-                self.stel_ssid = sess_cookies.get("stel_ssid")
-                self.stel_token = sess_cookies.get("stel_token", self.stel_token)
+            if "stel_token" in sess_cookies and sess_cookies["stel_token"]:
+                self.stel_ssid = sess_cookies.get("stel_ssid", self.stel_ssid)
+                self.stel_token = sess_cookies.get("stel_token")
                 self.stel_dt = sess_cookies.get("stel_dt", self.stel_dt)
-                print("Fragment cookielari haqiqatdan yangilandi!")
+                print("Fragment cookielari (stel_token) muvaffaqiyatli olindi!")
                 return True
 
-            print("Yangi cookielar olinmadi, eski cookielar qayta yuklanmoqda...")
+            print("Telegram OAuth muvaffaqiyatsiz bo'ldi (stel_token olinmadi). Eski cookielar yuklanmoqda...")
             self._init_session_cookies()
             return False
 
