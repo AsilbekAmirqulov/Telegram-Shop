@@ -9,10 +9,10 @@ from pytoniq_core import Cell
 
 class FragmentService:
     def __init__(self):
-        # Requests o'rniga Chrome 124 TLS barmoq izini soxtalashtiruvchi curl_cffi sessiyasi
+        # Chrome 124 TLS fingerprint bilan impersonate qilish
         self.session = requests.Session(impersonate="chrome124")
 
-        # Render Environment Variable'lardan yuklash
+        # Environment variable'larni yuklash
         self.stel_ssid = os.getenv("STEL_SSID", "")
         self.stel_dt = os.getenv("STEL_DT", "")
         self.stel_token = os.getenv("STEL_TOKEN", "")
@@ -20,7 +20,6 @@ class FragmentService:
         self.fallback_hash = os.getenv("FRAGMENT_HASH", "")
         self.mnemonic = os.getenv("MNEMONIC", "")
         
-        # Proxy qo'llab-quvvatlash (agar Render IP bloki bo'lsa)
         self.proxy = os.getenv("FRAGMENT_PROXY", "")
         if self.proxy:
             self.session.proxies = {
@@ -32,7 +31,7 @@ class FragmentService:
         self._apply_cookies()
 
     def _apply_cookies(self):
-        """Sessiyaga Fragment cookie-fayllarini biriktirish"""
+        """Sessiyaga cookielarni biriktirish"""
         self.session.cookies.clear()
         cookies_dict = {
             "stel_ssid": self.stel_ssid,
@@ -46,8 +45,8 @@ class FragmentService:
                 self.session.cookies.set(k, v, domain=".fragment.com")
 
     def get_headers(self) -> dict:
-        """Haqiqiy Chrome 124 brauzerining HTTP sarlavhalari"""
-        headers = {
+        """Standard Chrome 124 sarlavhalari"""
+        return {
             "Accept": "application/json, text/javascript, */*; q=0.01",
             "Accept-Language": "en-US,en;q=0.9",
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -61,24 +60,9 @@ class FragmentService:
             "Sec-Fetch-Mode": "cors",
             "Sec-Fetch-Site": "same-origin"
         }
-        
-        cookie_parts = []
-        if self.stel_ssid:
-            cookie_parts.append(f"stel_ssid={self.stel_ssid}")
-        if self.stel_dt:
-            cookie_parts.append(f"stel_dt={self.stel_dt}")
-        if self.stel_token:
-            cookie_parts.append(f"stel_token={self.stel_token}")
-        if self.stel_ton_token:
-            cookie_parts.append(f"stel_ton_token={self.stel_ton_token}")
-
-        if cookie_parts:
-            headers["Cookie"] = "; ".join(cookie_parts)
-
-        return headers
 
     def get_dynamic_hash(self) -> str:
-        """Fragment.com sahifasidan joriy API hash qiymatini 100% aniq olish"""
+        """Fragment.com sahifasidan joriy apiHash qiymatini olish hamda diagnostika qilish"""
         urls = [
             "https://fragment.com/premium",
             "https://fragment.com/stars",
@@ -88,20 +72,25 @@ class FragmentService:
         for url in urls:
             try:
                 res = self.session.get(url, headers=self.get_headers(), timeout=10)
-                
+                print(f"Hash Scraping Status ({url}): {res.status_code}")
+
+                # Regex patterns for apiHash
                 patterns = [
-                    r'ajInit\s*\(\s*\{[^}]*["\']hash["\']\s*:\s*["\']([a-f0-9]+)["\']',
                     r'Fragment\.apiHash\s*=\s*["\']([a-f0-9]+)["\']',
-                    r'["\']hash["\']\s*:\s*["\']([a-f0-9]{16,64})["\']',
-                    r'data-hash=["\']([a-f0-9]+)["\']'
+                    r'ajInit\s*\(\s*\{[^}]*["\']hash["\']\s*:\s*["\']([a-f0-9]+)["\']',
+                    r'["\']api_hash["\']\s*:\s*["\']([a-f0-9]+)["\']',
+                    r'["\']hash["\']\s*:\s*["\']([a-f0-9]{16,64})["\']'
                 ]
                 
                 for pat in patterns:
                     match = re.search(pat, res.text, re.IGNORECASE)
                     if match:
                         extracted_hash = match.group(1)
-                        print(f"Scraped Dynamic Hash ({url}):", extracted_hash)
+                        print(f"Scraped Dynamic Hash ({url}): {extracted_hash}")
                         return extracted_hash
+                
+                # Dynamic hash topilmasa, sahifa matnidan dastlabki 150 belgini chiqarish
+                print(f"Hash topilmadi ({url}). HTML Snippet: {res.text[:150].strip()}")
             except Exception as e:
                 print(f"Hash scraping xatosi ({url}):", e)
 
@@ -109,7 +98,6 @@ class FragmentService:
         return self.fallback_hash
 
     def search_recipient(self, username: str):
-        """Foydalanuvchini Fragment sessiyasida qidirish"""
         clean_username = username.replace("@", "").strip()
         current_hash = self.get_dynamic_hash()
         url = f"https://fragment.com/api?hash={current_hash}"
@@ -128,7 +116,6 @@ class FragmentService:
             return None
 
     async def init_gift_request(self, username: str, months: int = 3, telegram_client=None) -> dict:
-        """Telegram Premium xarid so'rovini boshlash"""
         clean_username = username.replace("@", "").strip()
 
         search_res = self.search_recipient(clean_username)
@@ -167,7 +154,6 @@ class FragmentService:
             return {"ok": False, "error": str(e)}
 
     def get_gift_link(self, req_id: str) -> dict:
-        """Premium to'lov rekvizitlari va payload olib berish"""
         current_hash = self.get_dynamic_hash()
         url = f"https://fragment.com/api?hash={current_hash}"
 
@@ -195,7 +181,6 @@ class FragmentService:
             return {"ok": False, "error": str(e)}
 
     async def init_buy_stars(self, username: str, stars_amount: int = 50, telegram_client=None) -> dict:
-        """Telegram Stars xarid so'rovini boshlash"""
         clean_username = username.replace("@", "").strip()
 
         search_res = self.search_recipient(clean_username)
@@ -228,7 +213,6 @@ class FragmentService:
             return {"ok": False, "error": str(e)}
 
     def get_buy_stars_link(self, req_id: str) -> dict:
-        """Stars to'lov rekvizitlarini olib berish"""
         current_hash = self.get_dynamic_hash()
         url = f"https://fragment.com/api?hash={current_hash}"
 
@@ -256,7 +240,6 @@ class FragmentService:
             return {"ok": False, "error": str(e)}
 
     async def send_ton_payment(self, destination_address: str, amount_nano: int, payload_boc: str = None):
-        """TON Hamyondan pytoniq orqali avtomatik to'lov o'tkazish"""
         if not self.mnemonic:
             raise Exception("MNEMONIC environment variable topilmadi!")
 
