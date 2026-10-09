@@ -1170,3 +1170,17 @@ def wallet_info():
         "wallet_address_in_env": os.getenv("WALLET_ADDRESS", ""),
         "mnemonic_status": "Mavjud" if os.getenv("MNEMONIC") else "Yo'q"
     }
+# ==========================================
+# SDK WALLET CHECK (DEBUG)
+# ==========================================
+@app.get("/api/check-sdk-wallet")
+def check_sdk_wallet():
+    try:
+        return {
+            "ok": True,
+            "mnemonic_word_count": len(fragment_api.mnemonic.split()) if fragment_api.mnemonic else 0,
+            "env_wallet_address": fragment_api.wallet_address,
+            "account_index": fragment_api.account_index
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
