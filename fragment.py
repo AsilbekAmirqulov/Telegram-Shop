@@ -74,7 +74,6 @@ class FragmentService:
             print("Telethon orqali Fragment Telegram OAuth boshlandi...")
             self.session.cookies.clear()
 
-            # 1. OAuth sahifasini yuklash va sessiya init qilish
             self.session.get("https://fragment.com/auth/telegram?auth_type=callback", headers=self.get_headers(), timeout=10)
 
             oauth_req_url = "https://oauth.telegram.org/auth/request?bot_id=5444323279&origin=https%3A%2F%2Ffragment.com&embed=1"
@@ -108,7 +107,6 @@ class FragmentService:
                             login_res = self.session.post("https://fragment.com/auth/login", data=auth_data, timeout=10)
                             print("Fragment auth/login javobi:", login_res.text)
                             
-                            # Yangi cookielarni saqlash
                             for cookie in self.session.cookies:
                                 if cookie.name == "stel_token":
                                     self.stel_token = cookie.value
@@ -165,8 +163,21 @@ class FragmentService:
             print("Recipient search xatosi:", e)
             return None
 
-    def init_gift_request(self, username: str, months: int = 3) -> dict:
-        """Telegram Premium so'rovini yuborish"""
+    async def init_gift_request(self, username: str, months: int = 3, telegram_client=None) -> dict:
+        """Telegram Premium so'rovini yuborish (Auto-retry bilan)"""
+        res = await self._send_init_gift(username, months)
+
+        # Agar Access denied yoki Bad request bo'lsa, Telethon orqali avto-login qilib qayta urinadi
+        if not res.get("ok") and res.get("error") in ["Access denied", "Bad request"] and telegram_client:
+            print(f"Fragment'dan {res.get('error')} olindi. Telethon orqali session yangilanmoqda...")
+            refreshed = await self.refresh_cookies_via_telethon(telegram_client)
+            if refreshed:
+                print("Session yangilandi. Gift request qayta yuborilmoqda...")
+                res = await self._send_init_gift(username, months)
+
+        return res
+
+    async def _send_init_gift(self, username: str, months: int) -> dict:
         clean_username = username.replace("@", "").strip()
 
         search_res = self.search_recipient(clean_username)
@@ -232,8 +243,20 @@ class FragmentService:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
-    def init_buy_stars(self, username: str, stars_amount: int = 50) -> dict:
-        """Telegram Stars so'rovini yuborish"""
+    async def init_buy_stars(self, username: str, stars_amount: int = 50, telegram_client=None) -> dict:
+        """Telegram Stars so'rovini yuborish (Auto-retry bilan)"""
+        res = await self._send_init_stars(username, stars_amount)
+
+        if not res.get("ok") and res.get("error") in ["Access denied", "Bad request"] and telegram_client:
+            print(f"Fragment'dan {res.get('error')} olindi. Telethon orqali session yangilanmoqda...")
+            refreshed = await self.refresh_cookies_via_telethon(telegram_client)
+            if refreshed:
+                print("Session yangilandi. Stars request qayta yuborilmoqda...")
+                res = await self._send_init_stars(username, stars_amount)
+
+        return res
+
+    async def _send_init_stars(self, username: str, stars_amount: int) -> dict:
         clean_username = username.replace("@", "").strip()
 
         search_res = self.search_recipient(clean_username)
