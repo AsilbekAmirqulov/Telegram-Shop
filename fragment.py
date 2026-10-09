@@ -6,28 +6,7 @@ from fragment_api import FragmentAPI
 class FragmentService:
     def __init__(self):
         self.mnemonic = os.getenv("MNEMONIC", "").strip()
-        # WALLET_ADDRESS ham, TON_ADDRESS ham birdek qo'llab-quvvatlanadi
-        self.wallet_address = (
-            os.getenv("WALLET_ADDRESS") or os.getenv("TON_ADDRESS") or "UQAOh0qjvQWkLk99DGpUdW-lHbfJeu5TKRFLHIg2v63gWIzm"
-        ).strip()
         self.api = FragmentAPI()
-
-    def _get_auth_params(self):
-        """Seed so'zlar soniga qarab SDK ga kerakli parametrlarni avtomatik shakllantiradi."""
-        words = self.mnemonic.split()
-        
-        # 24 so'zli standart TON hamyon uchun ortiqcha parametrlar berilmaydi
-        if len(words) == 24:
-            return {
-                "seed": self.mnemonic
-            }
-        # 12 so'zli hamyon uchun wallet_address va account_index ta'minlanadi
-        else:
-            return {
-                "seed": self.mnemonic,
-                "wallet_address": self.wallet_address,
-                "account_index": 0
-            }
 
     async def _run_sync_or_async(self, fn, *args, **kwargs):
         if inspect.iscoroutinefunction(fn):
@@ -61,12 +40,13 @@ class FragmentService:
             tx_hash = tx_hash or res.get("transaction_hash") or res.get("tx_hash") or res.get("hash")
             err = err or res.get("error")
 
+        # Agar xarid navbatda bo'lsa, polling bilan tekshiramiz
         if purchase_id and (not tx_hash or status in ["queued", "pending", "processing"]):
             print(f"Xarid navbatga tushdi (ID: {purchase_id}). Tranzaksiya kutilmoqda...")
 
             check_fn = getattr(self.api, "get_purchase", None) or getattr(self.api, "get_purchase_status", None)
 
-            for _ in range(15):  # Max 45 soniya kutish
+            for _ in range(15):  # Max 45 soniya kutamiz
                 await asyncio.sleep(3)
 
                 if check_fn:
@@ -112,26 +92,23 @@ class FragmentService:
         if not clean_username.startswith("@"):
             clean_username = f"@{clean_username}"
 
-        # Parametrlarni shakllantirish
-        call_kwargs = {
-            "username": clean_username,
-            "amount": stars_amount,
-            "payment_method": "gram",
-            **self._get_auth_params()
-        }
-
-        return await self._call_api_method("buy_stars", **call_kwargs)
+        return await self._call_api_method(
+            "buy_stars",
+            username=clean_username,
+            amount=stars_amount,
+            seed=self.mnemonic,
+            payment_method="gram"
+        )
 
     async def init_gift_request(self, username: str, months: int):
         clean_username = username.strip()
         if not clean_username.startswith("@"):
             clean_username = f"@{clean_username}"
 
-        call_kwargs = {
-            "username": clean_username,
-            "months": months,
-            "payment_method": "gram",
-            **self._get_auth_params()
-        }
-
-        return await self._call_api_method("buy_premium", **call_kwargs)
+        return await self._call_api_method(
+            "buy_premium",
+            username=clean_username,
+            months=months,
+            seed=self.mnemonic,
+            payment_method="gram"
+        )
