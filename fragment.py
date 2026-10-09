@@ -6,11 +6,30 @@ from fragment_api import FragmentAPI
 class FragmentService:
     def __init__(self):
         self.mnemonic = os.getenv("MNEMONIC", "").strip()
-        self.wallet_address = os.getenv("WALLET_ADDRESS", "UQAOh0qjvQWkLk99DGpUdW-lHbfJeu5TKRFLHIg2v63gWIzm").strip()
+        # WALLET_ADDRESS ham, TON_ADDRESS ham birdek qo'llab-quvvatlanadi
+        self.wallet_address = (
+            os.getenv("WALLET_ADDRESS") or os.getenv("TON_ADDRESS") or "UQAOh0qjvQWkLk99DGpUdW-lHbfJeu5TKRFLHIg2v63gWIzm"
+        ).strip()
         self.api = FragmentAPI()
 
+    def _get_auth_params(self):
+        """Seed so'zlar soniga qarab SDK ga kerakli parametrlarni avtomatik shakllantiradi."""
+        words = self.mnemonic.split()
+        
+        # 24 so'zli standart TON hamyon uchun ortiqcha parametrlar berilmaydi
+        if len(words) == 24:
+            return {
+                "seed": self.mnemonic
+            }
+        # 12 so'zli hamyon uchun wallet_address va account_index ta'minlanadi
+        else:
+            return {
+                "seed": self.mnemonic,
+                "wallet_address": self.wallet_address,
+                "account_index": 0
+            }
+
     async def _run_sync_or_async(self, fn, *args, **kwargs):
-        """Metod async bo'lsa await qiladi, sync bo'lsa ThreadPoolExecutor'da xavfsiz bajaradi."""
         if inspect.iscoroutinefunction(fn):
             return await fn(*args, **kwargs)
         else:
@@ -31,7 +50,6 @@ class FragmentService:
 
         print(f"FRAGMENT API RAW RESPONSE ({method_name}):", repr(res))
 
-        # Purchase obyekti yoki dict ma'lumotlarini ajratib olamiz
         purchase_id = getattr(res, "purchase_id", None)
         status = getattr(res, "status", None)
         tx_hash = getattr(res, "transaction_hash", None) or getattr(res, "tx_hash", None) or getattr(res, "hash", None)
@@ -43,13 +61,12 @@ class FragmentService:
             tx_hash = tx_hash or res.get("transaction_hash") or res.get("tx_hash") or res.get("hash")
             err = err or res.get("error")
 
-        # Gar xarid navbatda (queued/pending/processing) bo'lsa, polling bilan tekshiramiz
         if purchase_id and (not tx_hash or status in ["queued", "pending", "processing"]):
             print(f"Xarid navbatga tushdi (ID: {purchase_id}). Tranzaksiya kutilmoqda...")
 
             check_fn = getattr(self.api, "get_purchase", None) or getattr(self.api, "get_purchase_status", None)
 
-            for _ in range(15):  # Max 45 soniya kutamiz (15 * 3s)
+            for _ in range(15):  # Max 45 soniya kutish
                 await asyncio.sleep(3)
 
                 if check_fn:
@@ -76,7 +93,6 @@ class FragmentService:
                     except Exception as poll_e:
                         print("Polling xatosi:", poll_e)
 
-        # Aks holda dastlabki natijani qaytaramiz
         if purchase_id and not err:
             return {
                 "ok": True,
@@ -96,27 +112,26 @@ class FragmentService:
         if not clean_username.startswith("@"):
             clean_username = f"@{clean_username}"
 
-        return await self._call_api_method(
-            "buy_stars",
-            username=clean_username,
-            amount=stars_amount,
-            seed=self.mnemonic,
-            wallet_address=self.wallet_address,
-            account_index=0,
-            payment_method="gram"
-        )
+        # Parametrlarni shakllantirish
+        call_kwargs = {
+            "username": clean_username,
+            "amount": stars_amount,
+            "payment_method": "gram",
+            **self._get_auth_params()
+        }
+
+        return await self._call_api_method("buy_stars", **call_kwargs)
 
     async def init_gift_request(self, username: str, months: int):
         clean_username = username.strip()
         if not clean_username.startswith("@"):
             clean_username = f"@{clean_username}"
 
-        return await self._call_api_method(
-            "buy_premium",
-            username=clean_username,
-            months=months,
-            seed=self.mnemonic,
-            wallet_address=self.wallet_address,
-            account_index=0,
-            payment_method="gram"
-        )
+        call_kwargs = {
+            "username": clean_username,
+            "months": months,
+            "payment_method": "gram",
+            **self._get_auth_params()
+        }
+
+        return await self._call_api_method("buy_premium", **call_kwargs)
