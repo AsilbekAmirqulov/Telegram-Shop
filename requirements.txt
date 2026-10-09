@@ -7,4 +7,4 @@ google-genai
 requests
 pytoniq
 pytoniq_core
-fragment-api-dev==1.3.0
+fragment-api-dev
