@@ -1186,7 +1186,7 @@ def check_sdk_wallet():
         
         mnemonic = os.getenv("MNEMONIC", "").strip()
         expected_address = (
-            os.getenv("WALLET_ADDRESS") or os.getenv("TON_ADDRESS") or ""
+            os.getenv("WALLET_ADDRESS") or os.getenv("TON_ADDRESS") or "UQAOh0qjvQWkLk99DGpUdW-lHbfJeu5TKRFLHIg2v63gWIzm"
         ).strip()
 
         if not mnemonic:
@@ -1195,10 +1195,19 @@ def check_sdk_wallet():
                 "error": "Render Environment Variables qismida MNEMONIC o'zgaruvchisi topilmadi!"
             }
 
+        words = mnemonic.split()
         resolved_sdk_address = "Aniqlanmadi"
 
         try:
-            res = test_api.resolve_wallet(seed=mnemonic)
+            if len(words) == 24:
+                res = test_api.resolve_wallet(seed=mnemonic)
+            else:
+                res = test_api.resolve_wallet(
+                    seed=mnemonic,
+                    wallet_address=expected_address,
+                    account_index=0
+                )
+            
             resolved_sdk_address = (
                 getattr(res, "address", None) 
                 or getattr(res, "wallet_address", None) 
@@ -1209,9 +1218,10 @@ def check_sdk_wallet():
 
         return {
             "ok": True,
+            "seed_word_count": len(words),
             "expected_wallet_address": expected_address,
             "sdk_resolved_wallet_address": resolved_sdk_address,
-            "match": (expected_address == resolved_sdk_address) if expected_address else "WALLET_ADDRESS kiritilmagan"
+            "match": (expected_address == resolved_sdk_address) if expected_address else False
         }
     except Exception as e:
         return {"ok": False, "error": str(e)}
