@@ -6,7 +6,26 @@ from fragment_api import FragmentAPI
 class FragmentService:
     def __init__(self):
         self.mnemonic = os.getenv("MNEMONIC", "").strip()
+        # Render'dan WALLET_ADDRESS yoki TON_ADDRESS o'zgaruvchisini o'qiydi
+        self.wallet_address = (
+            os.getenv("WALLET_ADDRESS") or os.getenv("TON_ADDRESS") or "UQAOh0qjvQWkLk99DGpUdW-lHbfJeu5TKRFLHIg2v63gWIzm"
+        ).strip()
         self.api = FragmentAPI()
+
+    def _get_auth_params(self):
+        """Seed so'zlar sonini aniqlab, SDK talab qiladigan auth parametrlarni shakllantiradi."""
+        words = self.mnemonic.split()
+        if len(words) == 24:
+            return {
+                "seed": self.mnemonic
+            }
+        else:
+            # 12 so'zli BIP39 seed bo'lganda wallet_address va account_index majburiy ta'minlanadi
+            return {
+                "seed": self.mnemonic,
+                "wallet_address": self.wallet_address,
+                "account_index": 0
+            }
 
     async def _run_sync_or_async(self, fn, *args, **kwargs):
         if inspect.iscoroutinefunction(fn):
@@ -92,23 +111,25 @@ class FragmentService:
         if not clean_username.startswith("@"):
             clean_username = f"@{clean_username}"
 
-        return await self._call_api_method(
-            "buy_stars",
-            username=clean_username,
-            amount=stars_amount,
-            seed=self.mnemonic,
-            payment_method="gram"
-        )
+        call_kwargs = {
+            "username": clean_username,
+            "amount": stars_amount,
+            "payment_method": "gram",
+            **self._get_auth_params()
+        }
+
+        return await self._call_api_method("buy_stars", **call_kwargs)
 
     async def init_gift_request(self, username: str, months: int):
         clean_username = username.strip()
         if not clean_username.startswith("@"):
             clean_username = f"@{clean_username}"
 
-        return await self._call_api_method(
-            "buy_premium",
-            username=clean_username,
-            months=months,
-            seed=self.mnemonic,
-            payment_method="gram"
-        )
+        call_kwargs = {
+            "username": clean_username,
+            "months": months,
+            "payment_method": "gram",
+            **self._get_auth_params()
+        }
+
+        return await self._call_api_method("buy_premium", **call_kwargs)
