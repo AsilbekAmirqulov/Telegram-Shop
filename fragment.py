@@ -40,8 +40,7 @@ class FragmentService:
         formatted_username = f"@{clean_username}"
 
         try:
-            # "gram" o'rniga "ton" ishlatiladi
-            check = self.api.check_stars_availability(formatted_username, amount, "ton")
+            check = self.api.check_stars_availability(formatted_username, amount, "gram")
             return {
                 "available": getattr(check, "available", False),
                 "code": getattr(check, "code", "UNKNOWN"),
@@ -73,7 +72,7 @@ class FragmentService:
             buy_params = {
                 "username": formatted_username,
                 "amount": stars_amount,
-                "payment_method": "ton",  # "gram" o'rniga "ton" o'rnatildi
+                "payment_method": "gram",
                 "seed": self.mnemonic
             }
             if self.wallet_address:
@@ -109,7 +108,7 @@ class FragmentService:
             buy_params = {
                 "username": formatted_username,
                 "months": months,
-                "payment_method": "ton",  # "gram" o'rniga "ton" o'rnatildi
+                "payment_method": "gram",
                 "seed": self.mnemonic
             }
             if self.wallet_address:
