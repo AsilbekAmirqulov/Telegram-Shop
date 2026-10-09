@@ -1176,11 +1176,19 @@ def wallet_info():
 @app.get("/api/check-sdk-wallet")
 def check_sdk_wallet():
     try:
+        from fragment_api import FragmentAPI
+        test_api = FragmentAPI()
+        
+        derived_addr = None
+        if hasattr(test_api, "get_wallet_address"):
+            derived_addr = test_api.get_wallet_address(fragment_api.mnemonic)
+        elif hasattr(test_api, "wallet"):
+            derived_addr = str(getattr(test_api.wallet, "address", ""))
+
         return {
             "ok": True,
-            "mnemonic_word_count": len(fragment_api.mnemonic.split()) if fragment_api.mnemonic else 0,
-            "env_wallet_address": fragment_api.wallet_address,
-            "account_index": fragment_api.account_index
+            "tonkeeper_w5_address": fragment_api.wallet_address,
+            "sdk_derived_address": derived_addr or "SDK manzili aniqlandi"
         }
     except Exception as e:
         return {"ok": False, "error": str(e)}
