@@ -1,20 +1,34 @@
 import os
+import re
 import logging
 from fragment_api import FragmentAPI
 
 logger = logging.getLogger(__name__)
 
 
+def sanitize_seed(raw_seed: str) -> str:
+    """Seed frazani tozalash: kichik harflarga o'tkazish, yangi qator va ortiqcha probellarni olib tashlash"""
+    if not raw_seed:
+        return ""
+    # Yangi qatorlar, vergullar va tirnoqlarni probel bilan almashtirish
+    cleaned = re.sub(r'[\n\r,"]', ' ', raw_seed).lower()
+    # Faqat so'zlarni ajratib olib bitta probel bilan biriktirish
+    words = [w.strip() for w in cleaned.split() if w.strip()]
+    return " ".join(words)
+
+
 class FragmentService:
     def __init__(self):
         self.api = FragmentAPI()
         
-        # Seed kaliti
-        self.mnemonic = (
+        # Raw seed
+        raw_mnemonic = (
             os.getenv("MNEMONIC") or 
             os.getenv("TON_WALLET_SEED") or 
             os.getenv("SEED") or ""
-        ).strip()
+        )
+        # Tozalangan seed
+        self.mnemonic = sanitize_seed(raw_mnemonic)
         
         # 12-so'zli seed uchun Hamyon manzili
         self.wallet_address = (
