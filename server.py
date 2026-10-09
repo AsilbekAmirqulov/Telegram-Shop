@@ -692,13 +692,11 @@ async def create_order(order: OrderRequest):
 
             if is_premium:
                 months_cnt = order.months or 3
-                init_res = fragment_api.init_gift_request(username, months=int(months_cnt))
-                
-                # Bad request bo'lsa Telethon orqali avto-yangilab qayta urinamiz
-                if not init_res.get("ok") and "Bad request" in str(init_res.get("error", "")):
-                    print("Bad request olindi. Telethon orqali session yangilanmoqda...")
-                    await fragment_api.refresh_cookies_via_telethon(telegram_client)
-                    init_res = fragment_api.init_gift_request(username, months=int(months_cnt))
+                init_res = await fragment_api.init_gift_request(
+                    username, 
+                    months=int(months_cnt), 
+                    telegram_client=telegram_client
+                )
 
                 if init_res.get("ok"):
                     req_id = init_res.get("req_id")
@@ -715,13 +713,11 @@ async def create_order(order: OrderRequest):
 
             elif is_stars:
                 stars_cnt = order.stars or 50
-                init_res = fragment_api.init_buy_stars(username, stars_amount=int(stars_cnt))
-                
-                # Bad request bo'lsa Telethon orqali avto-yangilash
-                if not init_res.get("ok") and "Bad request" in str(init_res.get("error", "")):
-                    print("Bad request olindi. Telethon orqali session yangilanmoqda...")
-                    await fragment_api.refresh_cookies_via_telethon(telegram_client)
-                    init_res = fragment_api.init_buy_stars(username, stars_amount=int(stars_cnt))
+                init_res = await fragment_api.init_buy_stars(
+                    username, 
+                    stars_amount=int(stars_cnt), 
+                    telegram_client=telegram_client
+                )
 
                 if init_res.get("ok"):
                     req_id = init_res.get("req_id")
@@ -1115,13 +1111,11 @@ async def buy_premium(data: BuyPremiumRequest):
     clean_username = normalize_username(username)
 
     try:
-        init_res = fragment_api.init_gift_request(clean_username, months)
-        
-        # Bad request bo'lsa Telethon orqali yangilab qayta urinamiz
-        if not init_res.get("ok") and "Bad request" in str(init_res.get("error", "")):
-            print("Bad request olindi. Telethon orqali session yangilanmoqda...")
-            await fragment_api.refresh_cookies_via_telethon(telegram_client)
-            init_res = fragment_api.init_gift_request(clean_username, months)
+        init_res = await fragment_api.init_gift_request(
+            clean_username, 
+            months, 
+            telegram_client=telegram_client
+        )
 
         if not init_res.get("ok"):
             return {"success": False, "error": init_res.get("error", "Init request xatoligi")}
@@ -1162,13 +1156,11 @@ async def buy_stars(data: BuyStarsRequest):
     clean_username = normalize_username(username)
 
     try:
-        init_res = fragment_api.init_buy_stars(clean_username, stars_amount)
-
-        # Bad request bo'lsa Telethon orqali yangilab qayta urinamiz
-        if not init_res.get("ok") and "Bad request" in str(init_res.get("error", "")):
-            print("Bad request olindi. Telethon orqali session yangilanmoqda...")
-            await fragment_api.refresh_cookies_via_telethon(telegram_client)
-            init_res = fragment_api.init_buy_stars(clean_username, stars_amount)
+        init_res = await fragment_api.init_buy_stars(
+            clean_username, 
+            stars_amount, 
+            telegram_client=telegram_client
+        )
 
         if not init_res.get("ok"):
             return {"success": False, "error": init_res.get("error", "Stars init request xatoligi")}
