@@ -4,9 +4,7 @@ pydantic
 psycopg2-binary
 telethon
 google-genai
-pytoniq
 requests
-curl_cffi
+pytoniq
 pytoniq_core
-psycopg2-binary
 fragment-api-dev==1.3.0
