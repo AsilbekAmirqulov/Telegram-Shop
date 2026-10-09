@@ -16,7 +16,6 @@ class FragmentService:
         fn = getattr(self.api, method_name)
         
         try:
-            # Funksiya async yoki sync ekanini aniqlab to'g'ri chaqiramiz
             if inspect.iscoroutinefunction(fn):
                 res = await fn(**kwargs)
             else:
@@ -29,35 +28,42 @@ class FragmentService:
             print(f"API EXCEPTION ({method_name}):", repr(call_err))
             return {"ok": False, "error": str(call_err)}
 
-        print(f"FRAGMENT API RAW RESPONSE ({method_name}):", res, type(res))
+        print(f"FRAGMENT API RAW RESPONSE ({method_name}):", repr(res))
 
-        # Olingan javobni lug'at (dict) ko'rinishiga keltiramiz
-        res_dict = {}
+        # Purchase obyekti yoki dict atributlarini ajratib olamiz
+        purchase_id = getattr(res, "purchase_id", None)
+        status = getattr(res, "status", None)
+        tx_hash = getattr(res, "transaction_hash", None) or getattr(res, "tx_hash", None) or getattr(res, "hash", None)
+        err = getattr(res, "error", None)
+
         if isinstance(res, dict):
-            res_dict = res
-        elif hasattr(res, "dict") and callable(res.dict):
-            res_dict = res.dict()
-        elif hasattr(res, "model_dump") and callable(res.model_dump):
-            res_dict = res.model_dump()
-        else:
-            res_dict = {"raw": str(res)}
-            for attr in ["ok", "success", "tx_hash", "hash", "purchase_id", "id", "error", "message"]:
-                if hasattr(res, attr):
-                    res_dict[attr] = getattr(res, attr)
+            purchase_id = purchase_id or res.get("purchase_id") or res.get("id")
+            status = status or res.get("status")
+            tx_hash = tx_hash or res.get("transaction_hash") or res.get("tx_hash") or res.get("hash")
+            err = err or res.get("error")
 
-        # Muvaffaqiyatli tranzaksiyani tekshiramiz
-        is_ok = res_dict.get("ok") or res_dict.get("success") or bool(res_dict.get("tx_hash") or res_dict.get("hash"))
-        
-        if is_ok:
+        # Xarid navbatga olinganini yoki bajarilganini tekshiramiz
+        is_success = False
+        if purchase_id and not err:
+            is_success = True
+        elif status in ["queued", "pending", "processing", "completed", "paid", "success"]:
+            is_success = True
+        elif isinstance(res, dict) and (res.get("ok") or res.get("success")):
+            is_success = True
+
+        if is_success:
             return {
                 "ok": True,
-                "tx_hash": res_dict.get("tx_hash") or res_dict.get("hash"),
-                "purchase_id": res_dict.get("purchase_id") or res_dict.get("id"),
-                "raw": res_dict
+                "status": status or "queued",
+                "purchase_id": purchase_id,
+                "tx_hash": tx_hash,
+                "message": f"Xarid muvaffaqiyatli navbatga qo'shildi (ID: {purchase_id})"
             }
         else:
-            err_msg = res_dict.get("error") or res_dict.get("message") or str(res_dict)
-            return {"ok": False, "error": err_msg}
+            return {
+                "ok": False,
+                "error": str(err) if err else f"Xatolik yuz berdi (Status: {status})"
+            }
 
     async def init_buy_stars(self, username: str, stars_amount: int):
         clean_username = username.strip()
