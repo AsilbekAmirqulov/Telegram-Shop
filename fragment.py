@@ -12,12 +12,15 @@ class FragmentService:
         try:
             loop = asyncio.get_event_loop()
             
-            # slightbasebo/fragment-api-dev talabi: 
-            # 12-so'zli seed + wallet_address + account_index=0
+            # Fragment API talabiga ko'ra @ belgisini majburiy ta'minlaymiz
+            clean_username = username.strip()
+            if not clean_username.startswith("@"):
+                clean_username = f"@{clean_username}"
+
             res = await loop.run_in_executor(
                 None,
                 lambda: self.api.buy_stars(
-                    username=username,
+                    username=clean_username,
                     amount=stars_amount,
                     seed=self.mnemonic,
                     wallet_address=self.wallet_address,
@@ -45,10 +48,16 @@ class FragmentService:
     async def init_gift_request(self, username: str, months: int):
         try:
             loop = asyncio.get_event_loop()
+            
+            # Fragment API talabiga ko'ra @ belgisini majburiy ta'minlaymiz
+            clean_username = username.strip()
+            if not clean_username.startswith("@"):
+                clean_username = f"@{clean_username}"
+
             res = await loop.run_in_executor(
                 None,
                 lambda: self.api.buy_premium(
-                    username=username,
+                    username=clean_username,
                     months=months,
                     seed=self.mnemonic,
                     wallet_address=self.wallet_address,
