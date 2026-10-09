@@ -25,19 +25,19 @@ class FragmentService:
         self._update_headers()
 
     def _init_session_cookies(self):
-        """Cookielarni requests.Session obyektiga to'g'ri joylash"""
+        """Cookielarni requests.Session obyektiga domen cheklovisiz to'g'ri joylash"""
         self.session.cookies.clear()
-        if self.stel_ssid:
-            self.session.cookies.set("stel_ssid", self.stel_ssid, domain="fragment.com")
-        if self.stel_dt:
-            self.session.cookies.set("stel_dt", self.stel_dt, domain="fragment.com")
-        if self.stel_token:
-            self.session.cookies.set("stel_token", self.stel_token, domain="fragment.com")
-        if self.stel_ton_token:
-            self.session.cookies.set("stel_ton_token", self.stel_ton_token, domain="fragment.com")
+        for key, val in [
+            ("stel_ssid", self.stel_ssid),
+            ("stel_dt", self.stel_dt),
+            ("stel_token", self.stel_token),
+            ("stel_ton_token", self.stel_ton_token),
+        ]:
+            if val:
+                self.session.cookies.set(key, val)
 
     def _update_headers(self):
-        """Sessiya sarlavhalarini yangilash (Cookie hardcode qilmasdan)"""
+        """Sessiya sarlavhalarini yangilash"""
         self.headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             "Accept": "application/json, text/javascript, */*; q=0.01",
@@ -104,7 +104,7 @@ class FragmentService:
                 print("Fragment cookielari (stel_token) muvaffaqiyatli olindi!")
                 return True
 
-            print("Telegram OAuth muvaffaqiyatsiz bo'ldi (stel_token olinmadi). Eski cookielar yuklanmoqda...")
+            print("Telegram OAuth muvaffaqiyatsiz bo'ldi. Eski cookielar yuklanmoqda...")
             self._init_session_cookies()
             return False
 
@@ -151,7 +151,6 @@ class FragmentService:
         """Telegram Premium so'rovini yuborish"""
         clean_username = username.replace("@", "").strip()
 
-        # 1. Recipient qidiramiz va uning maxsus 'recipient' kalitini olamiz
         search_res = self.search_recipient(clean_username)
         if not search_res or not search_res.get("ok"):
             err_msg = search_res.get("error") if search_res else "Foydalanuvchi topilmadi"
@@ -167,8 +166,9 @@ class FragmentService:
         payload = {
             'mode': 'new',
             'method': 'initGiftPremiumRequest',
-            'recipient': recipient_token,  # Raw username o'rniga shifrlangan recipient token yuboriladi
-            'months': str(months)
+            'recipient': recipient_token,
+            'months': str(months),
+            'show_sender': '1'
         }
 
         try:
@@ -234,7 +234,8 @@ class FragmentService:
             'mode': 'new',
             'method': 'initBuyStarsRequest',
             'recipient': recipient_token,
-            'quantity': str(stars_amount)
+            'quantity': str(stars_amount),
+            'show_sender': '1'
         }
 
         try:
