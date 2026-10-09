@@ -8,12 +8,22 @@ logger = logging.getLogger(__name__)
 class FragmentService:
     def __init__(self):
         self.api = FragmentAPI()
-        # Seed kalitini MNEMONIC, TON_WALLET_SEED yoki SEED o'zgaruvchilaridan qidiradi
+        
+        # Seed kaliti
         self.mnemonic = (
             os.getenv("MNEMONIC") or 
             os.getenv("TON_WALLET_SEED") or 
             os.getenv("SEED") or ""
         ).strip()
+        
+        # 12-so'zli seed uchun Hamyon manzili
+        self.wallet_address = (
+            os.getenv("WALLET_ADDRESS") or 
+            os.getenv("TON_WALLET_ADDRESS") or ""
+        ).strip()
+        
+        account_idx_str = os.getenv("ACCOUNT_INDEX", "").strip()
+        self.account_index = int(account_idx_str) if account_idx_str.isdigit() else None
 
     def check_recipient_stars(self, username: str, amount: int = 50) -> dict:
         """To'lovni qabul qilishdan oldin foydalanuvchini tekshirish"""
@@ -39,27 +49,33 @@ class FragmentService:
     async def init_buy_stars(self, username: str, stars_amount: int = 50, telegram_client=None) -> dict:
         """Telegram Stars sotib olish va avtomatik to'lash"""
         if not self.mnemonic:
-            return {"ok": False, "error": "MNEMONIC (yoki TON_WALLET_SEED) environment variable topilmadi!"}
+            return {"ok": False, "error": "MNEMONIC environment variable topilmadi!"}
 
         clean_username = username.replace("@", "").strip()
         formatted_username = f"@{clean_username}"
 
         try:
-            # 1. Avval mavjudlikni tekshirish
+            # 1. Mavjudlikni tekshirish
             check = self.check_recipient_stars(clean_username, stars_amount)
             if not check.get("available"):
                 err_msg = check.get("message") or check.get("error") or "Foydalanuvchiga Stars yuborib bo'lmaydi"
                 return {"ok": False, "error": f"Mavjud emas: {err_msg}"}
 
-            # 2. Xarid so'rovini yuborish (buy_stars avtomatik seed orqali hamyondan to'laydi)
-            purchase = self.api.buy_stars(
-                username=formatted_username,
-                amount=stars_amount,
-                payment_method="gram",
-                seed=self.mnemonic
-            )
+            # 2. Parameters tayyorlash
+            buy_params = {
+                "username": formatted_username,
+                "amount": stars_amount,
+                "payment_method": "gram",
+                "seed": self.mnemonic
+            }
+            if self.wallet_address:
+                buy_params["wallet_address"] = self.wallet_address
+            elif self.account_index is not None:
+                buy_params["account_index"] = self.account_index
 
-            # 3. Transaksiya TON tarmog'ida yakunlanishini kutish
+            purchase = self.api.buy_stars(**buy_params)
+
+            # 3. Transaksiya yakunlanishini kutish
             result = self.api.wait(purchase.purchase_id)
             status = getattr(result, "status", "")
 
@@ -77,21 +93,27 @@ class FragmentService:
     async def init_gift_request(self, username: str, months: int = 3, telegram_client=None) -> dict:
         """Telegram Premium sotib olish va avtomatik to'lash"""
         if not self.mnemonic:
-            return {"ok": False, "error": "MNEMONIC (yoki TON_WALLET_SEED) environment variable topilmadi!"}
+            return {"ok": False, "error": "MNEMONIC environment variable topilmadi!"}
 
         clean_username = username.replace("@", "").strip()
         formatted_username = f"@{clean_username}"
 
         try:
-            # 1. Premium xarid qilish (buy_premium avtomatik seed orqali hamyondan to'laydi)
-            purchase = self.api.buy_premium(
-                username=formatted_username,
-                months=months,
-                payment_method="gram",
-                seed=self.mnemonic
-            )
+            # 1. Parameters tayyorlash
+            buy_params = {
+                "username": formatted_username,
+                "months": months,
+                "payment_method": "gram",
+                "seed": self.mnemonic
+            }
+            if self.wallet_address:
+                buy_params["wallet_address"] = self.wallet_address
+            elif self.account_index is not None:
+                buy_params["account_index"] = self.account_index
 
-            # 2. Transaksiya TON tarmog'ida yakunlanishini kutish
+            purchase = self.api.buy_premium(**buy_params)
+
+            # 2. Transaksiya yakunlanishini kutish
             result = self.api.wait(purchase.purchase_id)
             status = getattr(result, "status", "")
 
