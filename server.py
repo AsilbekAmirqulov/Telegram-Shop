@@ -1179,21 +1179,24 @@ def check_sdk_wallet():
         from fragment_api import FragmentAPI
         test_api = FragmentAPI()
         
-        api_info = {}
-        for k in dir(test_api):
-            if not k.startswith("__"):
-                try:
-                    val = getattr(test_api, k)
-                    if not callable(val):
-                        api_info[k] = str(val)
-                except Exception:
-                    pass
+        resolved_sdk_address = "Aniqlanmadi"
+        
+        # 1. Seed orqali SDK hosil qilgan manzilni olish
+        try:
+            res = test_api.resolve_wallet(seed=fragment_api.mnemonic)
+            resolved_sdk_address = getattr(res, "address", None) or getattr(res, "wallet_address", None) or str(res)
+        except Exception as e1:
+            # 2. Agar wallet_address bilan chaqirilsa
+            try:
+                res = test_api.resolve_wallet(wallet_address=fragment_api.wallet_address)
+                resolved_sdk_address = getattr(res, "address", None) or getattr(res, "wallet_address", None) or str(res)
+            except Exception as e2:
+                resolved_sdk_address = f"E1: {e1} | E2: {e2}"
 
         return {
             "ok": True,
             "tonkeeper_w5_address": fragment_api.wallet_address,
-            "api_attributes": api_info,
-            "all_methods": [m for m in dir(test_api) if not m.startswith("__")]
+            "sdk_actual_wallet_address": resolved_sdk_address
         }
     except Exception as e:
         return {"ok": False, "error": str(e)}
