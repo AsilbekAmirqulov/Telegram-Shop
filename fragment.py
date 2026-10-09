@@ -1,265 +1,78 @@
 import os
-import re
-import json
-import asyncio
-from curl_cffi import requests
-from pytoniq import WalletV4R2, LiteBalancer
-from pytoniq_core import Cell
+from fragment_api import FragmentAPI
 
 
 class FragmentService:
     def __init__(self):
-        # Chrome 124 TLS fingerprint bilan impersonate qilish
-        self.session = requests.Session(impersonate="chrome124")
-
-        # Environment variable'larni yuklash
-        self.stel_ssid = os.getenv("STEL_SSID", "")
-        self.stel_dt = os.getenv("STEL_DT", "")
-        self.stel_token = os.getenv("STEL_TOKEN", "")
-        self.stel_ton_token = os.getenv("STEL_TON_TOKEN", "")
-        self.fallback_hash = os.getenv("FRAGMENT_HASH", "")
+        self.api = FragmentAPI()
         self.mnemonic = os.getenv("MNEMONIC", "")
-        
-        self.proxy = os.getenv("FRAGMENT_PROXY", "")
-        if self.proxy:
-            self.session.proxies = {
-                "http": self.proxy,
-                "https": self.proxy
-            }
-            print("FragmentService: Proxy yoqildi ->", self.proxy.split("@")[-1])
 
-        self._apply_cookies()
-
-    def _apply_cookies(self):
-        """Sessiyaga cookielarni biriktirish"""
-        self.session.cookies.clear()
-        cookies_dict = {
-            "stel_ssid": self.stel_ssid,
-            "stel_dt": self.stel_dt,
-            "stel_token": self.stel_token,
-            "stel_ton_token": self.stel_ton_token,
-        }
-        for k, v in cookies_dict.items():
-            if v:
-                self.session.cookies.set(k, v, domain="fragment.com")
-                self.session.cookies.set(k, v, domain=".fragment.com")
-
-    def get_headers(self) -> dict:
-        """Standard Chrome 124 sarlavhalari"""
-        return {
-            "Accept": "application/json, text/javascript, */*; q=0.01",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "X-Requested-With": "XMLHttpRequest",
-            "Origin": "https://fragment.com",
-            "Referer": "https://fragment.com/premium",
-            "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-            "Sec-Ch-Ua-Mobile": "?0",
-            "Sec-Ch-Ua-Platform": '"Windows"',
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "same-origin"
-        }
-
-    def get_dynamic_hash(self) -> str:
-        """Fragment.com sahifasidan joriy apiHash qiymatini olish hamda diagnostika qilish"""
-        urls = [
-            "https://fragment.com/premium",
-            "https://fragment.com/stars",
-            "https://fragment.com/"
-        ]
-
-        for url in urls:
-            try:
-                res = self.session.get(url, headers=self.get_headers(), timeout=10)
-                print(f"Hash Scraping Status ({url}): {res.status_code}")
-
-                # Regex patterns for apiHash
-                patterns = [
-                    r'Fragment\.apiHash\s*=\s*["\']([a-f0-9]+)["\']',
-                    r'ajInit\s*\(\s*\{[^}]*["\']hash["\']\s*:\s*["\']([a-f0-9]+)["\']',
-                    r'["\']api_hash["\']\s*:\s*["\']([a-f0-9]+)["\']',
-                    r'["\']hash["\']\s*:\s*["\']([a-f0-9]{16,64})["\']'
-                ]
-                
-                for pat in patterns:
-                    match = re.search(pat, res.text, re.IGNORECASE)
-                    if match:
-                        extracted_hash = match.group(1)
-                        print(f"Scraped Dynamic Hash ({url}): {extracted_hash}")
-                        return extracted_hash
-                
-                # Dynamic hash topilmasa, sahifa matnidan dastlabki 150 belgini chiqarish
-                print(f"Hash topilmadi ({url}). HTML Snippet: {res.text[:150].strip()}")
-            except Exception as e:
-                print(f"Hash scraping xatosi ({url}):", e)
-
-        print("Fallback Hash ishlatilmoqda:", self.fallback_hash)
-        return self.fallback_hash
-
-    def search_recipient(self, username: str):
-        clean_username = username.replace("@", "").strip()
-        current_hash = self.get_dynamic_hash()
-        url = f"https://fragment.com/api?hash={current_hash}"
-
-        payload = {
-            'method': 'searchPremiumGiftRecipient',
-            'query': clean_username
-        }
-
+    def check_recipient_stars(self, username: str, amount: int = 50) -> dict:
+        """To'lovni qabul qilishdan oldin foydalanuvchini tekshirish"""
         try:
-            res = self.session.post(url, data=payload, headers=self.get_headers(), timeout=10)
-            print("Search Recipient Javobi:", res.text)
-            return res.json()
-        except Exception as e:
-            print("Recipient search xatosi:", e)
-            return None
-
-    async def init_gift_request(self, username: str, months: int = 3, telegram_client=None) -> dict:
-        clean_username = username.replace("@", "").strip()
-
-        search_res = self.search_recipient(clean_username)
-        if not search_res or not search_res.get("ok"):
-            err_msg = search_res.get("error") if search_res else "Foydalanuvchi topilmadi"
-            return {"ok": False, "error": f"Search error: {err_msg}"}
-
-        recipient_token = search_res.get("found", {}).get("recipient")
-        if not recipient_token:
-            return {"ok": False, "error": "Recipient token topilmadi"}
-
-        current_hash = self.get_dynamic_hash()
-        url = f"https://fragment.com/api?hash={current_hash}"
-
-        payload = {
-            'mode': 'new',
-            'method': 'initGiftPremiumRequest',
-            'recipient': recipient_token,
-            'months': str(months),
-            'show_sender': '1'
-        }
-
-        try:
-            res = self.session.post(url, data=payload, headers=self.get_headers(), timeout=10)
-            print("Init Gift Request Javobi:", res.text)
-
-            try:
-                data = res.json()
-            except Exception:
-                return {"ok": False, "error": f"JSON bo'lmagan javob: {res.text}"}
-
-            if not data.get("ok"):
-                return {"ok": False, "error": data.get("error", "Gift Premium init xatosi")}
-            return {"ok": True, "req_id": data.get("req_id")}
-        except Exception as e:
-            return {"ok": False, "error": str(e)}
-
-    def get_gift_link(self, req_id: str) -> dict:
-        current_hash = self.get_dynamic_hash()
-        url = f"https://fragment.com/api?hash={current_hash}"
-
-        payload = {
-            'id': req_id,
-            'method': 'getGiftPremiumLink'
-        }
-
-        try:
-            res = self.session.post(url, data=payload, headers=self.get_headers(), timeout=10)
-            data = res.json()
-            if not data.get("ok"):
-                return {"ok": False, "error": data.get("error", "Gift link olishda xatolik")}
-
-            transaction = data.get("transaction", {})
+            clean_username = username.replace("@", "").strip()
+            check = self.api.check_stars_availability(f"@{clean_username}", amount, "gram")
             return {
-                "ok": True,
-                "transaction": {
-                    "address": transaction.get("address"),
-                    "amount": transaction.get("amount"),
-                    "payload": transaction.get("payload")
-                }
+                "available": check.available,
+                "code": check.code,
+                "message": getattr(check, "message", "")
             }
         except Exception as e:
-            return {"ok": False, "error": str(e)}
+            return {"available": False, "error": str(e)}
 
     async def init_buy_stars(self, username: str, stars_amount: int = 50, telegram_client=None) -> dict:
+        """Telegram Stars sotib olish va avtomatik to'lash"""
+        if not self.mnemonic:
+            return {"ok": False, "error": "MNEMONIC environment variable topilmadi!"}
+
         clean_username = username.replace("@", "").strip()
 
-        search_res = self.search_recipient(clean_username)
-        if not search_res or not search_res.get("ok"):
-            err_msg = search_res.get("error") if search_res else "Foydalanuvchi topilmadi"
-            return {"ok": False, "error": f"Search error: {err_msg}"}
-
-        recipient_token = search_res.get("found", {}).get("recipient")
-        if not recipient_token:
-            return {"ok": False, "error": "Recipient token topilmadi"}
-
-        current_hash = self.get_dynamic_hash()
-        url = f"https://fragment.com/api?hash={current_hash}"
-
-        payload = {
-            'mode': 'new',
-            'method': 'initBuyStarsRequest',
-            'recipient': recipient_token,
-            'quantity': str(stars_amount),
-            'show_sender': '1'
-        }
-
         try:
-            res = self.session.post(url, data=payload, headers=self.get_headers(), timeout=10)
-            data = res.json()
-            if not data.get("ok"):
-                return {"ok": False, "error": data.get("error", "Stars init xatosi")}
-            return {"ok": True, "req_id": data.get("req_id")}
-        except Exception as e:
-            return {"ok": False, "error": str(e)}
+            # 1. Avval mavjudlikni tekshirish
+            check = self.check_recipient_stars(clean_username, stars_amount)
+            if not check.get("available"):
+                return {"ok": False, "error": check.get("message", "Foydalanuvchiga Stars yuborib bo'lmaydi")}
 
-    def get_buy_stars_link(self, req_id: str) -> dict:
-        current_hash = self.get_dynamic_hash()
-        url = f"https://fragment.com/api?hash={current_hash}"
-
-        payload = {
-            'id': req_id,
-            'method': 'getBuyStarsLink'
-        }
-
-        try:
-            res = self.session.post(url, data=payload, headers=self.get_headers(), timeout=10)
-            data = res.json()
-            if not data.get("ok"):
-                return {"ok": False, "error": data.get("error", "Stars link olishda xatolik")}
-
-            transaction = data.get("transaction", {})
-            return {
-                "ok": True,
-                "transaction": {
-                    "address": transaction.get("address"),
-                    "amount": transaction.get("amount"),
-                    "payload": transaction.get("payload")
-                }
-            }
-        except Exception as e:
-            return {"ok": False, "error": str(e)}
-
-    async def send_ton_payment(self, destination_address: str, amount_nano: int, payload_boc: str = None):
-        if not self.mnemonic:
-            raise Exception("MNEMONIC environment variable topilmadi!")
-
-        mnemonics_list = self.mnemonic.strip().split()
-
-        provider = LiteBalancer.from_mainnet_config(trust_level=2)
-        await provider.start_up()
-
-        try:
-            wallet = await WalletV4R2.from_mnemonic(provider=provider, mnemonics=mnemonics_list)
-
-            body = None
-            if payload_boc:
-                body = Cell.one_from_boc(payload_boc)
-
-            await wallet.transfer(
-                destination=destination_address,
-                amount=int(amount_nano),
-                body=body
+            # 2. Xarid qilish va to'lovni seed orqali avtomatik bajarish
+            purchase = self.api.buy_stars(
+                username=f"@{clean_username}",
+                amount=stars_amount,
+                payment_method="gram",
+                seed=self.mnemonic
             )
-            print(f"MUVAFFAQIYATLI TO'LOV: {amount_nano} nanoTON -> {destination_address}")
-        finally:
-            await provider.close_all()
+
+            # 3. Transaksiya TON tarmog'ida yakunlanishini kutish
+            result = self.api.wait(purchase.purchase_id)
+            if result.status == "COMPLETED":
+                return {"ok": True, "tx_hash": result.transaction_hash}
+            else:
+                return {"ok": False, "error": result.error or "Stars xarid qilinmadi"}
+
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    async def init_gift_request(self, username: str, months: int = 3, telegram_client=None) -> dict:
+        """Telegram Premium sotib olish va avtomatik to'lash"""
+        if not self.mnemonic:
+            return {"ok": False, "error": "MNEMONIC environment variable topilmadi!"}
+
+        clean_username = username.replace("@", "").strip()
+
+        try:
+            # 1. Premium xarid so'rovi va avto-to'lov
+            purchase = self.api.buy_premium(
+                username=f"@{clean_username}",
+                months=months,
+                payment_method="gram",
+                seed=self.mnemonic
+            )
+
+            # 2. Transaksiya TON tarmog'ida yakunlanishini kutish
+            result = self.api.wait(purchase.purchase_id)
+            if result.status == "COMPLETED":
+                return {"ok": True, "tx_hash": result.transaction_hash}
+            else:
+                return {"ok": False, "error": result.error or "Premium xarid qilinmadi"}
+
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
