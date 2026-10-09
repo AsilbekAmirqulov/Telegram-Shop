@@ -78,26 +78,29 @@ class FragmentService:
         return headers
 
     def get_dynamic_hash(self) -> str:
-        """Fragment.com sahifasidan dinamik apiHash qiymatini ajratib olish"""
-        urls_to_try = [
+        """Fragment.com sahifasidan joriy API hash qiymatini 100% aniq olish"""
+        urls = [
             "https://fragment.com/premium",
             "https://fragment.com/stars",
             "https://fragment.com/"
         ]
 
-        for url in urls_to_try:
+        for url in urls:
             try:
                 res = self.session.get(url, headers=self.get_headers(), timeout=10)
+                
                 patterns = [
+                    r'ajInit\s*\(\s*\{[^}]*["\']hash["\']\s*:\s*["\']([a-f0-9]+)["\']',
                     r'Fragment\.apiHash\s*=\s*["\']([a-f0-9]+)["\']',
-                    r'api_hash["\']?\s*:\s*["\']([a-f0-9]+)["\']',
-                    r'ajInit\s*\(\s*\{[^}]*["\']hash["\']\s*:\s*["\']([a-f0-9]+)["\']'
+                    r'["\']hash["\']\s*:\s*["\']([a-f0-9]{16,64})["\']',
+                    r'data-hash=["\']([a-f0-9]+)["\']'
                 ]
+                
                 for pat in patterns:
                     match = re.search(pat, res.text, re.IGNORECASE)
                     if match:
                         extracted_hash = match.group(1)
-                        print(f"curl_cffi bilan scraped hash ({url}):", extracted_hash)
+                        print(f"Scraped Dynamic Hash ({url}):", extracted_hash)
                         return extracted_hash
             except Exception as e:
                 print(f"Hash scraping xatosi ({url}):", e)
