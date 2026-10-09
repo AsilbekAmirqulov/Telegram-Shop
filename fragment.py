@@ -18,6 +18,16 @@ class FragmentService:
         self.stel_ton_token = os.getenv("STEL_TON_TOKEN", "")
         self.fallback_hash = os.getenv("FRAGMENT_HASH", "")
         self.mnemonic = os.getenv("MNEMONIC", "")
+        
+        # Datacenter IP blokini aylanib o'tish uchun Proxy (Ixtiyoriy, lekin tavsiya etiladi)
+        # Format: http://user:pass@ip:port yoki http://ip:port
+        self.proxy = os.getenv("FRAGMENT_PROXY", "")
+        if self.proxy:
+            self.session.proxies = {
+                "http": self.proxy,
+                "https": self.proxy
+            }
+            print("FragmentService: Proxy yoqildi ->", self.proxy.split("@")[-1])
 
         self._apply_cookies()
 
@@ -36,16 +46,23 @@ class FragmentService:
                 self.session.cookies.set(k, v, domain=".fragment.com")
 
     def get_headers(self) -> dict:
-        """Fragment API uchun sarlavhalarni shakllantirish"""
+        """Fragment API uchun mukammal Chrome 124+ sarlavhalarini shakllantirish"""
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             "Accept": "application/json, text/javascript, */*; q=0.01",
             "Accept-Language": "en-US,en;q=0.9",
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "X-Requested-With": "XMLHttpRequest",
             "Origin": "https://fragment.com",
-            "Referer": "https://fragment.com/"
+            "Referer": "https://fragment.com/premium",
+            "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Windows"',
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin"
         }
+        
         cookie_parts = []
         if self.stel_ssid:
             cookie_parts.append(f"stel_ssid={self.stel_ssid}")
@@ -62,16 +79,29 @@ class FragmentService:
         return headers
 
     def get_dynamic_hash(self) -> str:
-        """Fragment.com sahifasidan joriy API hash qiymatini olish"""
-        try:
-            res = self.session.get("https://fragment.com/stars", headers=self.get_headers(), timeout=10)
-            match = re.search(r'Fragment\.apiHash\s*=\s*["\']([a-f0-9]+)["\']', res.text)
-            if match:
-                extracted_hash = match.group(1)
-                print("Scraped Dynamic Hash:", extracted_hash)
-                return extracted_hash
-        except Exception as e:
-            print("Hash scraping xatosi:", e)
+        """Fragment.com sahifasidan joriy API hash qiymatini aniq olib berish"""
+        urls_to_try = [
+            "https://fragment.com/premium",
+            "https://fragment.com/stars",
+            "https://fragment.com/"
+        ]
+
+        for url in urls_to_try:
+            try:
+                res = self.session.get(url, headers=self.get_headers(), timeout=10)
+                patterns = [
+                    r'Fragment\.apiHash\s*=\s*["\']([a-f0-9]+)["\']',
+                    r'api_hash["\']?\s*:\s*["\']([a-f0-9]+)["\']',
+                    r'ajInit\s*\(\s*\{[^}]*["\']hash["\']\s*:\s*["\']([a-f0-9]+)["\']'
+                ]
+                for pat in patterns:
+                    match = re.search(pat, res.text, re.IGNORECASE)
+                    if match:
+                        extracted_hash = match.group(1)
+                        print(f"Scraped Hash ({url}):", extracted_hash)
+                        return extracted_hash
+            except Exception as e:
+                print(f"Hash scraping xatosi ({url}):", e)
 
         print("Fallback Hash ishlatilmoqda:", self.fallback_hash)
         return self.fallback_hash
