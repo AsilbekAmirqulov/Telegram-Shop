@@ -6,3 +6,5 @@ telethon
 google-genai
 pytoniq
 requests
+curl_cffi
+pytoniq_core
