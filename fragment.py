@@ -26,6 +26,7 @@ class FragmentService:
 
     def _init_session_cookies(self):
         """Cookielarni requests.Session obyektiga to'g'ri joylash"""
+        self.session.cookies.clear()
         if self.stel_ssid:
             self.session.cookies.set("stel_ssid", self.stel_ssid, domain="fragment.com")
         if self.stel_dt:
@@ -56,7 +57,10 @@ class FragmentService:
         try:
             print("Telethon orqali Fragment Telegram OAuth boshlandi...")
             
-            # 1. Telegram OAuth so'rovi
+            # 1. Eski eskirgan cookielarni tozalaymiz (soxta true chiqmasligi uchun)
+            self.session.cookies.clear()
+
+            # 2. Telegram OAuth so'rovi
             oauth_req_url = "https://oauth.telegram.org/auth/request?bot_id=5444323279&origin=https%3A%2F%2Ffragment.com&embed=1"
             res = self.session.post(oauth_req_url, headers={"X-Requested-With": "XMLHttpRequest"}, timeout=10)
             
@@ -69,7 +73,7 @@ class FragmentService:
             except Exception:
                 data = {}
 
-            # 2. Telethon orqali login tokenini tasdiqlash
+            # 3. Telethon orqali login tokenini tasdiqlash
             token_b64 = data.get("token") or data.get("req_id")
             if token_b64:
                 try:
@@ -80,7 +84,7 @@ class FragmentService:
                 except Exception as t_err:
                     print("Telethon AcceptLoginToken xatosi:", t_err)
 
-            # 3. Autentifikatsiya holatini tekshirish
+            # 4. Autentifikatsiya holatini tekshirish
             req_id = data.get("req_id")
             if req_id:
                 status_url = f"https://oauth.telegram.org/auth/status?req_id={req_id}"
@@ -97,18 +101,22 @@ class FragmentService:
                     except Exception:
                         pass
 
-            # 4. Yangi cookielar kelganini tekshirish
+            # 5. Yangi cookielar haqiqatan kelganini tekshirish
             sess_cookies = self.session.cookies.get_dict()
-            if "stel_ssid" in sess_cookies:
-                self.stel_ssid = sess_cookies.get("stel_ssid", self.stel_ssid)
+            if "stel_ssid" in sess_cookies and sess_cookies["stel_ssid"]:
+                self.stel_ssid = sess_cookies.get("stel_ssid")
                 self.stel_token = sess_cookies.get("stel_token", self.stel_token)
                 self.stel_dt = sess_cookies.get("stel_dt", self.stel_dt)
-                print("Fragment cookielari muvaffaqiyatli yangilandi!")
+                print("Fragment cookielari haqiqatdan yangilandi!")
                 return True
 
+            print("Yangi cookielar olinmadi, eski cookielar qayta yuklanmoqda...")
+            self._init_session_cookies()
             return False
+
         except Exception as e:
             print("Telethon Fragment auto-login xatosi:", e)
+            self._init_session_cookies()
             return False
 
     def get_dynamic_hash(self) -> str:
