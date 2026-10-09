@@ -14,6 +14,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 from telethon import TelegramClient
+from telethon.sessions import StringSession
 from telethon.tl.functions.contacts import ResolveUsernameRequest
 
 # Biz yaratgan Fragment xizmati importi
@@ -47,18 +48,18 @@ RESELLCODES_BASE_URL = "https://api.resellcodes.com"
 
 TG_API_ID = os.getenv("TG_API_ID")
 TG_API_HASH = os.getenv("TG_API_HASH")
-TG_SESSION = os.getenv("TG_SESSION", "telegram_shop")
+TG_SESSION = os.getenv("TG_SESSION", "")
 
 # =========================================================
-# TELEGRAM CLIENT
+# TELEGRAM CLIENT (StringSession bilan)
 # =========================================================
 
 telegram_client = None
 
-if TG_API_ID and TG_API_HASH:
+if TG_API_ID and TG_API_HASH and TG_SESSION:
     try:
         telegram_client = TelegramClient(
-            TG_SESSION,
+            StringSession(TG_SESSION),
             int(TG_API_ID),
             TG_API_HASH
         )
@@ -693,7 +694,7 @@ async def create_order(order: OrderRequest):
                 months_cnt = order.months or 3
                 init_res = fragment_api.init_gift_request(username, months=int(months_cnt))
                 
-                # Bad request (cookie eskirishi) bo'lsa Telethon orqali avto-yangilab qayta urinamiz
+                # Bad request bo'lsa Telethon orqali avto-yangilab qayta urinamiz
                 if not init_res.get("ok") and "Bad request" in str(init_res.get("error", "")):
                     print("Bad request olindi. Telethon orqali session yangilanmoqda...")
                     await fragment_api.refresh_cookies_via_telethon(telegram_client)
@@ -735,7 +736,6 @@ async def create_order(order: OrderRequest):
                         delivery_status = "completed"
                         delivery_message = f"@{username} hisobiga {stars_cnt} ta Stars yetkazildi!"
 
-            # Agar Fragment yetkazib berishi muvaffaqiyatli bo'lsa, statusni 'completed' qilamiz
             if delivery_status == "completed":
                 cur.execute(
                     "UPDATE orders SET status = 'completed' WHERE id = %s",
@@ -1117,7 +1117,7 @@ async def buy_premium(data: BuyPremiumRequest):
     try:
         init_res = fragment_api.init_gift_request(clean_username, months)
         
-        # Bad request (cookie eskirishi) bo'lsa Telethon orqali yangilab qayta urinamiz
+        # Bad request bo'lsa Telethon orqali yangilab qayta urinamiz
         if not init_res.get("ok") and "Bad request" in str(init_res.get("error", "")):
             print("Bad request olindi. Telethon orqali session yangilanmoqda...")
             await fragment_api.refresh_cookies_via_telethon(telegram_client)
@@ -1164,7 +1164,7 @@ async def buy_stars(data: BuyStarsRequest):
     try:
         init_res = fragment_api.init_buy_stars(clean_username, stars_amount)
 
-        # Bad request (cookie eskirishi) bo'lsa Telethon orqali yangilab qayta urinamiz
+        # Bad request bo'lsa Telethon orqali yangilab qayta urinamiz
         if not init_res.get("ok") and "Bad request" in str(init_res.get("error", "")):
             print("Bad request olindi. Telethon orqali session yangilanmoqda...")
             await fragment_api.refresh_cookies_via_telethon(telegram_client)
