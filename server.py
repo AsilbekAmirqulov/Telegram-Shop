@@ -1179,16 +1179,21 @@ def check_sdk_wallet():
         from fragment_api import FragmentAPI
         test_api = FragmentAPI()
         
-        derived_addr = None
-        if hasattr(test_api, "get_wallet_address"):
-            derived_addr = test_api.get_wallet_address(fragment_api.mnemonic)
-        elif hasattr(test_api, "wallet"):
-            derived_addr = str(getattr(test_api.wallet, "address", ""))
+        api_info = {}
+        for k in dir(test_api):
+            if not k.startswith("__"):
+                try:
+                    val = getattr(test_api, k)
+                    if not callable(val):
+                        api_info[k] = str(val)
+                except Exception:
+                    pass
 
         return {
             "ok": True,
             "tonkeeper_w5_address": fragment_api.wallet_address,
-            "sdk_derived_address": derived_addr or "SDK manzili aniqlandi"
+            "api_attributes": api_info,
+            "all_methods": [m for m in dir(test_api) if not m.startswith("__")]
         }
     except Exception as e:
         return {"ok": False, "error": str(e)}
