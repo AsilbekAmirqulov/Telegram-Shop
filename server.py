@@ -939,19 +939,21 @@ async def create_order(
 
     try:
         if kind == "premium":
-            available = (
-                await fragment_api.check_premium_availability(
+            if hasattr(fragment_api, "check_premium_availability"):
+                available = await fragment_api.check_premium_availability(
                     username,
                     months,
                 )
-            )
+            else:
+                available = True
         else:
-            available = (
-                await fragment_api.check_stars_availability(
+            if hasattr(fragment_api, "check_stars_availability"):
+                available = await fragment_api.check_stars_availability(
                     username,
                     stars,
                 )
-            )
+            else:
+                available = True
 
     except Exception:
         logger.exception(
@@ -1362,7 +1364,7 @@ async def test_premium_buy(
         "ok": True,
         "username": username,
         "months": data.months,
-        "message": "Username tekshildi. Test endpoint xarid qilmaydi.",
+        "message": "Username tekshirildi. Test endpoint xarid qilmaydi.",
     }
 
 
@@ -1426,12 +1428,13 @@ async def api_buy_premium(
         )
 
     try:
-        available = (
-            await fragment_api.check_premium_availability(
+        if hasattr(fragment_api, "check_premium_availability"):
+            available = await fragment_api.check_premium_availability(
                 username,
                 data.months,
             )
-        )
+        else:
+            available = True
 
         if not available:
             raise HTTPException(
@@ -1496,12 +1499,13 @@ async def api_buy_stars(
         )
 
     try:
-        available = (
-            await fragment_api.check_stars_availability(
+        if hasattr(fragment_api, "check_stars_availability"):
+            available = await fragment_api.check_stars_availability(
                 username,
                 data.stars_amount,
             )
-        )
+        else:
+            available = True
 
         if not available:
             raise HTTPException(
