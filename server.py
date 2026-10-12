@@ -99,8 +99,6 @@ if TG_API_ID and TG_API_HASH and TG_SESSION:
 # =========================================================
 # 3. MAHSULOT NARXLARI
 # =========================================================
-# Bu narxlar app.js dagi narxlar bilan aynan mos bo'lishi kerak.
-# Avtomatik xarid uchun faqat ushbu katalogdagi mahsulotlar qabul qilinadi.
 
 PREMIUM_PRICES = {
     3: 165000,
@@ -293,7 +291,6 @@ def require_admin(
     ),
     admin_key: Optional[str] = Query(default=None),
 ):
-    # ADMIN_KEY bo'sh bo'lsa, admin amallarini ochmaymiz.
     if not ADMIN_KEY:
         raise HTTPException(
             status_code=503,
@@ -364,7 +361,6 @@ async def check_telegram_username(
 ) -> dict:
     username = clean_username(username)
 
-    # Telegram client ishlamasa, username tasdiqlanmaydi.
     if not telegram_client:
         return {
             "ok": False,
@@ -627,6 +623,7 @@ class BuyStarsRequest(BaseModel):
     stars_amount: int
     admin_key: Optional[str] = None
 
+
 # =========================================================
 # 13. ASOSIY ENDPOINTLAR
 # =========================================================
@@ -759,9 +756,6 @@ async def admin_add_balance(
     try:
         with conn:
             with conn.cursor() as cur:
-                # Bir vaqtning o'zida kelgan so'rovlar
-                # balansni noto'g'ri hisoblamasligi uchun
-                # wallet qatori bloklanadi.
                 get_wallet_row(
                     cur,
                     data.user_id,
@@ -870,8 +864,6 @@ async def add_referral(
 async def create_order(
     order: OrderRequest,
 ):
-    # Xarid funksiyasi xavfsizlik sababli
-    # standart holatda o'chirilgan.
     if not FRAGMENT_PURCHASES_ENABLED:
         raise HTTPException(
             status_code=503,
@@ -881,14 +873,12 @@ async def create_order(
             ),
         )
 
-    # Mahsulot va narxni serverning o'zi tekshiradi.
     kind, expected_price, months, stars = classify_order(
         order.product,
         order.months,
         order.stars,
     )
 
-    # Frontend yuborgan narxga ishonmaymiz.
     if order.amount != expected_price:
         raise HTTPException(
             status_code=400,
@@ -902,7 +892,6 @@ async def create_order(
         order.recipient_username,
     )
 
-    # Username haqiqatan tekshirilishi kerak.
     username_result = await check_telegram_username(
         username,
     )
@@ -916,7 +905,6 @@ async def create_order(
             ),
         )
 
-    # Supplier xizmat mavjudligini tasdiqlashi kerak.
     try:
         if kind == "premium":
             available = (
@@ -953,8 +941,6 @@ async def create_order(
     order_id = None
 
     try:
-        # Balansni tekshirish, buyurtma yaratish va
-        # pul yechish bitta database tranzaksiyasida bajariladi.
         with conn:
             with conn.cursor() as cur:
                 wallet = get_wallet_row(
@@ -1046,8 +1032,6 @@ async def create_order(
                     ),
                 )
 
-        # Database tranzaksiyasi tugadi.
-        # Endi supplierga so'rov yuboriladi.
         try:
             if kind == "premium":
                 result = (
@@ -1090,8 +1074,6 @@ async def create_order(
             or result.get("order_id")
         )
 
-        # Faqat aniq yakuniy muvaffaqiyat bo'lsa,
-        # buyurtma completed bo'ladi.
         if (
             result.get("ok") is True
             and supplier_status in {
@@ -1102,8 +1084,6 @@ async def create_order(
         ):
             final_status = "completed"
         else:
-            # Noaniq holatda avtomatik refund qilmaymiz.
-            # Avval supplier orqali holat tekshiriladi.
             final_status = "reconciliation_required"
 
         with conn:
@@ -1190,6 +1170,7 @@ async def my_orders(
 
     finally:
         conn.close()
+
 
 # =========================================================
 # 21. ADMIN BARCHA BUYURTMALARNI KO'RISHI
@@ -1345,8 +1326,6 @@ async def test_premium_buy(
             ),
         )
 
-    # Bu endpoint faqat tekshiradi.
-    # Haqiqiy xaridni boshlamaydi.
     return {
         "ok": True,
         "username": username,
@@ -1433,9 +1412,6 @@ async def api_buy_premium(
             data.months,
         )
 
-        # SDK natijasi qanday bo'lishidan qat'i nazar,
-        # faqat SDK natijasini qaytaramiz.
-        # Mijoz buyurtmasi sifatida completed deb taxmin qilmaymiz.
         return result
 
     except HTTPException:
@@ -1530,7 +1506,6 @@ async def api_buy_stars(
 async def api_wallet_info(
     _: bool = Depends(require_admin),
 ):
-    # Seed yoki maxfiy kalit hech qachon API orqali qaytarilmaydi.
     return {
         "ok": True,
         "wallet_address_configured": bool(
@@ -1577,11 +1552,9 @@ async def wallet_transactions_alias(
 
 
 # =========================================================
-# SERVER KODI TUGADI
+# 32. SDK SOURCE AUDIT (DEBUG)
 # =========================================================
-# ==========================================
-# SDK SOURCE AUDIT (DEBUG)
-# ==========================================
+
 @app.get("/api/inspect-sdk")
 def inspect_sdk():
     try:
@@ -1590,6 +1563,7 @@ def inspect_sdk():
 
         stars_code = ""
         premium_code = ""
+        create_purchase_code = ""
 
         try:
             stars_code = inspect.getsource(FragmentAPI.buy_stars)
@@ -1601,10 +1575,16 @@ def inspect_sdk():
         except Exception as e2:
             premium_code = f"Error reading buy_premium: {e2}"
 
+        try:
+            create_purchase_code = inspect.getsource(FragmentAPI.create_purchase)
+        except Exception as e3:
+            create_purchase_code = f"Error reading create_purchase: {e3}"
+
         return {
             "ok": True,
             "buy_stars_code": stars_code,
-            "buy_premium_code": premium_code
+            "buy_premium_code": premium_code,
+            "create_purchase_code": create_purchase_code,
         }
     except Exception as e:
         return {"ok": False, "error": str(e)}
