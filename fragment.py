@@ -1,601 +1,1583 @@
 
 import os
-import asyncio
-import inspect
 import re
-from decimal import Decimal, InvalidOperation
+import json
+import secrets
+import logging
+import urllib.request
+import urllib.error
+from typing import Optional
 
-from fragment_api import FragmentAPI
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    Header,
+    Depends,
+    Query,
+)
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+
+from telethon import TelegramClient
+from telethon.sessions import StringSession
+from telethon.tl.functions.contacts import ResolveUsernameRequest
+
+from fragment import FragmentService
 
 
-class FragmentService:
-    """
-    Telegram Shop uchun Fragment API wrapper.
+# =========================================================
+# 1. LOG VA FASTAPI
+# =========================================================
 
-    Xavfsizlik:
-    - Availability tekshiruvlariga mnemonic uzatilmaydi.
-    - Xom API javoblari va maxfiy ma'lumotlar log qilinmaydi.
-    - Xaridlar standart holatda o'chirilgan.
-    - Xaridni yoqishdan oldin tashqi API seed xavfsizligi tekshirilishi kerak.
-    """
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+logger = logging.getLogger("telegram_shop")
 
-    USERNAME_RE = re.compile(r"^[A-Za-z0-9_]{5,32}$")
+app = FastAPI(
+    title="Telegram Shop API",
+    version="2.0.0",
+)
 
-    TERMINAL_SUCCESS = {"completed", "success", "paid"}
-    TERMINAL_FAILURE = {
-        "failed",
-        "cancelled",
-        "canceled",
-        "reconciliation_required",
-    }
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-    def __init__(self):
-        self.mnemonic = os.getenv("MNEMONIC", "").strip()
-        self.wallet_address = (
-            os.getenv("WALLET_ADDRESS")
-            or os.getenv("TON_ADDRESS")
-            or ""
-        ).strip()
-        self.api = FragmentAPI()
 
-    # --------------------------------------------------
-    # YORDAMCHI FUNKSIYALAR
-    # --------------------------------------------------
+# =========================================================
+# 2. ENVIRONMENT SOZLAMALARI
+# =========================================================
 
-    @staticmethod
-    def _field(obj, name, default=None):
-        if isinstance(obj, dict):
-            return obj.get(name, default)
-        return getattr(obj, name, default)
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+ADMIN_KEY = os.getenv("ADMIN_KEY", "").strip()
 
-    @staticmethod
-    def _safe_text(value, limit=120):
-        if not isinstance(value, str):
-            return None
+RESELLCODES_API_KEY = os.getenv(
+    "RESELLCODES_API_KEY", ""
+).strip()
 
-        value = value.strip()
-        if not value or len(value) > limit:
-            return None
+RESELLCODES_BASE_URL = os.getenv(
+    "RESELLCODES_BASE_URL",
+    "https://api.resellcodes.com",
+).rstrip("/")
 
-        if not re.fullmatch(r"[A-Za-z0-9_.:-]+", value):
-            return None
+TG_API_ID = os.getenv("TG_API_ID", "").strip()
+TG_API_HASH = os.getenv("TG_API_HASH", "").strip()
+TG_SESSION = os.getenv("TG_SESSION", "").strip()
 
-        return value
+FRAGMENT_PURCHASES_ENABLED = (
+    os.getenv("FRAGMENT_PURCHASES_ENABLED", "false")
+    .strip()
+    .lower()
+    == "true"
+)
 
-    @staticmethod
-    def _safe_decimal(value):
-        if isinstance(value, bool) or value is None:
-            return None
+fragment_api = FragmentService()
 
-        try:
-            number = Decimal(str(value))
-            if not number.is_finite() or number < 0:
-                return None
-            return str(number)
-        except (InvalidOperation, ValueError, TypeError):
-            return None
+telegram_client = None
 
-    @staticmethod
-    def _normalize_username(username):
-        if not isinstance(username, str):
-            return None
+if TG_API_ID and TG_API_HASH and TG_SESSION:
+    try:
+        telegram_client = TelegramClient(
+            StringSession(TG_SESSION),
+            int(TG_API_ID),
+            TG_API_HASH,
+        )
+    except (ValueError, TypeError):
+        logger.exception(
+            "Telegram sozlamalarida xatolik"
+        )
+        telegram_client = None
 
-        username = username.strip()
-        if username.startswith("@"):
-            username = username[1:]
 
-        if not FragmentService.USERNAME_RE.fullmatch(username):
-            return None
+# =========================================================
+# 3. MAHSULOT NARXLARI
+# =========================================================
+# Bu narxlar app.js dagi narxlar bilan aynan mos bo'lishi kerak.
+# Avtomatik xarid uchun faqat ushbu katalogdagi mahsulotlar qabul qilinadi.
 
-        return "@" + username
+PREMIUM_PRICES = {
+    3: 165000,
+    6: 220000,
+    12: 390000,
+}
 
-    @staticmethod
-    async def _run_sync_or_async(fn, *args, **kwargs):
-        if inspect.iscoroutinefunction(fn):
-            return await fn(*args, **kwargs)
+STARS_PRICES = {
+    50: 11000,
+    100: 30000,
+    150: 40000,
+    250: 64000,
+    350: 89000,
+    500: 125000,
+    750: 185000,
+    1000: 244000,
+    1500: 365000,
+    2500: 605000,
+    5000: 1205000,
+}
 
-        loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(
-            None,
-            lambda: fn(*args, **kwargs),
+
+# =========================================================
+# 4. DATABASE CONNECTION
+# =========================================================
+
+def get_db_connection():
+    if not DATABASE_URL:
+        raise HTTPException(
+            status_code=503,
+            detail="DATABASE_URL sozlanmagan",
         )
 
-        # Ba'zi wrapperlar oddiy funksiya ichidan coroutine qaytarishi mumkin.
-        if inspect.isawaitable(result):
-            return await result
+    try:
+        return psycopg2.connect(
+            DATABASE_URL,
+            cursor_factory=RealDictCursor,
+        )
+    except Exception:
+        logger.exception(
+            "Ma'lumotlar bazasiga ulanishda xatolik"
+        )
+        raise HTTPException(
+            status_code=503,
+            detail="Ma'lumotlar bazasiga ulanib bo'lmadi",
+        )
 
-        return result
 
-    @staticmethod
-    def _safe_error_code(exc):
-        """
-        Exception matni log qilinmaydi.
-        Faqat oddiy, oldindan cheklangan kod qaytariladi.
-        """
-        code = getattr(exc, "code", None)
+# =========================================================
+# 5. DATABASE TABLES
+# =========================================================
 
-        if isinstance(code, str) and re.fullmatch(
-            r"[A-Z][A-Z0-9_]{1,60}", code
-        ):
-            return code
+def init_db():
+    if not DATABASE_URL:
+        logger.warning(
+            "DATABASE_URL yo'q. Database init o'tkazib yuborildi."
+        )
+        return
 
-        return "API_REQUEST_FAILED"
+    conn = None
 
-    # --------------------------------------------------
-    # SDK METODINI XAVFSIZ CHAQRISH
-    # --------------------------------------------------
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
 
-    async def _invoke_checked(self, method_name, values):
-        """
-        SDK metodining parametrlarini inspect orqali aniqlaydi.
-        Parametrlar noma'lum bo'lsa, taxminiy positional argument
-        yubormaydi.
-        """
-        method = getattr(self.api, method_name, None)
+        with conn:
+            with conn.cursor() as cur:
 
-        if not callable(method):
-            return {
-                "ok": False,
-                "available": False,
-                "code": "METHOD_NOT_FOUND",
-                "error": "SDK da mavjudlik tekshiruv metodi topilmadi.",
-            }
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS orders (
+                        id SERIAL PRIMARY KEY,
+                        user_id BIGINT NOT NULL,
+                        product TEXT NOT NULL,
+                        amount BIGINT NOT NULL,
+                        status TEXT NOT NULL DEFAULT 'pending',
+                        telegram_username TEXT,
+                        months INTEGER,
+                        stars INTEGER,
+                        price_usd NUMERIC(12,4),
+                        supplier_order_id TEXT,
+                        created_at TIMESTAMPTZ
+                            NOT NULL DEFAULT NOW()
+                    )
+                """)
 
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS wallets (
+                        user_id BIGINT PRIMARY KEY,
+                        balance BIGINT NOT NULL DEFAULT 0,
+                        updated_at TIMESTAMPTZ
+                            NOT NULL DEFAULT NOW()
+                    )
+                """)
+
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS wallet_transactions (
+                        id SERIAL PRIMARY KEY,
+                        user_id BIGINT NOT NULL,
+                        type TEXT NOT NULL,
+                        amount BIGINT NOT NULL,
+                        description TEXT,
+                        created_at TIMESTAMPTZ
+                            NOT NULL DEFAULT NOW()
+                    )
+                """)
+
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS referrals (
+                        id SERIAL PRIMARY KEY,
+                        referrer_id BIGINT NOT NULL,
+                        referred_id BIGINT NOT NULL UNIQUE,
+                        created_at TIMESTAMPTZ
+                            NOT NULL DEFAULT NOW(),
+                        CHECK (referrer_id <> referred_id)
+                    )
+                """)
+
+                cur.execute("""
+                    CREATE INDEX IF NOT EXISTS
+                    idx_orders_user_created
+                    ON orders(user_id, created_at DESC)
+                """)
+
+                cur.execute("""
+                    CREATE INDEX IF NOT EXISTS
+                    idx_wallet_tx_user_created
+                    ON wallet_transactions(
+                        user_id,
+                        created_at DESC
+                    )
+                """)
+
+    except Exception:
+        logger.exception(
+            "Database jadvallarini yaratishda xatolik"
+        )
+        raise
+
+    finally:
+        if conn:
+            conn.close()
+
+
+# =========================================================
+# 6. STARTUP VA SHUTDOWN
+# =========================================================
+
+@app.on_event("startup")
+async def startup_event():
+    try:
+        init_db()
+    except Exception:
+        logger.exception(
+            "Server ishga tushganda database xatoligi"
+        )
+
+    if telegram_client:
         try:
-            signature = inspect.signature(method)
-            parameters = signature.parameters
+            await telegram_client.connect()
 
-            kwargs = {}
-            unresolved = []
+            if not await telegram_client.is_user_authorized():
+                logger.warning(
+                    "Telegram sessiyasi avtorizatsiyadan o'tmagan"
+                )
 
-            for name, parameter in parameters.items():
-                if parameter.kind in (
-                    inspect.Parameter.VAR_POSITIONAL,
-                    inspect.Parameter.VAR_KEYWORD,
-                ):
-                    continue
-
-                if name in values:
-                    kwargs[name] = values[name]
-                elif parameter.default is inspect.Parameter.empty:
-                    unresolved.append(name)
-
-            if unresolved:
-                return {
-                    "ok": False,
-                    "available": False,
-                    "code": "SDK_SIGNATURE_UNSUPPORTED",
-                    "error": (
-                        "SDK parametrlari kutilgan shaklda emas. "
-                        "SDK metod imzosini tekshirish kerak."
-                    ),
-                }
-
-            result = await self._run_sync_or_async(
-                method,
-                **kwargs,
+        except Exception:
+            logger.exception(
+                "Telegram client ulanishida xatolik"
             )
 
-            return self._parse_availability(result)
 
-        except Exception as exc:
-            print(
-                "[Fragment] Availability request failed:",
-                {
-                    "method": method_name,
-                    "exception_type": type(exc).__name__,
-                    "code": self._safe_error_code(exc),
-                },
+@app.on_event("shutdown")
+async def shutdown_event():
+    if telegram_client:
+        try:
+            await telegram_client.disconnect()
+        except Exception:
+            logger.exception(
+                "Telegram client uzilishida xatolik"
             )
 
-            return {
-                "ok": False,
-                "available": False,
-                "code": "AVAILABILITY_CHECK_FAILED",
-                "error": (
-                    "Mavjudlikni tekshirish bajarilmadi. "
-                    "To'lovni hozircha davom ettirmang."
-                ),
-            }
 
-    def _parse_availability(self, result):
-        """
-        SDK javobidan faqat kerakli maydonlarni oladi.
-        Noma'lum javobni avtomatik ravishda available deb qabul qilmaydi.
-        """
-        available = self._field(result, "available")
+# =========================================================
+# 7. ADMIN TEKSHIRUVI
+# =========================================================
 
-        if not isinstance(available, bool):
-            available = self._field(result, "is_available")
+def require_admin(
+    x_admin_key: Optional[str] = Header(
+        default=None,
+        alias="X-Admin-Key",
+    ),
+    admin_key: Optional[str] = Query(default=None),
+):
+    # ADMIN_KEY bo'sh bo'lsa, admin amallarini ochmaymiz.
+    if not ADMIN_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="ADMIN_KEY serverda sozlanmagan",
+        )
 
-        if not isinstance(available, bool):
-            available = self._field(result, "eligible")
+    supplied_key = x_admin_key or admin_key
 
-        if not isinstance(available, bool):
-            available = None
+    if (
+        not supplied_key
+        or not secrets.compare_digest(
+            str(supplied_key),
+            ADMIN_KEY,
+        )
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Admin ruxsati talab qilinadi",
+        )
 
-        status = self._field(result, "status")
-        code = self._field(result, "code")
-        price = self._field(result, "price")
+    return True
 
-        safe_status = self._safe_text(status)
-        safe_code = self._safe_text(code)
-        safe_price = self._safe_decimal(price)
 
-        if available is None:
-            return {
-                "ok": False,
-                "available": False,
-                "code": "UNKNOWN_AVAILABILITY_RESPONSE",
-                "status": safe_status,
-                "error": (
-                    "SDK javobida mavjudlik aniq tasdiqlanmadi. "
-                    "Xaridga ruxsat berilmadi."
-                ),
-            }
+def require_body_admin_key(key: Optional[str]):
+    if not ADMIN_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="ADMIN_KEY serverda sozlanmagan",
+        )
 
+    if (
+        not key
+        or not secrets.compare_digest(
+            str(key),
+            ADMIN_KEY,
+        )
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Admin kaliti noto'g'ri",
+        )
+
+
+# =========================================================
+# 8. USERNAME TEKSHIRISH
+# =========================================================
+
+def clean_username(username: str) -> str:
+    username = (username or "").strip()
+
+    if username.startswith("@"):
+        username = username[1:]
+
+    if not re.fullmatch(
+        r"[A-Za-z0-9_]{5,32}",
+        username,
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Telegram username noto'g'ri",
+        )
+
+    return username
+
+
+async def check_telegram_username(
+    username: str,
+) -> dict:
+    username = clean_username(username)
+
+    # Telegram client ishlamasa, username tasdiqlanmaydi.
+    if not telegram_client:
         return {
-            "ok": True,
-            "available": available,
-            "code": safe_code,
-            "status": safe_status,
-            "price": safe_price,
+            "ok": False,
+            "valid": False,
             "message": (
-                "Xizmat mavjud."
-                if available
-                else "Xizmat hozir mavjud emas."
+                "Telegram username tekshiruvi "
+                "serverda sozlanmagan"
             ),
         }
 
-    # --------------------------------------------------
-    # STARS MAVJUDLIGINI TEKSHIRISH
-    # MNEMONIC BU METODGA UZATILMAYDI
-    # --------------------------------------------------
+    try:
+        result = await telegram_client(
+            ResolveUsernameRequest(username)
+        )
 
-    async def check_stars_availability(
-        self,
-        username: str,
-        stars_amount: int,
-    ):
-        clean_username = self._normalize_username(username)
-
-        if not clean_username:
+        if getattr(result, "users", None):
             return {
-                "ok": False,
-                "available": False,
-                "code": "INVALID_USERNAME",
-                "error": "Telegram username noto'g'ri.",
+                "ok": True,
+                "valid": True,
+                "username": username,
             }
 
+        return {
+            "ok": False,
+            "valid": False,
+            "message": "Telegram foydalanuvchisi topilmadi",
+        }
+
+    except Exception as exc:
+        error_name = type(exc).__name__.lower()
+
         if (
-            isinstance(stars_amount, bool)
-            or not isinstance(stars_amount, int)
-            or not 50 <= stars_amount <= 1_000_000
+            "usernameinvalid" in error_name
+            or "usernamenotoccupied" in error_name
         ):
             return {
                 "ok": False,
-                "available": False,
-                "code": "INVALID_AMOUNT",
-                "error": "Stars miqdori noto'g'ri.",
+                "valid": False,
+                "message": "Bunday username topilmadi",
             }
 
-        return await self._invoke_checked(
-            "check_stars_availability",
-            {
-                "username": clean_username,
-                "amount": stars_amount,
-                "stars_amount": stars_amount,
-                "payment_method": "gram",
-            },
+        logger.warning(
+            "Username tekshiruvi muvaffaqiyatsiz: %s",
+            type(exc).__name__,
         )
 
-    # --------------------------------------------------
-    # PREMIUM MAVJUDLIGINI TEKSHIRISH
-    # MNEMONIC BU METODGA UZATILMAYDI
-    # --------------------------------------------------
+        return {
+            "ok": False,
+            "valid": False,
+            "message": "Username hozir tekshirilmadi",
+        }
 
-    async def check_premium_availability(
-        self,
-        username: str,
-        months: int,
+
+# =========================================================
+# 9. BALANS YORDAMCHI FUNKSIYALARI
+# =========================================================
+
+def get_wallet_row(
+    cur,
+    user_id: int,
+    lock: bool = False,
+):
+    cur.execute(
+        """
+        INSERT INTO wallets (user_id, balance)
+        VALUES (%s, 0)
+        ON CONFLICT (user_id) DO NOTHING
+        """,
+        (user_id,),
+    )
+
+    sql = """
+        SELECT user_id, balance
+        FROM wallets
+        WHERE user_id = %s
+    """
+
+    if lock:
+        sql += " FOR UPDATE"
+
+    cur.execute(sql, (user_id,))
+    return cur.fetchone()
+
+
+# =========================================================
+# 10. MAHSULOTNI ANIQLASH VA NARXNI TEKSHIRISH
+# =========================================================
+
+def classify_order(
+    product: str,
+    months: Optional[int],
+    stars: Optional[int],
+):
+    product_name = (product or "").strip().lower()
+
+    if (
+        "star" in product_name
+        or "yulduz" in product_name
     ):
-        clean_username = self._normalize_username(username)
+        if stars not in STARS_PRICES:
+            raise HTTPException(
+                status_code=400,
+                detail="Stars paketi katalogda mavjud emas",
+            )
 
-        if not clean_username:
+        return (
+            "stars",
+            STARS_PRICES[stars],
+            None,
+            stars,
+        )
+
+    if "premium" in product_name:
+        if months not in PREMIUM_PRICES:
+            raise HTTPException(
+                status_code=400,
+                detail="Premium muddati katalogda mavjud emas",
+            )
+
+        return (
+            "premium",
+            PREMIUM_PRICES[months],
+            months,
+            None,
+        )
+
+    raise HTTPException(
+        status_code=400,
+        detail=(
+            "Bu mahsulot avtomatik xarid uchun "
+            "qo'llab-quvvatlanmaydi"
+        ),
+    )
+
+
+# =========================================================
+# 11. RESELLCODES API YORDAMCHISI
+# =========================================================
+
+def reseller_request(
+    path: str,
+    method: str = "GET",
+    payload: Optional[dict] = None,
+):
+    if not RESELLCODES_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="Supplier API kaliti sozlanmagan",
+        )
+
+    url = (
+        f"{RESELLCODES_BASE_URL}/"
+        f"{path.lstrip('/')}"
+    )
+
+    body = (
+        json.dumps(payload).encode("utf-8")
+        if payload is not None
+        else None
+    )
+
+    request = urllib.request.Request(
+        url,
+        data=body,
+        method=method,
+        headers={
+            "Authorization": (
+                f"Bearer {RESELLCODES_API_KEY}"
+            ),
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(
+            request,
+            timeout=20,
+        ) as response:
+            raw = response.read().decode(
+                "utf-8",
+                errors="replace",
+            )
+
+            return json.loads(raw) if raw else {}
+
+    except urllib.error.HTTPError as exc:
+        logger.warning(
+            "Supplier API HTTP xatosi: %s",
+            exc.code,
+        )
+        raise HTTPException(
+            status_code=502,
+            detail="Supplier API so'rovni rad etdi",
+        )
+
+    except Exception:
+        logger.exception(
+            "Supplier API bilan aloqa xatosi"
+        )
+        raise HTTPException(
+            status_code=502,
+            detail="Supplier API bilan aloqa o'rnatilmadi",
+        )
+
+
+# =========================================================
+# 12. REQUEST MODELLARI
+# =========================================================
+
+class OrderRequest(BaseModel):
+    user_id: int = Field(gt=0)
+    product: str = Field(min_length=1, max_length=100)
+    amount: int = Field(gt=0)
+    recipient_username: str = Field(
+        min_length=5,
+        max_length=33,
+    )
+    months: Optional[int] = None
+    stars: Optional[int] = None
+
+
+class StatusRequest(BaseModel):
+    status: str = Field(
+        min_length=1,
+        max_length=40,
+    )
+
+
+class AdminBalanceRequest(BaseModel):
+    user_id: int = Field(gt=0)
+    amount: int = Field(gt=0)
+    description: Optional[str] = Field(
+        default="Admin tomonidan balans to'ldirildi",
+        max_length=250,
+    )
+
+
+class ReferralRequest(BaseModel):
+    user_id: int = Field(gt=0)
+    referrer_id: int = Field(gt=0)
+
+
+class PremiumTestRequest(BaseModel):
+    username: str = Field(
+        min_length=5,
+        max_length=33,
+    )
+    months: int
+
+
+class BuyPremiumRequest(BaseModel):
+    username: str
+    months: int
+    admin_key: Optional[str] = None
+
+
+class BuyStarsRequest(BaseModel):
+    username: str
+    stars_amount: int
+    admin_key: Optional[str] = None
+
+# =========================================================
+# 13. ASOSIY ENDPOINTLAR
+# =========================================================
+
+@app.get("/")
+async def root():
+    return {
+        "ok": True,
+        "message": "Telegram Shop server is running!",
+    }
+
+
+@app.get("/health")
+async def health():
+    return {
+        "ok": True,
+        "database_configured": bool(DATABASE_URL),
+        "telegram_check_configured": telegram_client is not None,
+        "fragment_purchases_enabled": FRAGMENT_PURCHASES_ENABLED,
+    }
+
+
+@app.get("/info")
+async def info():
+    return {
+        "ok": True,
+        "service": "Telegram Shop",
+        "version": app.version,
+        "database_configured": bool(DATABASE_URL),
+        "telegram_configured": telegram_client is not None,
+        "fragment_purchases_enabled": FRAGMENT_PURCHASES_ENABLED,
+    }
+
+
+# =========================================================
+# 14. TELEGRAM USERNAME TEKSHIRISH
+# =========================================================
+
+@app.get("/check-username")
+async def check_username(
+    username: str = Query(
+        min_length=5,
+        max_length=33,
+    ),
+):
+    return await check_telegram_username(username)
+
+
+# =========================================================
+# 15. FOYDALANUVCHI BALANSI
+# =========================================================
+
+@app.get("/balance")
+async def balance(
+    user_id: int = Query(gt=0),
+):
+    conn = get_db_connection()
+
+    try:
+        with conn:
+            with conn.cursor() as cur:
+                wallet = get_wallet_row(
+                    cur,
+                    user_id,
+                )
+
+                return {
+                    "ok": True,
+                    "user_id": user_id,
+                    "balance": int(wallet["balance"]),
+                }
+
+    finally:
+        conn.close()
+
+
+# =========================================================
+# 16. BALANS TRANZAKSIYALARI
+# =========================================================
+
+@app.get("/wallet/transactions")
+async def wallet_transactions(
+    user_id: int = Query(gt=0),
+    limit: int = Query(default=20, ge=1, le=100),
+):
+    conn = get_db_connection()
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    id,
+                    type,
+                    amount,
+                    description,
+                    created_at
+                FROM wallet_transactions
+                WHERE user_id = %s
+                ORDER BY created_at DESC
+                LIMIT %s
+                """,
+                (user_id, limit),
+            )
+
+            rows = cur.fetchall()
+
             return {
-                "ok": False,
-                "available": False,
-                "code": "INVALID_USERNAME",
-                "error": "Telegram username noto'g'ri.",
+                "ok": True,
+                "transactions": [
+                    dict(row) for row in rows
+                ],
             }
 
-        if (
-            isinstance(months, bool)
-            or not isinstance(months, int)
-            or months not in (3, 6, 12)
-        ):
-            return {
-                "ok": False,
-                "available": False,
-                "code": "INVALID_DURATION",
-                "error": "Premium muddati 3, 6 yoki 12 oy bo'lishi kerak.",
-            }
+    finally:
+        conn.close()
 
-        return await self._invoke_checked(
-            "check_premium_availability",
-            {
-                "username": clean_username,
-                "months": months,
-                "payment_method": "gram",
+
+# =========================================================
+# 17. ADMIN FOYDALANUVCHI BALANSINI TO'LDIRISHI
+# =========================================================
+
+@app.post("/admin/add-balance")
+async def admin_add_balance(
+    data: AdminBalanceRequest,
+    _: bool = Depends(require_admin),
+):
+    conn = get_db_connection()
+
+    try:
+        with conn:
+            with conn.cursor() as cur:
+                # Bir vaqtning o'zida kelgan so'rovlar
+                # balansni noto'g'ri hisoblamasligi uchun
+                # wallet qatori bloklanadi.
+                get_wallet_row(
+                    cur,
+                    data.user_id,
+                    lock=True,
+                )
+
+                cur.execute(
+                    """
+                    UPDATE wallets
+                    SET
+                        balance = balance + %s,
+                        updated_at = NOW()
+                    WHERE user_id = %s
+                    RETURNING balance
+                    """,
+                    (
+                        data.amount,
+                        data.user_id,
+                    ),
+                )
+
+                wallet = cur.fetchone()
+
+                cur.execute(
+                    """
+                    INSERT INTO wallet_transactions
+                    (
+                        user_id,
+                        type,
+                        amount,
+                        description
+                    )
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (
+                        data.user_id,
+                        "credit",
+                        data.amount,
+                        data.description,
+                    ),
+                )
+
+        return {
+            "ok": True,
+            "user_id": data.user_id,
+            "balance": int(wallet["balance"]),
+        }
+
+    finally:
+        conn.close()
+
+
+# =========================================================
+# 18. REFERAL RO'YXATDAN O'TKAZISH
+# =========================================================
+
+@app.post("/referral")
+async def add_referral(
+    data: ReferralRequest,
+):
+    if data.user_id == data.referrer_id:
+        raise HTTPException(
+            status_code=400,
+            detail="O'zingizni referral sifatida kirita olmaysiz",
+        )
+
+    conn = get_db_connection()
+
+    try:
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO referrals
+                    (
+                        referrer_id,
+                        referred_id
+                    )
+                    VALUES (%s, %s)
+                    ON CONFLICT (referred_id)
+                    DO NOTHING
+                    RETURNING id
+                    """,
+                    (
+                        data.referrer_id,
+                        data.user_id,
+                    ),
+                )
+
+                created = cur.fetchone()
+
+        return {
+            "ok": True,
+            "registered": created is not None,
+        }
+
+    finally:
+        conn.close()
+
+
+# =========================================================
+# 19. YANGI BUYURTMA YARATISH
+# =========================================================
+
+@app.post("/create-order")
+async def create_order(
+    order: OrderRequest,
+):
+    # Xarid funksiyasi xavfsizlik sababli
+    # standart holatda o'chirilgan.
+    if not FRAGMENT_PURCHASES_ENABLED:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Avtomatik xarid vaqtincha o'chirilgan. "
+                "Xarid xavfsizligi tekshirilishi kerak."
+            ),
+        )
+
+    # Mahsulot va narxni serverning o'zi tekshiradi.
+    kind, expected_price, months, stars = classify_order(
+        order.product,
+        order.months,
+        order.stars,
+    )
+
+    # Frontend yuborgan narxga ishonmaymiz.
+    if order.amount != expected_price:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Mahsulot narxi mos emas",
+                "expected_amount": expected_price,
             },
         )
 
-    # --------------------------------------------------
-    # XARID UCHUN XAVFSIZLIK TEKSHIRUVI
-    # STANDART HOLATDA XARID O'CHIRILGAN
-    # --------------------------------------------------
+    username = clean_username(
+        order.recipient_username,
+    )
 
-    def _purchase_guard(self):
-        purchases_enabled = (
-            os.getenv("FRAGMENT_PURCHASES_ENABLED", "false")
-            .strip()
-            .lower()
-            == "true"
+    # Username haqiqatan tekshirilishi kerak.
+    username_result = await check_telegram_username(
+        username,
+    )
+
+    if not username_result.get("valid"):
+        raise HTTPException(
+            status_code=400,
+            detail=username_result.get(
+                "message",
+                "Username tekshirilmadi",
+            ),
         )
 
-        seed_submission_allowed = (
-            os.getenv("ALLOW_THIRD_PARTY_SEED_SUBMISSION", "false")
-            .strip()
-            .lower()
-            == "true"
+    # Supplier xizmat mavjudligini tasdiqlashi kerak.
+    try:
+        if kind == "premium":
+            available = (
+                await fragment_api.check_premium_availability(
+                    username,
+                    months,
+                )
+            )
+        else:
+            available = (
+                await fragment_api.check_stars_availability(
+                    username,
+                    stars,
+                )
+            )
+
+    except Exception:
+        logger.exception(
+            "Supplier mavjudligini tekshirishda xatolik"
         )
 
-        if not purchases_enabled:
-            return {
-                "ok": False,
-                "code": "PURCHASES_DISABLED",
-                "error": (
-                    "Fragment xaridlari vaqtincha o'chirilgan. "
-                    "Avval integratsiya tekshirilishi kerak."
-                ),
-            }
+        raise HTTPException(
+            status_code=502,
+            detail="Xizmat mavjudligini tekshirishda xatolik",
+        )
 
-        if not seed_submission_allowed:
-            return {
-                "ok": False,
-                "code": "EXTERNAL_SEED_SUBMISSION_DISABLED",
-                "error": (
-                    "SDK seed ma'lumotini tashqi API ga yuborishi "
-                    "mumkin. Xavfsizlik tasdiqlanmagani uchun "
-                    "xarid boshlanmadi."
-                ),
-            }
+    if not available:
+        raise HTTPException(
+            status_code=409,
+            detail="Bu xizmat hozir mavjud emas yoki tekshirilmadi",
+        )
 
-        if not self.mnemonic:
-            return {
-                "ok": False,
-                "code": "MNEMONIC_MISSING",
-                "error": "MNEMONIC sozlanmagan. Xarid boshlanmadi.",
-            }
+    conn = get_db_connection()
+    order_id = None
 
-        words = self.mnemonic.split()
+    try:
+        # Balansni tekshirish, buyurtma yaratish va
+        # pul yechish bitta database tranzaksiyasida bajariladi.
+        with conn:
+            with conn.cursor() as cur:
+                wallet = get_wallet_row(
+                    cur,
+                    order.user_id,
+                    lock=True,
+                )
 
-        if len(words) not in (12, 24):
-            return {
-                "ok": False,
-                "code": "INVALID_SEED_WORD_COUNT",
-                "error": "Mnemonic uzunligi noto'g'ri.",
-            }
+                current_balance = int(
+                    wallet["balance"]
+                )
 
-        if len(words) == 12 and not self.wallet_address:
-            return {
-                "ok": False,
-                "code": "WALLET_ADDRESS_MISSING",
-                "error": "Wallet manzili sozlanmagan.",
-            }
+                if current_balance < expected_price:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Balans yetarli emas",
+                    )
 
-        return None
+                cur.execute(
+                    """
+                    INSERT INTO orders
+                    (
+                        user_id,
+                        product,
+                        amount,
+                        status,
+                        telegram_username,
+                        months,
+                        stars
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                    """,
+                    (
+                        order.user_id,
+                        kind,
+                        expected_price,
+                        "processing",
+                        username,
+                        months,
+                        stars,
+                    ),
+                )
 
-    def _get_auth_params(self):
-        words = self.mnemonic.split()
+                order_id = cur.fetchone()["id"]
 
-        if len(words) == 24:
-            return {"seed": self.mnemonic}
+                cur.execute(
+                    """
+                    UPDATE wallets
+                    SET
+                        balance = balance - %s,
+                        updated_at = NOW()
+                    WHERE
+                        user_id = %s
+                        AND balance >= %s
+                    RETURNING balance
+                    """,
+                    (
+                        expected_price,
+                        order.user_id,
+                        expected_price,
+                    ),
+                )
 
-        if len(words) == 12:
-            return {
-                "seed": self.mnemonic,
-                "wallet_address": self.wallet_address,
-            }
+                updated_wallet = cur.fetchone()
 
-        raise ValueError("INVALID_SEED_WORD_COUNT")
+                if not updated_wallet:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Balans yetarli emas",
+                    )
 
-    # --------------------------------------------------
-    # XARID API METODINI CHAQRISH
-    # --------------------------------------------------
+                cur.execute(
+                    """
+                    INSERT INTO wallet_transactions
+                    (
+                        user_id,
+                        type,
+                        amount,
+                        description
+                    )
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (
+                        order.user_id,
+                        "debit",
+                        expected_price,
+                        f"Buyurtma #{order_id} uchun mablag' yechildi",
+                    ),
+                )
 
-    async def _purchase(self, method_name, **kwargs):
-        guard_error = self._purchase_guard()
-
-        if guard_error:
-            return guard_error
-
-        method = getattr(self.api, method_name, None)
-
-        if not callable(method):
-            return {
-                "ok": False,
-                "code": "METHOD_NOT_FOUND",
-                "error": "SDK xarid metodi topilmadi.",
-            }
-
+        # Database tranzaksiyasi tugadi.
+        # Endi supplierga so'rov yuboriladi.
         try:
-            # Diqqat: SDK seedni tashqi serverga yuborishi mumkin.
-            result = await self._run_sync_or_async(
-                method,
-                **kwargs,
+            if kind == "premium":
+                result = (
+                    await fragment_api.init_gift_request(
+                        username,
+                        months,
+                    )
+                )
+            else:
+                result = (
+                    await fragment_api.init_buy_stars(
+                        username,
+                        stars,
+                    )
+                )
+
+        except Exception:
+            logger.exception(
+                "Buyurtma #%s supplier xatosi",
+                order_id,
             )
 
-            status = self._field(result, "status")
-            purchase_id = (
-                self._field(result, "purchase_id")
-                or self._field(result, "request_id")
-                or self._field(result, "id")
-            )
-            tx_hash = (
-                self._field(result, "transaction_hash")
-                or self._field(result, "tx_hash")
-                or self._field(result, "hash")
-            )
-
-            safe_status = self._safe_text(status)
-            safe_purchase_id = self._safe_text(purchase_id)
-            safe_tx_hash = self._safe_text(tx_hash, 180)
-
-            print(
-                "[Fragment] Purchase response:",
-                {
-                    "method": method_name,
-                    "status": safe_status,
-                    "purchase_id": safe_purchase_id,
-                    "has_tx_hash": bool(safe_tx_hash),
-                },
-            )
-
-            if safe_status and safe_status.lower() in self.TERMINAL_FAILURE:
-                return {
-                    "ok": False,
-                    "code": "PURCHASE_FAILED",
-                    "status": safe_status,
-                    "purchase_id": safe_purchase_id,
-                    "error": "Xarid muvaffaqiyatsiz yakunlandi.",
-                }
-
-            if (
-                safe_status
-                and safe_status.lower() in self.TERMINAL_SUCCESS
-            ) or safe_tx_hash:
-                return {
-                    "ok": True,
-                    "status": safe_status or "completed",
-                    "purchase_id": safe_purchase_id,
-                    "tx_hash": safe_tx_hash,
-                    "message": (
-                        "SDK muvaffaqiyat holatini qaytardi. "
-                        "Yetkazib berishni alohida tasdiqlash kerak."
-                    ),
-                }
-
-            if safe_purchase_id:
-                return {
-                    "ok": True,
-                    "status": safe_status or "processing",
-                    "purchase_id": safe_purchase_id,
-                    "message": (
-                        "So'rov qabul qilindi; yakuniy natija "
-                        "hali tasdiqlanmagan."
-                    ),
-                }
-
-            return {
+            result = {
                 "ok": False,
-                "code": "UNKNOWN_PURCHASE_RESPONSE",
-                "error": (
-                    "SDK xaridning yakuniy holatini bermadi. "
-                    "Takroriy xarid boshlamang; holatni tekshiring."
-                ),
+                "status": "reconciliation_required",
             }
 
-        except Exception as exc:
-            print(
-                "[Fragment] Purchase request failed:",
-                {
-                    "method": method_name,
-                    "exception_type": type(exc).__name__,
-                    "code": self._safe_error_code(exc),
-                },
-            )
-
-            return {
+        if not isinstance(result, dict):
+            result = {
                 "ok": False,
-                "code": self._safe_error_code(exc),
-                "error": (
-                    "Xarid natijasini aniqlab bo'lmadi. "
-                    "Balansdan pul yechish yoki qayta urinishdan "
-                    "oldin buyurtma holatini tekshiring."
-                ),
+                "status": "reconciliation_required",
             }
 
-    # --------------------------------------------------
-    # STARS XARIDI
-    # --------------------------------------------------
+        supplier_status = str(
+            result.get("status", "")
+        ).lower()
 
-    async def init_buy_stars(
-        self,
-        username: str,
-        stars_amount: int,
-    ):
-        clean_username = self._normalize_username(username)
-
-        if not clean_username:
-            return {
-                "ok": False,
-                "code": "INVALID_USERNAME",
-                "error": "Telegram username noto'g'ri.",
-            }
-
-        if (
-            isinstance(stars_amount, bool)
-            or not isinstance(stars_amount, int)
-            or not 50 <= stars_amount <= 1_000_000
-        ):
-            return {
-                "ok": False,
-                "code": "INVALID_AMOUNT",
-                "error": "Stars miqdori noto'g'ri.",
-            }
-
-        return await self._purchase(
-            "buy_stars",
-            username=clean_username,
-            amount=stars_amount,
-            payment_method="gram",
-            **self._get_auth_params(),
+        supplier_order_id = (
+            result.get("purchase_id")
+            or result.get("order_id")
         )
 
-    # --------------------------------------------------
-    # PREMIUM XARIDI
-    # --------------------------------------------------
-
-    async def init_gift_request(
-        self,
-        username: str,
-        months: int,
-    ):
-        clean_username = self._normalize_username(username)
-
-        if not clean_username:
-            return {
-                "ok": False,
-                "code": "INVALID_USERNAME",
-                "error": "Telegram username noto'g'ri.",
-            }
-
+        # Faqat aniq yakuniy muvaffaqiyat bo'lsa,
+        # buyurtma completed bo'ladi.
         if (
-            isinstance(months, bool)
-            or not isinstance(months, int)
-            or months not in (3, 6, 12)
+            result.get("ok") is True
+            and supplier_status in {
+                "completed",
+                "success",
+                "paid",
+            }
         ):
+            final_status = "completed"
+        else:
+            # Noaniq holatda avtomatik refund qilmaymiz.
+            # Avval supplier orqali holat tekshiriladi.
+            final_status = "reconciliation_required"
+
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE orders
+                    SET
+                        status = %s,
+                        supplier_order_id = %s
+                    WHERE id = %s
+                    """,
+                    (
+                        final_status,
+                        (
+                            str(supplier_order_id)
+                            if supplier_order_id
+                            else None
+                        ),
+                        order_id,
+                    ),
+                )
+
+        return {
+            "ok": final_status == "completed",
+            "order_id": order_id,
+            "status": final_status,
+            "message": (
+                "Buyurtma bajarildi"
+                if final_status == "completed"
+                else (
+                    "Buyurtma tekshiruvda. "
+                    "Supplier holati tasdiqlanmaguncha "
+                    "avtomatik refund amalga oshirilmaydi."
+                )
+            ),
+        }
+
+    finally:
+        conn.close()
+
+
+# =========================================================
+# 20. FOYDALANUVCHINING BUYURTMALARI
+# =========================================================
+
+@app.get("/my-orders")
+async def my_orders(
+    user_id: int = Query(gt=0),
+    limit: int = Query(default=50, ge=1, le=100),
+):
+    conn = get_db_connection()
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    id,
+                    user_id,
+                    product,
+                    amount,
+                    status,
+                    telegram_username,
+                    months,
+                    stars,
+                    created_at
+                FROM orders
+                WHERE user_id = %s
+                ORDER BY created_at DESC
+                LIMIT %s
+                """,
+                (user_id, limit),
+            )
+
+            rows = cur.fetchall()
+
             return {
-                "ok": False,
-                "code": "INVALID_DURATION",
-                "error": "Premium muddati 3, 6 yoki 12 oy bo'lishi kerak.",
+                "ok": True,
+                "orders": [
+                    dict(row) for row in rows
+                ],
             }
 
-        return await self._purchase(
-            "buy_premium",
-            username=clean_username,
-            months=months,
-            payment_method="gram",
-            **self._get_auth_params(),
+    finally:
+        conn.close()
+
+# =========================================================
+# 21. ADMIN BARCHA BUYURTMALARNI KO'RISHI
+# =========================================================
+
+@app.get("/orders")
+async def all_orders(
+    _: bool = Depends(require_admin),
+    limit: int = Query(default=100, ge=1, le=500),
+):
+    conn = get_db_connection()
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    id,
+                    user_id,
+                    product,
+                    amount,
+                    status,
+                    telegram_username,
+                    months,
+                    stars,
+                    price_usd,
+                    supplier_order_id,
+                    created_at
+                FROM orders
+                ORDER BY created_at DESC
+                LIMIT %s
+                """,
+                (limit,),
+            )
+
+            return {
+                "ok": True,
+                "orders": [
+                    dict(row) for row in cur.fetchall()
+                ],
+            }
+
+    finally:
+        conn.close()
+
+
+# =========================================================
+# 22. ADMIN BUYURTMA STATUSINI O'ZGARTIRISHI
+# =========================================================
+
+@app.patch("/orders/{order_id}/status")
+async def update_order_status(
+    order_id: int,
+    data: StatusRequest,
+    _: bool = Depends(require_admin),
+):
+    allowed_statuses = {
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        "cancelled",
+        "reconciliation_required",
+    }
+
+    if data.status not in allowed_statuses:
+        raise HTTPException(
+            status_code=400,
+            detail="Buyurtma statusi noto'g'ri",
         )
+
+    conn = get_db_connection()
+
+    try:
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE orders
+                    SET status = %s
+                    WHERE id = %s
+                    RETURNING id, status
+                    """,
+                    (
+                        data.status,
+                        order_id,
+                    ),
+                )
+
+                row = cur.fetchone()
+
+                if not row:
+                    raise HTTPException(
+                        status_code=404,
+                        detail="Buyurtma topilmadi",
+                    )
+
+        return {
+            "ok": True,
+            "order": dict(row),
+        }
+
+    finally:
+        conn.close()
+
+
+# =========================================================
+# 23. RESELLCODES HISOBI
+# =========================================================
+
+@app.get("/supplier-account")
+async def supplier_account(
+    _: bool = Depends(require_admin),
+):
+    return reseller_request("/account")
+
+
+# =========================================================
+# 24. RESELLCODES PREMIUM NARXLARI
+# =========================================================
+
+@app.get("/supplier-premium-prices")
+async def supplier_premium_prices(
+    _: bool = Depends(require_admin),
+):
+    return reseller_request("/products/premium")
+
+
+# =========================================================
+# 25. PREMIUM TEST — XARID AMALGA OSHIRILMAYDI
+# =========================================================
+
+@app.post("/test-premium-buy")
+async def test_premium_buy(
+    data: PremiumTestRequest,
+):
+    username = clean_username(data.username)
+
+    if data.months not in (3, 6, 12):
+        raise HTTPException(
+            status_code=400,
+            detail="Faqat 3, 6 yoki 12 oylik Premium qo'llab-quvvatlanadi",
+        )
+
+    check = await check_telegram_username(username)
+
+    if not check.get("valid"):
+        raise HTTPException(
+            status_code=400,
+            detail=check.get(
+                "message",
+                "Username tekshirilmadi",
+            ),
+        )
+
+    # Bu endpoint faqat tekshiradi.
+    # Haqiqiy xaridni boshlamaydi.
+    return {
+        "ok": True,
+        "username": username,
+        "months": data.months,
+        "message": "Username tekshirildi. Test endpoint xarid qilmaydi.",
+    }
+
+
+# =========================================================
+# 26. DATABASE TEST
+# =========================================================
+
+@app.get("/database-test")
+async def database_test(
+    _: bool = Depends(require_admin),
+):
+    conn = get_db_connection()
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1 AS test")
+            result = cur.fetchone()
+
+        return {
+            "ok": result["test"] == 1,
+            "database": "connected",
+        }
+
+    finally:
+        conn.close()
+
+
+# =========================================================
+# 27. TO'G'RIDAN-TO'G'RI PREMIUM XARIDI
+# =========================================================
+
+@app.post("/api/buy-premium")
+async def api_buy_premium(
+    data: BuyPremiumRequest,
+):
+    require_body_admin_key(data.admin_key)
+
+    if not FRAGMENT_PURCHASES_ENABLED:
+        raise HTTPException(
+            status_code=503,
+            detail="Fragment xaridlari xavfsizlik sabab o'chirilgan",
+        )
+
+    username = clean_username(data.username)
+
+    if data.months not in (3, 6, 12):
+        raise HTTPException(
+            status_code=400,
+            detail="Faqat 3, 6 yoki 12 oy",
+        )
+
+    check = await check_telegram_username(username)
+
+    if not check.get("valid"):
+        raise HTTPException(
+            status_code=400,
+            detail=check.get(
+                "message",
+                "Username tekshirilmadi",
+            ),
+        )
+
+    try:
+        available = (
+            await fragment_api.check_premium_availability(
+                username,
+                data.months,
+            )
+        )
+
+        if not available:
+            raise HTTPException(
+                status_code=409,
+                detail="Premium mavjudligi tasdiqlanmadi",
+            )
+
+        result = await fragment_api.init_gift_request(
+            username,
+            data.months,
+        )
+
+        # SDK natijasi qanday bo'lishidan qat'i nazar,
+        # faqat SDK natijasini qaytaramiz.
+        # Mijoz buyurtmasi sifatida completed deb taxmin qilmaymiz.
+        return result
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logger.exception(
+            "To'g'ridan-to'g'ri Premium xaridida xatolik"
+        )
+
+        raise HTTPException(
+            status_code=502,
+            detail="Premium xarid so'rovi xatolik bilan yakunlandi",
+        )
+
+
+# =========================================================
+# 28. TO'G'RIDAN-TO'G'RI STARS XARIDI
+# =========================================================
+
+@app.post("/api/buy-stars")
+async def api_buy_stars(
+    data: BuyStarsRequest,
+):
+    require_body_admin_key(data.admin_key)
+
+    if not FRAGMENT_PURCHASES_ENABLED:
+        raise HTTPException(
+            status_code=503,
+            detail="Fragment xaridlari xavfsizlik sabab o'chirilgan",
+        )
+
+    username = clean_username(data.username)
+
+    if data.stars_amount not in STARS_PRICES:
+        raise HTTPException(
+            status_code=400,
+            detail="Stars paketi katalogda mavjud emas",
+        )
+
+    check = await check_telegram_username(username)
+
+    if not check.get("valid"):
+        raise HTTPException(
+            status_code=400,
+            detail=check.get(
+                "message",
+                "Username tekshirilmadi",
+            ),
+        )
+
+    try:
+        available = (
+            await fragment_api.check_stars_availability(
+                username,
+                data.stars_amount,
+            )
+        )
+
+        if not available:
+            raise HTTPException(
+                status_code=409,
+                detail="Stars mavjudligi tasdiqlanmadi",
+            )
+
+        result = await fragment_api.init_buy_stars(
+            username,
+            data.stars_amount,
+        )
+
+        return result
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        logger.exception(
+            "To'g'ridan-to'g'ri Stars xaridida xatolik"
+        )
+
+        raise HTTPException(
+            status_code=502,
+            detail="Stars xarid so'rovida xatolik",
+        )
+
+
+# =========================================================
+# 29. WALLET HOLATI — FAQAT ADMIN UCHUN
+# =========================================================
+
+@app.get("/api/wallet-info")
+async def api_wallet_info(
+    _: bool = Depends(require_admin),
+):
+    # Seed yoki maxfiy kalit hech qachon API orqali qaytarilmaydi.
+    return {
+        "ok": True,
+        "wallet_address_configured": bool(
+            os.getenv("WALLET_ADDRESS", "").strip()
+            or os.getenv("TON_ADDRESS", "").strip()
+        ),
+        "mnemonic_configured": bool(
+            os.getenv("MNEMONIC", "").strip()
+        ),
+        "purchases_enabled": FRAGMENT_PURCHASES_ENABLED,
+    }
+
+
+# =========================================================
+# 30. SDK WALLET TEKSHIRUVI — XAVFSIZLIK SABABLI O'CHIRILGAN
+# =========================================================
+
+@app.get("/api/check-sdk-wallet")
+async def api_check_sdk_wallet(
+    _: bool = Depends(require_admin),
+):
+    raise HTTPException(
+        status_code=410,
+        detail=(
+            "Bu endpoint xavfsizlik sabab o'chirilgan. "
+            "Seed yoki mnemonic uchinchi tomonga yuborilmasin."
+        ),
+    )
+
+
+# =========================================================
+# 31. WALLET TRANZAKSIYALARI UCHUN MOSLIK ALIASI
+# =========================================================
+
+@app.get("/api/wallet-transactions")
+async def wallet_transactions_alias(
+    user_id: int = Query(gt=0),
+    limit: int = Query(default=20, ge=1, le=100),
+):
+    return await wallet_transactions(
+        user_id=user_id,
+        limit=limit,
+    )
+
+
+# =========================================================
+# SERVER KODI TUGADI
+# =========================================================
+        
