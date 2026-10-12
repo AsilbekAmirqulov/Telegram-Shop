@@ -1,102 +1,60 @@
+
 import os
 import asyncio
 import inspect
 import re
+from decimal import Decimal, InvalidOperation
 
 from fragment_api import FragmentAPI
 
 
 class FragmentService:
     """
-    Fragment API bilan xavfsiz ishlash uchun wrapper.
+    Telegram Shop uchun Fragment API wrapper.
 
     Xavfsizlik:
-    - Seed/mnemonic hech qachon logga chiqarilmaydi.
-    - Xom API javobi logga chiqarilmaydi.
-    - MNEMONIC bo'lmasa, xarid boshlanmaydi.
+    - Availability tekshiruvlariga mnemonic uzatilmaydi.
+    - Xom API javoblari va maxfiy ma'lumotlar log qilinmaydi.
     - Xaridlar standart holatda o'chirilgan.
+    - Xaridni yoqishdan oldin tashqi API seed xavfsizligi tekshirilishi kerak.
     """
 
-    SAFE_ERROR_CODES = {
-        "TOP_UP_REQUIRED",
-        "WALLET_SELECTION_REQUIRED",
-        "INVALID_BIP39_SEED",
-        "INVALID_WALLET_ADDRESS",
-        "INVALID_ACCOUNT_INDEX",
-        "WALLET_ADDRESS_MISMATCH",
-        "WALLET_INDEX_NOT_FOUND",
-        "WALLET_RESOLVER_BUSY",
-        "RECIPIENT_NOT_FOUND",
-        "RECIPIENT_INELIGIBLE",
-        "PREMIUM_ALREADY_ACTIVE",
-        "PAYMENT_METHOD_UNAVAILABLE",
-        "PURCHASE_FAILED",
-        "INVALID_AMOUNT",
-        "RATE_LIMITED",
-        "SERVICE_UNAVAILABLE",
+    USERNAME_RE = re.compile(r"^[A-Za-z0-9_]{5,32}$")
+
+    TERMINAL_SUCCESS = {"completed", "success", "paid"}
+    TERMINAL_FAILURE = {
+        "failed",
+        "cancelled",
+        "canceled",
+        "reconciliation_required",
     }
 
     def __init__(self):
         self.mnemonic = os.getenv("MNEMONIC", "").strip()
-
-        # Zaxira yoki tasodifiy hardcoded manzil ishlatilmaydi.
         self.wallet_address = (
             os.getenv("WALLET_ADDRESS")
             or os.getenv("TON_ADDRESS")
             or ""
         ).strip()
-
         self.api = FragmentAPI()
 
     # --------------------------------------------------
-    # XAVFSIZ YORDAMCHI FUNKSIYALAR
+    # YORDAMCHI FUNKSIYALAR
     # --------------------------------------------------
 
     @staticmethod
     def _field(obj, name, default=None):
         if isinstance(obj, dict):
             return obj.get(name, default)
-
         return getattr(obj, name, default)
 
-    @classmethod
-    def _extract_error_code(cls, obj):
-        """
-        Faqat tanilgan xato kodlarini ajratadi.
-        Xato matnini to'liq logga chiqarmaydi.
-        """
-        if obj is None:
-            return None
-
-        if isinstance(obj, dict):
-            candidate = obj.get("code")
-        else:
-            candidate = getattr(obj, "code", None)
-
-        if (
-            isinstance(candidate, str)
-            and candidate in cls.SAFE_ERROR_CODES
-        ):
-            return candidate
-
-        # Ba'zi SDK xatoni dict o'rniga satr ko'rinishida qaytarishi mumkin.
-        if isinstance(obj, str):
-            for code in cls.SAFE_ERROR_CODES:
-                if code in obj:
-                    return code
-
-        return None
-
     @staticmethod
-    def _safe_text(value, max_length=80):
-        """
-        Log uchun faqat sodda identifikator/statuslarni qabul qiladi.
-        Arbitrary obyekt repr() qilinmaydi.
-        """
+    def _safe_text(value, limit=120):
         if not isinstance(value, str):
             return None
 
-        if len(value) > max_length:
+        value = value.strip()
+        if not value or len(value) > limit:
             return None
 
         if not re.fullmatch(r"[A-Za-z0-9_.:-]+", value):
@@ -105,127 +63,319 @@ class FragmentService:
         return value
 
     @staticmethod
-    def _safe_number(value):
-        """
-        Faqat oddiy raqam yoki raqam ko'rinishidagi satr.
-        """
-        if isinstance(value, bool):
+    def _safe_decimal(value):
+        if isinstance(value, bool) or value is None:
             return None
 
-        if isinstance(value, (int, float)):
-            return value
+        try:
+            number = Decimal(str(value))
+            if not number.is_finite() or number < 0:
+                return None
+            return str(number)
+        except (InvalidOperation, ValueError, TypeError):
+            return None
 
-        if isinstance(value, str):
-            if re.fullmatch(r"\d{1,18}(?:\.\d{1,18})?", value):
-                return value
+    @staticmethod
+    def _normalize_username(username):
+        if not isinstance(username, str):
+            return None
 
-        return None
+        username = username.strip()
+        if username.startswith("@"):
+            username = username[1:]
 
-    @classmethod
-    def _public_error_message(cls, code):
-        messages = {
-            "TOP_UP_REQUIRED": (
-                "Hamyon mablag'i xarid va tarmoq xarajatlari uchun "
-                "yetarli emas deb topildi. Aniq yetishmayotgan summa "
-                "API javobida mavjud emas."
-            ),
-            "WALLET_SELECTION_REQUIRED": (
-                "Wallet manzili yoki account index talab qilinadi."
-            ),
-            "INVALID_WALLET_ADDRESS": "Wallet manzili noto'g'ri.",
-            "INVALID_ACCOUNT_INDEX": "Account index noto'g'ri.",
-            "WALLET_ADDRESS_MISMATCH": (
-                "Tanlangan wallet manzili mos kelmadi."
-            ),
-            "RECIPIENT_NOT_FOUND": "Telegram recipient topilmadi.",
-            "RECIPIENT_INELIGIBLE": (
-                "Recipient ushbu xarid uchun mos emas."
-            ),
-            "PAYMENT_METHOD_UNAVAILABLE": (
-                "Ushbu to'lov usuli hozir mavjud emas."
-            ),
-        }
+        if not FragmentService.USERNAME_RE.fullmatch(username):
+            return None
 
-        return messages.get(
-            code,
-            "Xarid so'rovi bajarilmadi. Xavfsiz logdagi kodni tekshiring."
+        return "@" + username
+
+    @staticmethod
+    async def _run_sync_or_async(fn, *args, **kwargs):
+        if inspect.iscoroutinefunction(fn):
+            return await fn(*args, **kwargs)
+
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(
+            None,
+            lambda: fn(*args, **kwargs),
         )
 
-    def _log_safe_response(self, method_name, response):
+        # Ba'zi wrapperlar oddiy funksiya ichidan coroutine qaytarishi mumkin.
+        if inspect.isawaitable(result):
+            return await result
+
+        return result
+
+    @staticmethod
+    def _safe_error_code(exc):
         """
-        Faqat ruxsat etilgan xavfsiz maydonlarni chiqaradi.
-        Seed, mnemonic, username va xom response chiqarilmaydi.
+        Exception matni log qilinmaydi.
+        Faqat oddiy, oldindan cheklangan kod qaytariladi.
         """
-        error_obj = self._field(response, "error")
-        error_code = (
-            self._extract_error_code(error_obj)
-            or self._extract_error_code(response)
-        )
+        code = getattr(exc, "code", None)
 
-        summary = {
-            "method": method_name,
-            "status": self._safe_text(
-                self._field(response, "status")
-            ),
-            "purchase_id": self._safe_text(
-                self._field(response, "purchase_id")
-                or self._field(response, "request_id")
-                or self._field(response, "id")
-            ),
-            "amount": self._safe_number(
-                self._field(response, "amount")
-            ),
-            "price": self._safe_number(
-                self._field(response, "price")
-            ),
-            "fee": self._safe_number(
-                self._field(response, "fee")
-            ),
-            "error_code": error_code,
-        }
+        if isinstance(code, str) and re.fullmatch(
+            r"[A-Z][A-Z0-9_]{1,60}", code
+        ):
+            return code
 
-        print("[SAFE LOG] Fragment response:", summary)
-
-        return summary
+        return "API_REQUEST_FAILED"
 
     # --------------------------------------------------
-    # XARIDNI XAVFSIZLIK NUQTAYI NAZARIDAN TEKSHIRISH
+    # SDK METODINI XAVFSIZ CHAQRISH
+    # --------------------------------------------------
+
+    async def _invoke_checked(self, method_name, values):
+        """
+        SDK metodining parametrlarini inspect orqali aniqlaydi.
+        Parametrlar noma'lum bo'lsa, taxminiy positional argument
+        yubormaydi.
+        """
+        method = getattr(self.api, method_name, None)
+
+        if not callable(method):
+            return {
+                "ok": False,
+                "available": False,
+                "code": "METHOD_NOT_FOUND",
+                "error": "SDK da mavjudlik tekshiruv metodi topilmadi.",
+            }
+
+        try:
+            signature = inspect.signature(method)
+            parameters = signature.parameters
+
+            kwargs = {}
+            unresolved = []
+
+            for name, parameter in parameters.items():
+                if parameter.kind in (
+                    inspect.Parameter.VAR_POSITIONAL,
+                    inspect.Parameter.VAR_KEYWORD,
+                ):
+                    continue
+
+                if name in values:
+                    kwargs[name] = values[name]
+                elif parameter.default is inspect.Parameter.empty:
+                    unresolved.append(name)
+
+            if unresolved:
+                return {
+                    "ok": False,
+                    "available": False,
+                    "code": "SDK_SIGNATURE_UNSUPPORTED",
+                    "error": (
+                        "SDK parametrlari kutilgan shaklda emas. "
+                        "SDK metod imzosini tekshirish kerak."
+                    ),
+                }
+
+            result = await self._run_sync_or_async(
+                method,
+                **kwargs,
+            )
+
+            return self._parse_availability(result)
+
+        except Exception as exc:
+            print(
+                "[Fragment] Availability request failed:",
+                {
+                    "method": method_name,
+                    "exception_type": type(exc).__name__,
+                    "code": self._safe_error_code(exc),
+                },
+            )
+
+            return {
+                "ok": False,
+                "available": False,
+                "code": "AVAILABILITY_CHECK_FAILED",
+                "error": (
+                    "Mavjudlikni tekshirish bajarilmadi. "
+                    "To'lovni hozircha davom ettirmang."
+                ),
+            }
+
+    def _parse_availability(self, result):
+        """
+        SDK javobidan faqat kerakli maydonlarni oladi.
+        Noma'lum javobni avtomatik ravishda available deb qabul qilmaydi.
+        """
+        available = self._field(result, "available")
+
+        if not isinstance(available, bool):
+            available = self._field(result, "is_available")
+
+        if not isinstance(available, bool):
+            available = self._field(result, "eligible")
+
+        if not isinstance(available, bool):
+            available = None
+
+        status = self._field(result, "status")
+        code = self._field(result, "code")
+        price = self._field(result, "price")
+
+        safe_status = self._safe_text(status)
+        safe_code = self._safe_text(code)
+        safe_price = self._safe_decimal(price)
+
+        if available is None:
+            return {
+                "ok": False,
+                "available": False,
+                "code": "UNKNOWN_AVAILABILITY_RESPONSE",
+                "status": safe_status,
+                "error": (
+                    "SDK javobida mavjudlik aniq tasdiqlanmadi. "
+                    "Xaridga ruxsat berilmadi."
+                ),
+            }
+
+        return {
+            "ok": True,
+            "available": available,
+            "code": safe_code,
+            "status": safe_status,
+            "price": safe_price,
+            "message": (
+                "Xizmat mavjud."
+                if available
+                else "Xizmat hozir mavjud emas."
+            ),
+        }
+
+    # --------------------------------------------------
+    # STARS MAVJUDLIGINI TEKSHIRISH
+    # MNEMONIC BU METODGA UZATILMAYDI
+    # --------------------------------------------------
+
+    async def check_stars_availability(
+        self,
+        username: str,
+        stars_amount: int,
+    ):
+        clean_username = self._normalize_username(username)
+
+        if not clean_username:
+            return {
+                "ok": False,
+                "available": False,
+                "code": "INVALID_USERNAME",
+                "error": "Telegram username noto'g'ri.",
+            }
+
+        if (
+            isinstance(stars_amount, bool)
+            or not isinstance(stars_amount, int)
+            or not 50 <= stars_amount <= 1_000_000
+        ):
+            return {
+                "ok": False,
+                "available": False,
+                "code": "INVALID_AMOUNT",
+                "error": "Stars miqdori noto'g'ri.",
+            }
+
+        return await self._invoke_checked(
+            "check_stars_availability",
+            {
+                "username": clean_username,
+                "amount": stars_amount,
+                "stars_amount": stars_amount,
+                "payment_method": "gram",
+            },
+        )
+
+    # --------------------------------------------------
+    # PREMIUM MAVJUDLIGINI TEKSHIRISH
+    # MNEMONIC BU METODGA UZATILMAYDI
+    # --------------------------------------------------
+
+    async def check_premium_availability(
+        self,
+        username: str,
+        months: int,
+    ):
+        clean_username = self._normalize_username(username)
+
+        if not clean_username:
+            return {
+                "ok": False,
+                "available": False,
+                "code": "INVALID_USERNAME",
+                "error": "Telegram username noto'g'ri.",
+            }
+
+        if (
+            isinstance(months, bool)
+            or not isinstance(months, int)
+            or months not in (3, 6, 12)
+        ):
+            return {
+                "ok": False,
+                "available": False,
+                "code": "INVALID_DURATION",
+                "error": "Premium muddati 3, 6 yoki 12 oy bo'lishi kerak.",
+            }
+
+        return await self._invoke_checked(
+            "check_premium_availability",
+            {
+                "username": clean_username,
+                "months": months,
+                "payment_method": "gram",
+            },
+        )
+
+    # --------------------------------------------------
+    # XARID UCHUN XAVFSIZLIK TEKSHIRUVI
+    # STANDART HOLATDA XARID O'CHIRILGAN
     # --------------------------------------------------
 
     def _purchase_guard(self):
-        """
-        Standart holatda xaridni bloklaydi.
+        purchases_enabled = (
+            os.getenv("FRAGMENT_PURCHASES_ENABLED", "false")
+            .strip()
+            .lower()
+            == "true"
+        )
 
-        Uchinchi tomon SDK xizmatiga seed uzatilishini anglagan,
-        alohida ruxsat bermagan foydalanuvchi uchun xarid ochilmaydi.
-        """
+        seed_submission_allowed = (
+            os.getenv("ALLOW_THIRD_PARTY_SEED_SUBMISSION", "false")
+            .strip()
+            .lower()
+            == "true"
+        )
+
+        if not purchases_enabled:
+            return {
+                "ok": False,
+                "code": "PURCHASES_DISABLED",
+                "error": (
+                    "Fragment xaridlari vaqtincha o'chirilgan. "
+                    "Avval integratsiya tekshirilishi kerak."
+                ),
+            }
+
+        if not seed_submission_allowed:
+            return {
+                "ok": False,
+                "code": "EXTERNAL_SEED_SUBMISSION_DISABLED",
+                "error": (
+                    "SDK seed ma'lumotini tashqi API ga yuborishi "
+                    "mumkin. Xavfsizlik tasdiqlanmagani uchun "
+                    "xarid boshlanmadi."
+                ),
+            }
+
         if not self.mnemonic:
             return {
                 "ok": False,
                 "code": "MNEMONIC_MISSING",
-                "error": (
-                    "MNEMONIC sozlamasi mavjud emas. "
-                    "Xavfsizlik uchun xarid boshlanmadi."
-                ),
-            }
-
-        # Faqat ongli ravishda yoqilsa davom etadi.
-        allow_external_seed = (
-            os.getenv(
-                "ALLOW_THIRD_PARTY_SEED_SUBMISSION",
-                "false"
-            ).strip().lower() == "true"
-        )
-
-        if not allow_external_seed:
-            return {
-                "ok": False,
-                "code": "PURCHASE_DISABLED",
-                "error": (
-                    "Xarid vaqtincha o'chirilgan. "
-                    "SDK seed ma'lumotini tashqi API xizmatiga uzatishi "
-                    "mumkin; xavfsizlik tekshiruvisiz davom etilmadi."
-                ),
+                "error": "MNEMONIC sozlanmagan. Xarid boshlanmadi.",
             }
 
         words = self.mnemonic.split()
@@ -234,34 +384,23 @@ class FragmentService:
             return {
                 "ok": False,
                 "code": "INVALID_SEED_WORD_COUNT",
-                "error": (
-                    "Mnemonic uzunligi 12 yoki 24 so'z bo'lishi kerak."
-                ),
+                "error": "Mnemonic uzunligi noto'g'ri.",
             }
 
         if len(words) == 12 and not self.wallet_address:
             return {
                 "ok": False,
                 "code": "WALLET_ADDRESS_MISSING",
-                "error": (
-                    "12 so'zli wallet uchun WALLET_ADDRESS "
-                    "yoki TON_ADDRESS talab qilinadi."
-                ),
+                "error": "Wallet manzili sozlanmagan.",
             }
 
         return None
 
     def _get_auth_params(self):
-        """
-        12 so'zli seed uchun wallet_address orqali wallet tanlanadi.
-        Account index oldindan tasdiqlanmagan bo'lsa, 0 deb taxmin qilinmaydi.
-        """
         words = self.mnemonic.split()
 
         if len(words) == 24:
-            return {
-                "seed": self.mnemonic,
-            }
+            return {"seed": self.mnemonic}
 
         if len(words) == 12:
             return {
@@ -271,337 +410,192 @@ class FragmentService:
 
         raise ValueError("INVALID_SEED_WORD_COUNT")
 
-    async def _run_sync_or_async(self, fn, *args, **kwargs):
-        if inspect.iscoroutinefunction(fn):
-            return await fn(*args, **kwargs)
-
-        loop = asyncio.get_running_loop()
-
-        return await loop.run_in_executor(
-            None,
-            lambda: fn(*args, **kwargs)
-        )
-
     # --------------------------------------------------
-    # FRAGMENT API CHAQIRISHI
+    # XARID API METODINI CHAQRISH
     # --------------------------------------------------
 
-    async def _call_api_method(self, method_name: str, **kwargs):
-        if not hasattr(self.api, method_name):
+    async def _purchase(self, method_name, **kwargs):
+        guard_error = self._purchase_guard()
+
+        if guard_error:
+            return guard_error
+
+        method = getattr(self.api, method_name, None)
+
+        if not callable(method):
             return {
                 "ok": False,
                 "code": "METHOD_NOT_FOUND",
-                "error": (
-                    f"FragmentAPI da '{method_name}' metodi topilmadi."
-                ),
+                "error": "SDK xarid metodi topilmadi.",
             }
-
-        fn = getattr(self.api, method_name)
 
         try:
-            response = await self._run_sync_or_async(
-                fn,
-                **kwargs
+            # Diqqat: SDK seedni tashqi serverga yuborishi mumkin.
+            result = await self._run_sync_or_async(
+                method,
+                **kwargs,
             )
 
-        except Exception as exc:
-            # Exception matni yoki repr(exc) chiqarilmaydi.
-            error_code = self._extract_error_code(exc)
-
-            retry_after = self._safe_number(
-                getattr(exc, "retry_after", None)
+            status = self._field(result, "status")
+            purchase_id = (
+                self._field(result, "purchase_id")
+                or self._field(result, "request_id")
+                or self._field(result, "id")
             )
+            tx_hash = (
+                self._field(result, "transaction_hash")
+                or self._field(result, "tx_hash")
+                or self._field(result, "hash")
+            )
+
+            safe_status = self._safe_text(status)
+            safe_purchase_id = self._safe_text(purchase_id)
+            safe_tx_hash = self._safe_text(tx_hash, 180)
 
             print(
-                "[SAFE LOG] API exception:",
+                "[Fragment] Purchase response:",
                 {
                     "method": method_name,
-                    "exception_type": type(exc).__name__,
-                    "error_code": error_code,
-                    "retry_after": retry_after,
-                }
+                    "status": safe_status,
+                    "purchase_id": safe_purchase_id,
+                    "has_tx_hash": bool(safe_tx_hash),
+                },
             )
 
-            return {
-                "ok": False,
-                "code": error_code or "API_EXCEPTION",
-                "error": self._public_error_message(error_code),
-            }
+            if safe_status and safe_status.lower() in self.TERMINAL_FAILURE:
+                return {
+                    "ok": False,
+                    "code": "PURCHASE_FAILED",
+                    "status": safe_status,
+                    "purchase_id": safe_purchase_id,
+                    "error": "Xarid muvaffaqiyatsiz yakunlandi.",
+                }
 
-        summary = self._log_safe_response(
-            method_name,
-            response
-        )
-
-        purchase_id = (
-            self._field(response, "purchase_id")
-            or self._field(response, "request_id")
-            or self._field(response, "id")
-        )
-
-        status = self._field(response, "status")
-
-        tx_hash = (
-            self._field(response, "transaction_hash")
-            or self._field(response, "tx_hash")
-            or self._field(response, "hash")
-        )
-
-        error_obj = self._field(response, "error")
-
-        error_code = (
-            self._extract_error_code(error_obj)
-            or self._extract_error_code(response)
-        )
-
-        if error_code:
-            return {
-                "ok": False,
-                "code": error_code,
-                "error": self._public_error_message(error_code),
-            }
-
-        # SDK taqdim etsa, rasmiy wait() metodidan foydalanamiz.
-        terminal_success = {
-            "completed",
-            "success",
-            "paid",
-        }
-
-        terminal_failure = {
-            "failed",
-            "cancelled",
-            "reconciliation_required",
-        }
-
-        status_text = (
-            status.lower()
-            if isinstance(status, str)
-            else ""
-        )
-
-        if (
-            purchase_id
-            and not tx_hash
-            and status_text not in terminal_success
-            and status_text not in terminal_failure
-        ):
-            wait_fn = getattr(self.api, "wait", None)
-
-            if wait_fn:
-                try:
-                    final_result = await self._run_sync_or_async(
-                        wait_fn,
-                        purchase_id
-                    )
-
-                except Exception as exc:
-                    error_code = self._extract_error_code(exc)
-
-                    print(
-                        "[SAFE LOG] Purchase wait exception:",
-                        {
-                            "exception_type": type(exc).__name__,
-                            "error_code": error_code,
-                        }
-                    )
-
-                    return {
-                        "ok": False,
-                        "code": error_code or "WAIT_EXCEPTION",
-                        "purchase_id": purchase_id,
-                        "error": self._public_error_message(error_code),
-                    }
-
-                self._log_safe_response(
-                    "wait",
-                    final_result
-                )
-
-                final_status = self._field(
-                    final_result,
-                    "status"
-                )
-
-                final_status_text = (
-                    final_status.lower()
-                    if isinstance(final_status, str)
-                    else ""
-                )
-
-                final_tx_hash = (
-                    self._field(final_result, "transaction_hash")
-                    or self._field(final_result, "tx_hash")
-                    or self._field(final_result, "hash")
-                )
-
-                final_error_obj = self._field(
-                    final_result,
-                    "error"
-                )
-
-                final_error_code = (
-                    self._extract_error_code(final_error_obj)
-                    or self._extract_error_code(final_result)
-                )
-
-                if final_error_code:
-                    return {
-                        "ok": False,
-                        "code": final_error_code,
-                        "purchase_id": purchase_id,
-                        "error": self._public_error_message(
-                            final_error_code
-                        ),
-                    }
-
-                if (
-                    final_status_text in terminal_success
-                    or final_tx_hash
-                ):
-                    return {
-                        "ok": True,
-                        "status": final_status_text or "completed",
-                        "purchase_id": purchase_id,
-                        "tx_hash": final_tx_hash,
-                        "message": (
-                            "SDK xaridni muvaffaqiyatli deb qaytardi. "
-                            "Telegram balansini alohida tasdiqlang."
-                        ),
-                    }
-
-                if final_status_text in terminal_failure:
-                    return {
-                        "ok": False,
-                        "status": final_status_text,
-                        "purchase_id": purchase_id,
-                        "error": (
-                            "Xarid muvaffaqiyatsiz yakunlandi. "
-                            "Qo'shimcha xaridni qayta boshlamang; "
-                            "avval holatni tekshiring."
-                        ),
-                    }
-
+            if (
+                safe_status
+                and safe_status.lower() in self.TERMINAL_SUCCESS
+            ) or safe_tx_hash:
                 return {
                     "ok": True,
-                    "status": final_status_text or "processing",
-                    "purchase_id": purchase_id,
+                    "status": safe_status or "completed",
+                    "purchase_id": safe_purchase_id,
+                    "tx_hash": safe_tx_hash,
                     "message": (
-                        "Xarid hali yakuniy holatga yetmagan."
+                        "SDK muvaffaqiyat holatini qaytardi. "
+                        "Yetkazib berishni alohida tasdiqlash kerak."
                     ),
                 }
 
-        if status_text in terminal_success or tx_hash:
+            if safe_purchase_id:
+                return {
+                    "ok": True,
+                    "status": safe_status or "processing",
+                    "purchase_id": safe_purchase_id,
+                    "message": (
+                        "So'rov qabul qilindi; yakuniy natija "
+                        "hali tasdiqlanmagan."
+                    ),
+                }
+
             return {
-                "ok": True,
-                "status": status_text or "completed",
-                "purchase_id": purchase_id,
-                "tx_hash": tx_hash,
-                "message": (
-                    "SDK xaridni muvaffaqiyatli deb qaytardi. "
-                    "Telegram balansini alohida tasdiqlang."
+                "ok": False,
+                "code": "UNKNOWN_PURCHASE_RESPONSE",
+                "error": (
+                    "SDK xaridning yakuniy holatini bermadi. "
+                    "Takroriy xarid boshlamang; holatni tekshiring."
                 ),
             }
 
-        if status_text in terminal_failure:
+        except Exception as exc:
+            print(
+                "[Fragment] Purchase request failed:",
+                {
+                    "method": method_name,
+                    "exception_type": type(exc).__name__,
+                    "code": self._safe_error_code(exc),
+                },
+            )
+
             return {
                 "ok": False,
-                "status": status_text,
-                "error": "Xarid muvaffaqiyatsiz yakunlandi.",
+                "code": self._safe_error_code(exc),
+                "error": (
+                    "Xarid natijasini aniqlab bo'lmadi. "
+                    "Balansdan pul yechish yoki qayta urinishdan "
+                    "oldin buyurtma holatini tekshiring."
+                ),
             }
-
-        if purchase_id:
-            return {
-                "ok": True,
-                "status": status_text or "processing",
-                "purchase_id": purchase_id,
-                "message": "Xarid so'rovi qabul qilindi.",
-            }
-
-        return {
-            "ok": False,
-            "code": "UNKNOWN_API_RESPONSE",
-            "error": (
-                "API yakuniy natijani yoki purchase ID ni bermadi."
-            ),
-        }
 
     # --------------------------------------------------
-    # STARS
+    # STARS XARIDI
     # --------------------------------------------------
 
     async def init_buy_stars(
         self,
         username: str,
-        stars_amount: int
+        stars_amount: int,
     ):
-        guard_error = self._purchase_guard()
+        clean_username = self._normalize_username(username)
 
-        if guard_error:
-            return guard_error
-
-        clean_username = username.strip()
-
-        if not clean_username.startswith("@"):
-            clean_username = f"@{clean_username}"
+        if not clean_username:
+            return {
+                "ok": False,
+                "code": "INVALID_USERNAME",
+                "error": "Telegram username noto'g'ri.",
+            }
 
         if (
             isinstance(stars_amount, bool)
             or not isinstance(stars_amount, int)
-            or stars_amount < 50
+            or not 50 <= stars_amount <= 1_000_000
         ):
             return {
                 "ok": False,
                 "code": "INVALID_AMOUNT",
-                "error": "Stars miqdori kamida 50 bo'lishi kerak.",
+                "error": "Stars miqdori noto'g'ri.",
             }
 
-        call_kwargs = {
-            "username": clean_username,
-            "amount": stars_amount,
-            "payment_method": "gram",
-            **self._get_auth_params(),
-        }
-
-        return await self._call_api_method(
+        return await self._purchase(
             "buy_stars",
-            **call_kwargs
+            username=clean_username,
+            amount=stars_amount,
+            payment_method="gram",
+            **self._get_auth_params(),
         )
 
     # --------------------------------------------------
-    # PREMIUM
+    # PREMIUM XARIDI
     # --------------------------------------------------
 
     async def init_gift_request(
         self,
         username: str,
-        months: int
+        months: int,
     ):
-        guard_error = self._purchase_guard()
+        clean_username = self._normalize_username(username)
 
-        if guard_error:
-            return guard_error
+        if not clean_username:
+            return {
+                "ok": False,
+                "code": "INVALID_USERNAME",
+                "error": "Telegram username noto'g'ri.",
+            }
 
-        clean_username = username.strip()
-
-        if not clean_username.startswith("@"):
-            clean_username = f"@{clean_username}"
-
-        if months not in (3, 6, 12):
+        if (
+            isinstance(months, bool)
+            or not isinstance(months, int)
+            or months not in (3, 6, 12)
+        ):
             return {
                 "ok": False,
                 "code": "INVALID_DURATION",
                 "error": "Premium muddati 3, 6 yoki 12 oy bo'lishi kerak.",
             }
 
-        call_kwargs = {
-            "username": clean_username,
-            "months": months,
-            "payment_method": "gram",
-            **self._get_auth_params(),
-        }
-
-        return await self._call_api_method(
+        return await self._purchase(
             "buy_premium",
-            **call_kwargs
+            username=clean_username,
+            months=months,
+            payment_method="gram",
+            **self._get_auth_params(),
         )
