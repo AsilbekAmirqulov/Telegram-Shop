@@ -1579,3 +1579,32 @@ async def wallet_transactions_alias(
 # =========================================================
 # SERVER KODI TUGADI
 # =========================================================
+# ==========================================
+# SDK SOURCE AUDIT (DEBUG)
+# ==========================================
+@app.get("/api/inspect-sdk")
+def inspect_sdk():
+    try:
+        import inspect
+        from fragment_api import FragmentAPI
+
+        stars_code = ""
+        premium_code = ""
+
+        try:
+            stars_code = inspect.getsource(FragmentAPI.buy_stars)
+        except Exception as e1:
+            stars_code = f"Error reading buy_stars: {e1}"
+
+        try:
+            premium_code = inspect.getsource(FragmentAPI.buy_premium)
+        except Exception as e2:
+            premium_code = f"Error reading buy_premium: {e2}"
+
+        return {
+            "ok": True,
+            "buy_stars_code": stars_code,
+            "buy_premium_code": premium_code
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
