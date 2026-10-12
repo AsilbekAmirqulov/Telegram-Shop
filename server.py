@@ -659,7 +659,39 @@ async def info():
 
 
 # =========================================================
-# 14. TELEGRAM USERNAME TEKSHIRISH
+# 14. KATALOG VA NARXLAR (SWAGGER VA FRONTEND UCHUN)
+# =========================================================
+
+@app.get("/catalog/stars")
+async def get_stars_catalog():
+    """
+    Swagger va Frontend uchun mavjud barcha Stars paketlari va ularning narxlarini qaytaradi.
+    """
+    return {
+        "ok": True,
+        "packages": [
+            {"stars": stars, "price_sum": price}
+            for stars, price in STARS_PRICES.items()
+        ],
+    }
+
+
+@app.get("/catalog/premium")
+async def get_premium_catalog():
+    """
+    Swagger va Frontend uchun mavjud barcha Premium muddatlari va ularning narxlarini qaytaradi.
+    """
+    return {
+        "ok": True,
+        "packages": [
+            {"months": months, "price_sum": price}
+            for months, price in PREMIUM_PRICES.items()
+        ],
+    }
+
+
+# =========================================================
+# 15. TELEGRAM USERNAME TEKSHIRISH
 # =========================================================
 
 @app.get("/check-username")
@@ -673,7 +705,7 @@ async def check_username(
 
 
 # =========================================================
-# 15. FOYDALANUVCHI BALANSI
+# 16. FOYDALANUVCHI BALANSI
 # =========================================================
 
 @app.get("/balance")
@@ -701,7 +733,7 @@ async def balance(
 
 
 # =========================================================
-# 16. BALANS TRANZAKSIYALARI
+# 17. BALANS TRANZAKSIYALARI
 # =========================================================
 
 @app.get("/wallet/transactions")
@@ -743,7 +775,7 @@ async def wallet_transactions(
 
 
 # =========================================================
-# 17. ADMIN FOYDALANUVCHI BALANSINI TO'LDIRISHI
+# 18. ADMIN FOYDALANUVCHI BALANSINI TO'LDIRISHI
 # =========================================================
 
 @app.post("/admin/add-balance")
@@ -809,7 +841,7 @@ async def admin_add_balance(
 
 
 # =========================================================
-# 18. REFERAL RO'YXATDAN O'TKAZISH
+# 19. REFERAL RO'YXATDAN O'TKAZISH
 # =========================================================
 
 @app.post("/referral")
@@ -857,7 +889,7 @@ async def add_referral(
 
 
 # =========================================================
-# 19. YANGI BUYURTMA YARATISH
+# 20. YANGI BUYURTMA YARATISH
 # =========================================================
 
 @app.post("/create-order")
@@ -1127,7 +1159,7 @@ async def create_order(
 
 
 # =========================================================
-# 20. FOYDALANUVCHINING BUYURTMALARI
+# 21. FOYDALANUVCHINING BUYURTMALARI
 # =========================================================
 
 @app.get("/my-orders")
@@ -1173,7 +1205,7 @@ async def my_orders(
 
 
 # =========================================================
-# 21. ADMIN BARCHA BUYURTMALARNI KO'RISHI
+# 22. ADMIN BARCHA BUYURTMALARNI KO'RISHI
 # =========================================================
 
 @app.get("/orders")
@@ -1218,7 +1250,7 @@ async def all_orders(
 
 
 # =========================================================
-# 22. ADMIN BUYURTMA STATUSINI O'ZGARTIRISHI
+# 23. ADMIN BUYURTMA STATUSINI O'ZGARTIRISHI
 # =========================================================
 
 @app.patch("/orders/{order_id}/status")
@@ -1278,7 +1310,7 @@ async def update_order_status(
 
 
 # =========================================================
-# 23. RESELLCODES HISOBI
+# 24. RESELLCODES HISOBI
 # =========================================================
 
 @app.get("/supplier-account")
@@ -1289,7 +1321,7 @@ async def supplier_account(
 
 
 # =========================================================
-# 24. RESELLCODES PREMIUM NARXLARI
+# 25. RESELLCODES PREMIUM NARXLARI
 # =========================================================
 
 @app.get("/supplier-premium-prices")
@@ -1300,7 +1332,7 @@ async def supplier_premium_prices(
 
 
 # =========================================================
-# 25. PREMIUM TEST — XARID AMALGA OSHIRILMAYDI
+# 26. PREMIUM TEST — XARID AMALGA OSHIRILMAYDI
 # =========================================================
 
 @app.post("/test-premium-buy")
@@ -1330,12 +1362,12 @@ async def test_premium_buy(
         "ok": True,
         "username": username,
         "months": data.months,
-        "message": "Username tekshirildi. Test endpoint xarid qilmaydi.",
+        "message": "Username tekshildi. Test endpoint xarid qilmaydi.",
     }
 
 
 # =========================================================
-# 26. DATABASE TEST
+# 27. DATABASE TEST
 # =========================================================
 
 @app.get("/database-test")
@@ -1359,7 +1391,7 @@ async def database_test(
 
 
 # =========================================================
-# 27. TO'G'RIDAN-TO'G'RI PREMIUM XARIDI
+# 28. TO'G'RIDAN-TO'G'RI PREMIUM XARIDI
 # =========================================================
 
 @app.post("/api/buy-premium")
@@ -1429,7 +1461,7 @@ async def api_buy_premium(
 
 
 # =========================================================
-# 28. TO'G'RIDAN-TO'G'RI STARS XARIDI
+# 29. TO'G'RIDAN-TO'G'RI STARS XARIDI
 # =========================================================
 
 @app.post("/api/buy-stars")
@@ -1499,7 +1531,7 @@ async def api_buy_stars(
 
 
 # =========================================================
-# 29. WALLET HOLATI — FAQAT ADMIN UCHUN
+# 30. WALLET HOLATI — FAQAT ADMIN UCHUN
 # =========================================================
 
 @app.get("/api/wallet-info")
@@ -1520,7 +1552,7 @@ async def api_wallet_info(
 
 
 # =========================================================
-# 30. SDK WALLET TEKSHIRUVI — XAVFSIZLIK SABABLI O'CHIRILGAN
+# 31. SDK WALLET TEKSHIRUVI — XAVFSIZLIK SABABLI O'CHIRILGAN
 # =========================================================
 
 @app.get("/api/check-sdk-wallet")
@@ -1537,7 +1569,7 @@ async def api_check_sdk_wallet(
 
 
 # =========================================================
-# 31. WALLET TRANZAKSIYALARI UCHUN MOSLIK ALIASI
+# 32. WALLET TRANZAKSIYALARI UCHUN MOSLIK ALIASI
 # =========================================================
 
 @app.get("/api/wallet-transactions")
@@ -1549,42 +1581,3 @@ async def wallet_transactions_alias(
         user_id=user_id,
         limit=limit,
     )
-
-
-# =========================================================
-# 32. SDK SOURCE AUDIT (DEBUG)
-# =========================================================
-
-@app.get("/api/inspect-sdk")
-def inspect_sdk():
-    try:
-        import inspect
-        from fragment_api import FragmentAPI
-
-        stars_code = ""
-        premium_code = ""
-        create_purchase_code = ""
-
-        try:
-            stars_code = inspect.getsource(FragmentAPI.buy_stars)
-        except Exception as e1:
-            stars_code = f"Error reading buy_stars: {e1}"
-
-        try:
-            premium_code = inspect.getsource(FragmentAPI.buy_premium)
-        except Exception as e2:
-            premium_code = f"Error reading buy_premium: {e2}"
-
-        try:
-            create_purchase_code = inspect.getsource(FragmentAPI.create_purchase)
-        except Exception as e3:
-            create_purchase_code = f"Error reading create_purchase: {e3}"
-
-        return {
-            "ok": True,
-            "buy_stars_code": stars_code,
-            "buy_premium_code": premium_code,
-            "create_purchase_code": create_purchase_code,
-        }
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
