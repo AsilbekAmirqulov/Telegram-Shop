@@ -1,3 +1,4 @@
+
 import os
 import asyncio
 import inspect
@@ -525,6 +526,100 @@ class FragmentService:
                 "API yakuniy natijani yoki purchase ID ni bermadi."
             ),
         }
+
+    # --------------------------------------------------
+    # XARIDDAN OLDIN MAVJUDLIKNI TEKSHIRISH
+    # --------------------------------------------------
+
+    async def check_stars_availability(
+        self,
+        username: str,
+        stars_amount: int,
+    ) -> bool:
+        """Stars xarididan oldin SDK orqali mavjudlikni tekshiradi.
+
+        Bu metod server.py kutayotgan wrapper nomini saqlaydi,
+        ammo SDK ning haqiqiy check_availability() metodidan foydalanadi.
+        Tekshiruv xato bersa, fail-closed tarzda False qaytaradi.
+        """
+        clean_username = username.strip().lstrip("@")
+
+        if (
+            isinstance(stars_amount, bool)
+            or not isinstance(stars_amount, int)
+            or not 50 <= stars_amount <= 1_000_000
+        ):
+            return False
+
+        checker = getattr(self.api, "check_availability", None)
+        if not callable(checker):
+            print("[SAFE LOG] Availability method missing for Stars")
+            return False
+
+        try:
+            result = await self._run_sync_or_async(
+                checker,
+                product="stars",
+                username=f"@{clean_username}",
+                amount=stars_amount,
+                payment_method="gram",
+            )
+            return self._field(result, "available", False) is True
+        except Exception as exc:
+            # Xatolik matni, username yoki maxfiy ma'lumot logga chiqarilmaydi.
+            retry_after = self._safe_number(
+                getattr(exc, "retry_after", None)
+            )
+            print(
+                "[SAFE LOG] Stars availability check failed:",
+                {
+                    "exception_type": type(exc).__name__,
+                    "retry_after": retry_after,
+                },
+            )
+            return False
+
+    async def check_premium_availability(
+        self,
+        username: str,
+        months: int,
+    ) -> bool:
+        """Premium sovg'asidan oldin SDK orqali mavjudlikni tekshiradi.
+
+        Tekshiruv muvaffaqiyatli va available=True bo'lsagina True qaytaradi.
+        Narxni band qilmaydi va xarid yaratmaydi.
+        """
+        clean_username = username.strip().lstrip("@")
+
+        if isinstance(months, bool) or months not in (3, 6, 12):
+            return False
+
+        checker = getattr(self.api, "check_availability", None)
+        if not callable(checker):
+            print("[SAFE LOG] Availability method missing for Premium")
+            return False
+
+        try:
+            result = await self._run_sync_or_async(
+                checker,
+                product="premium",
+                username=f"@{clean_username}",
+                amount=months,
+                payment_method="gram",
+            )
+            return self._field(result, "available", False) is True
+        except Exception as exc:
+            retry_after = self._safe_number(
+                getattr(exc, "retry_after", None)
+            )
+            print(
+                "[SAFE LOG] Premium availability check failed:",
+                {
+                    "exception_type": type(exc).__name__,
+                    "retry_after": retry_after,
+                },
+            )
+            return False
 
     # --------------------------------------------------
     # STARS
