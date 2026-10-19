@@ -2591,18 +2591,7 @@ Linkni do‘stlaringizga yuboring.
     }
 
 
-    // Navigatsiyaga qora fondagi qizil qo'ng'iroqcha tugmasini avtomatik qo'shish
-    const bottomNavEl = document.querySelector('.bottom-navigation');
-    if (bottomNavEl && !document.getElementById('navBellBtn')) {
-        const bellBtn = document.createElement('button');
-        bellBtn.type = 'button';
-        bellBtn.id = 'navBellBtn';
-        bellBtn.className = 'nav-bell-btn';
-        bellBtn.innerHTML = '🔔';
-        bellBtn.title = 'Bildirishnomalar';
-        bellBtn.addEventListener('click', openNotifications);
-        bottomNavEl.appendChild(bellBtn);
-    }
+  
 
 
     // =========================================================
