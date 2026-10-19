@@ -4080,3 +4080,32 @@ select:focus {
 .nav-item.active .nav-label {
     color: #2ea8ff;
 }
+/* =========================================================
+   BOTTOM NAVIGATION — MAJBURIY KO'RSATISH FIXI
+   ========================================================= */
+
+.bottom-navigation {
+    position: fixed !important;
+    z-index: 99999 !important;
+    left: 50% !important;
+    bottom: 12px !important;
+    transform: translateX(-50%) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-around !important;
+    width: calc(100% - 24px) !important;
+    max-width: 420px !important;
+    height: 60px !important;
+    padding: 0 10px !important;
+    border-radius: 28px !important;
+    background: rgba(10, 14, 20, 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+}
+
+/* Telefon ekranida pastki qism yopilib qolmasligi uchun body paddingi */
+body {
+    padding-bottom: 90px !important;
+}
