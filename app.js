@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // =========================================================
     // 1. SOZLAMALAR VA TELEGRAM WEB APP
     // =========================================================
-    const SERVER_URL = "https://telegram-shop-co3o.onrender.com";
+    const SERVER_URL = "https://telegram-shop-9liy.onrender.com";
     const tg = window.Telegram?.WebApp || null;
 
     if (tg) {
