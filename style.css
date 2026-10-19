@@ -4109,3 +4109,55 @@ select:focus {
 body {
     padding-bottom: 90px !important;
 }
+/* =========================================================
+   BOTTOM NAVIGATION & NOTIFICATION BELL FIX
+   ========================================================= */
+.bottom-navigation {
+    position: fixed !important;
+    z-index: 99999 !important;
+    left: 50% !important;
+    bottom: 12px !important;
+    transform: translateX(-50%) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-around !important;
+    width: calc(100% - 24px) !important;
+    max-width: 420px !important;
+    height: 60px !important;
+    padding: 0 10px !important;
+    border-radius: 28px !important;
+    background: rgba(10, 14, 20, 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+}
+
+/* Navigatsiyadagi bildirishnoma qo'ng'iroqcha tugmasi (rasmdagidek) */
+.nav-bell-btn {
+    position: absolute !important;
+    right: -6px !important;
+    top: -14px !important;
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 50% !important;
+    background: linear-gradient(135deg, #ff2d55, #ff375f) !important;
+    border: 2px solid rgba(10, 14, 20, 0.95) !important;
+    color: #fff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 15px rgba(255, 45, 85, 0.4) !important;
+    z-index: 100000 !important;
+    font-size: 18px !important;
+    transition: transform 0.2s ease !important;
+}
+
+.nav-bell-btn:active {
+    transform: scale(0.92) !important;
+}
+
+body {
+    padding-bottom: 90px !important;
+}
