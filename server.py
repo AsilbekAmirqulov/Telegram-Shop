@@ -1,3 +1,4 @@
+
 import os
 import re
 import json
@@ -5,18 +6,12 @@ import secrets
 import logging
 import urllib.request
 import urllib.error
-from typing import Optional
+from typing import Optional, Any
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from fastapi import (
-    FastAPI,
-    HTTPException,
-    Header,
-    Depends,
-    Query,
-)
+from fastapi import FastAPI, HTTPException, Header, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -28,7 +23,7 @@ from fragment import FragmentService
 
 
 # =========================================================
-# 1. LOG VA FASTAPI
+# 1. LOGGING VA FASTAPI
 # =========================================================
 
 logging.basicConfig(
@@ -39,7 +34,7 @@ logger = logging.getLogger("telegram_shop")
 
 app = FastAPI(
     title="Telegram Shop API",
-    version="2.0.0",
+    version="2.1.0",
 )
 
 app.add_middleware(
@@ -71,15 +66,14 @@ TG_API_ID = os.getenv("TG_API_ID", "").strip()
 TG_API_HASH = os.getenv("TG_API_HASH", "").strip()
 TG_SESSION = os.getenv("TG_SESSION", "").strip()
 
+# Xavfsizlik uchun hozircha false holatida qoldiring.
 FRAGMENT_PURCHASES_ENABLED = (
     os.getenv("FRAGMENT_PURCHASES_ENABLED", "false")
     .strip()
-    .lower()
-    == "true"
+    .lower() == "true"
 )
 
 fragment_api = FragmentService()
-
 telegram_client = None
 
 if TG_API_ID and TG_API_HASH and TG_SESSION:
@@ -90,9 +84,7 @@ if TG_API_ID and TG_API_HASH and TG_SESSION:
             TG_API_HASH,
         )
     except (ValueError, TypeError):
-        logger.exception(
-            "Telegram sozlamalarida xatolik"
-        )
+        logger.exception("Telegram sozlamalarida xatolik")
         telegram_client = None
 
 
@@ -138,9 +130,7 @@ def get_db_connection():
             cursor_factory=RealDictCursor,
         )
     except Exception:
-        logger.exception(
-            "Ma'lumotlar bazasiga ulanishda xatolik"
-        )
+        logger.exception("Database ulanishida xatolik")
         raise HTTPException(
             status_code=503,
             detail="Ma'lumotlar bazasiga ulanib bo'lmadi",
@@ -148,7 +138,7 @@ def get_db_connection():
 
 
 # =========================================================
-# 5. DATABASE TABLES
+# 5. DATABASE JADVALLARI VA MIGRATSIYA
 # =========================================================
 
 def init_db():
@@ -165,7 +155,6 @@ def init_db():
 
         with conn:
             with conn.cursor() as cur:
-
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS orders (
                         id SERIAL PRIMARY KEY,
@@ -178,17 +167,42 @@ def init_db():
                         stars INTEGER,
                         price_usd NUMERIC(12,4),
                         supplier_order_id TEXT,
-                        created_at TIMESTAMPTZ
-                            NOT NULL DEFAULT NOW()
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                     )
+                """)
+
+                # Eski jadval versiyalari uchun xavfsiz migratsiya.
+                cur.execute("""
+                    ALTER TABLE orders
+                    ADD COLUMN IF NOT EXISTS telegram_username TEXT
+                """)
+                cur.execute("""
+                    ALTER TABLE orders
+                    ADD COLUMN IF NOT EXISTS months INTEGER
+                """)
+                cur.execute("""
+                    ALTER TABLE orders
+                    ADD COLUMN IF NOT EXISTS stars INTEGER
+                """)
+                cur.execute("""
+                    ALTER TABLE orders
+                    ADD COLUMN IF NOT EXISTS price_usd NUMERIC(12,4)
+                """)
+                cur.execute("""
+                    ALTER TABLE orders
+                    ADD COLUMN IF NOT EXISTS supplier_order_id TEXT
+                """)
+                cur.execute("""
+                    ALTER TABLE orders
+                    ADD COLUMN IF NOT EXISTS created_at
+                    TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 """)
 
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS wallets (
                         user_id BIGINT PRIMARY KEY,
                         balance BIGINT NOT NULL DEFAULT 0,
-                        updated_at TIMESTAMPTZ
-                            NOT NULL DEFAULT NOW()
+                        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                     )
                 """)
 
@@ -199,8 +213,7 @@ def init_db():
                         type TEXT NOT NULL,
                         amount BIGINT NOT NULL,
                         description TEXT,
-                        created_at TIMESTAMPTZ
-                            NOT NULL DEFAULT NOW()
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                     )
                 """)
 
@@ -209,31 +222,23 @@ def init_db():
                         id SERIAL PRIMARY KEY,
                         referrer_id BIGINT NOT NULL,
                         referred_id BIGINT NOT NULL UNIQUE,
-                        created_at TIMESTAMPTZ
-                            NOT NULL DEFAULT NOW(),
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                         CHECK (referrer_id <> referred_id)
                     )
                 """)
 
                 cur.execute("""
-                    CREATE INDEX IF NOT EXISTS
-                    idx_orders_user_created
+                    CREATE INDEX IF NOT EXISTS idx_orders_user_created
                     ON orders(user_id, created_at DESC)
                 """)
 
                 cur.execute("""
-                    CREATE INDEX IF NOT EXISTS
-                    idx_wallet_tx_user_created
-                    ON wallet_transactions(
-                        user_id,
-                        created_at DESC
-                    )
+                    CREATE INDEX IF NOT EXISTS idx_wallet_tx_user_created
+                    ON wallet_transactions(user_id, created_at DESC)
                 """)
 
     except Exception:
-        logger.exception(
-            "Database jadvallarini yaratishda xatolik"
-        )
+        logger.exception("Database jadvallarini yaratishda xatolik")
         raise
 
     finally:
@@ -250,9 +255,7 @@ async def startup_event():
     try:
         init_db()
     except Exception:
-        logger.exception(
-            "Server ishga tushganda database xatoligi"
-        )
+        logger.exception("Database startup xatoligi")
 
     if telegram_client:
         try:
@@ -264,9 +267,7 @@ async def startup_event():
                 )
 
         except Exception:
-            logger.exception(
-                "Telegram client ulanishida xatolik"
-            )
+            logger.exception("Telegram client ulanishida xatolik")
 
 
 @app.on_event("shutdown")
@@ -275,9 +276,7 @@ async def shutdown_event():
         try:
             await telegram_client.disconnect()
         except Exception:
-            logger.exception(
-                "Telegram client uzilishida xatolik"
-            )
+            logger.exception("Telegram client uzilishida xatolik")
 
 
 # =========================================================
@@ -323,10 +322,7 @@ def require_body_admin_key(key: Optional[str]):
 
     if (
         not key
-        or not secrets.compare_digest(
-            str(key),
-            ADMIN_KEY,
-        )
+        or not secrets.compare_digest(str(key), ADMIN_KEY)
     ):
         raise HTTPException(
             status_code=403,
@@ -335,7 +331,7 @@ def require_body_admin_key(key: Optional[str]):
 
 
 # =========================================================
-# 8. USERNAME TEKSHIRISH
+# 8. TELEGRAM USERNAME TEKSHIRISH
 # =========================================================
 
 def clean_username(username: str) -> str:
@@ -344,10 +340,7 @@ def clean_username(username: str) -> str:
     if username.startswith("@"):
         username = username[1:]
 
-    if not re.fullmatch(
-        r"[A-Za-z0-9_]{5,32}",
-        username,
-    ):
+    if not re.fullmatch(r"[A-Za-z0-9_]{5,32}", username):
         raise HTTPException(
             status_code=400,
             detail="Telegram username noto'g'ri",
@@ -356,9 +349,7 @@ def clean_username(username: str) -> str:
     return username
 
 
-async def check_telegram_username(
-    username: str,
-) -> dict:
+async def check_telegram_username(username: str) -> dict:
     username = clean_username(username)
 
     if not telegram_client:
@@ -418,11 +409,7 @@ async def check_telegram_username(
 # 9. BALANS YORDAMCHI FUNKSIYALARI
 # =========================================================
 
-def get_wallet_row(
-    cur,
-    user_id: int,
-    lock: bool = False,
-):
+def get_wallet_row(cur, user_id: int, lock: bool = False):
     cur.execute(
         """
         INSERT INTO wallets (user_id, balance)
@@ -446,7 +433,7 @@ def get_wallet_row(
 
 
 # =========================================================
-# 10. MAHSULOTNI ANIQLASH VA NARXNI TEKSHIRISH
+# 10. MAHSULOTNI ANIQLASH VA NARX
 # =========================================================
 
 def classify_order(
@@ -456,22 +443,14 @@ def classify_order(
 ):
     product_name = (product or "").strip().lower()
 
-    if (
-        "star" in product_name
-        or "yulduz" in product_name
-    ):
+    if "star" in product_name or "yulduz" in product_name:
         if stars not in STARS_PRICES:
             raise HTTPException(
                 status_code=400,
                 detail="Stars paketi katalogda mavjud emas",
             )
 
-        return (
-            "stars",
-            STARS_PRICES[stars],
-            None,
-            stars,
-        )
+        return "stars", STARS_PRICES[stars], None, stars
 
     if "premium" in product_name:
         if months not in PREMIUM_PRICES:
@@ -480,12 +459,7 @@ def classify_order(
                 detail="Premium muddati katalogda mavjud emas",
             )
 
-        return (
-            "premium",
-            PREMIUM_PRICES[months],
-            months,
-            None,
-        )
+        return "premium", PREMIUM_PRICES[months], months, None
 
     raise HTTPException(
         status_code=400,
@@ -497,7 +471,67 @@ def classify_order(
 
 
 # =========================================================
-# 11. RESELLCODES API YORDAMCHISI
+# 11. FRAGMENT XIZMATINI XAVFSIZ TEKSHIRISH
+# =========================================================
+
+async def check_fragment_availability(
+    kind: str,
+    username: str,
+    quantity: int,
+) -> bool:
+    if kind == "premium":
+        method_name = "check_premium_availability"
+    elif kind == "stars":
+        method_name = "check_stars_availability"
+    else:
+        return False
+
+    method = getattr(fragment_api, method_name, None)
+
+    # Metod mavjud bo'lmasa, xizmatni mavjud deb hisoblamaymiz.
+    if not callable(method):
+        logger.error(
+            "Fragment tekshiruv metodi topilmadi: %s",
+            method_name,
+        )
+        return False
+
+    try:
+        result = await method(username, quantity)
+
+        # Faqat aniq True natija qabul qilinadi.
+        return result is True
+
+    except Exception:
+        logger.exception(
+            "Fragment mavjudligini tekshirishda xatolik"
+        )
+        return False
+
+
+def ensure_fragment_enabled():
+    if not FRAGMENT_PURCHASES_ENABLED:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Fragment xaridlari vaqtincha o'chirilgan. "
+                "Integratsiya tekshirilmaguncha xarid yoqilmaydi."
+            ),
+        )
+
+
+def normalize_supplier_result(result: Any) -> dict:
+    if isinstance(result, dict):
+        return result
+
+    return {
+        "ok": False,
+        "status": "reconciliation_required",
+    }
+
+
+# =========================================================
+# 12. RESELLCODES API
 # =========================================================
 
 def reseller_request(
@@ -511,10 +545,7 @@ def reseller_request(
             detail="Supplier API kaliti sozlanmagan",
         )
 
-    url = (
-        f"{RESELLCODES_BASE_URL}/"
-        f"{path.lstrip('/')}"
-    )
+    url = f"{RESELLCODES_BASE_URL}/{path.lstrip('/')}"
 
     body = (
         json.dumps(payload).encode("utf-8")
@@ -527,40 +558,29 @@ def reseller_request(
         data=body,
         method=method,
         headers={
-            "Authorization": (
-                f"Bearer {RESELLCODES_API_KEY}"
-            ),
+            "Authorization": f"Bearer {RESELLCODES_API_KEY}",
             "Content-Type": "application/json",
             "Accept": "application/json",
         },
     )
 
     try:
-        with urllib.request.urlopen(
-            request,
-            timeout=20,
-        ) as response:
+        with urllib.request.urlopen(request, timeout=20) as response:
             raw = response.read().decode(
                 "utf-8",
                 errors="replace",
             )
-
             return json.loads(raw) if raw else {}
 
     except urllib.error.HTTPError as exc:
-        logger.warning(
-            "Supplier API HTTP xatosi: %s",
-            exc.code,
-        )
+        logger.warning("Supplier API HTTP xatosi: %s", exc.code)
         raise HTTPException(
             status_code=502,
             detail="Supplier API so'rovni rad etdi",
         )
 
     except Exception:
-        logger.exception(
-            "Supplier API bilan aloqa xatosi"
-        )
+        logger.exception("Supplier API bilan aloqa xatosi")
         raise HTTPException(
             status_code=502,
             detail="Supplier API bilan aloqa o'rnatilmadi",
@@ -568,26 +588,20 @@ def reseller_request(
 
 
 # =========================================================
-# 12. REQUEST MODELLARI
+# 13. REQUEST MODELLARI
 # =========================================================
 
 class OrderRequest(BaseModel):
     user_id: int = Field(gt=0)
     product: str = Field(min_length=1, max_length=100)
     amount: int = Field(gt=0)
-    recipient_username: str = Field(
-        min_length=5,
-        max_length=33,
-    )
+    recipient_username: str = Field(min_length=5, max_length=33)
     months: Optional[int] = None
     stars: Optional[int] = None
 
 
 class StatusRequest(BaseModel):
-    status: str = Field(
-        min_length=1,
-        max_length=40,
-    )
+    status: str = Field(min_length=1, max_length=40)
 
 
 class AdminBalanceRequest(BaseModel):
@@ -605,27 +619,26 @@ class ReferralRequest(BaseModel):
 
 
 class PremiumTestRequest(BaseModel):
-    username: str = Field(
-        min_length=5,
-        max_length=33,
-    )
+    username: str = Field(min_length=5, max_length=33)
     months: int
 
 
 class BuyPremiumRequest(BaseModel):
-    username: str
+    username: str = Field(min_length=5, max_length=33)
     months: int
     admin_key: Optional[str] = None
+    request_id: str = Field(min_length=8, max_length=128)
 
 
 class BuyStarsRequest(BaseModel):
-    username: str
+    username: str = Field(min_length=5, max_length=33)
     stars_amount: int
     admin_key: Optional[str] = None
+    request_id: str = Field(min_length=8, max_length=128)
 
 
 # =========================================================
-# 13. ASOSIY ENDPOINTLAR
+# 14. ROOT, HEALTH, INFO
 # =========================================================
 
 @app.get("/")
@@ -659,14 +672,11 @@ async def info():
 
 
 # =========================================================
-# 14. KATALOG VA NARXLAR (SWAGGER VA FRONTEND UCHUN)
+# 15. KATALOG
 # =========================================================
 
 @app.get("/catalog/stars")
 async def get_stars_catalog():
-    """
-    Swagger va Frontend uchun mavjud barcha Stars paketlari va ularning narxlarini qaytaradi.
-    """
     return {
         "ok": True,
         "packages": [
@@ -678,9 +688,6 @@ async def get_stars_catalog():
 
 @app.get("/catalog/premium")
 async def get_premium_catalog():
-    """
-    Swagger va Frontend uchun mavjud barcha Premium muddatlari va ularning narxlarini qaytaradi.
-    """
     return {
         "ok": True,
         "packages": [
@@ -691,36 +698,28 @@ async def get_premium_catalog():
 
 
 # =========================================================
-# 15. TELEGRAM USERNAME TEKSHIRISH
+# 16. USERNAME TEKSHIRISH
 # =========================================================
 
 @app.get("/check-username")
 async def check_username(
-    username: str = Query(
-        min_length=5,
-        max_length=33,
-    ),
+    username: str = Query(min_length=5, max_length=33),
 ):
     return await check_telegram_username(username)
 
 
 # =========================================================
-# 16. FOYDALANUVCHI BALANSI
+# 17. FOYDALANUVCHI BALANSI
 # =========================================================
 
 @app.get("/balance")
-async def balance(
-    user_id: int = Query(gt=0),
-):
+async def balance(user_id: int = Query(gt=0)):
     conn = get_db_connection()
 
     try:
         with conn:
             with conn.cursor() as cur:
-                wallet = get_wallet_row(
-                    cur,
-                    user_id,
-                )
+                wallet = get_wallet_row(cur, user_id)
 
                 return {
                     "ok": True,
@@ -733,7 +732,7 @@ async def balance(
 
 
 # =========================================================
-# 17. BALANS TRANZAKSIYALARI
+# 18. BALANS TRANZAKSIYALARI
 # =========================================================
 
 @app.get("/wallet/transactions")
@@ -747,12 +746,7 @@ async def wallet_transactions(
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT
-                    id,
-                    type,
-                    amount,
-                    description,
-                    created_at
+                SELECT id, type, amount, description, created_at
                 FROM wallet_transactions
                 WHERE user_id = %s
                 ORDER BY created_at DESC
@@ -761,12 +755,10 @@ async def wallet_transactions(
                 (user_id, limit),
             )
 
-            rows = cur.fetchall()
-
             return {
                 "ok": True,
                 "transactions": [
-                    dict(row) for row in rows
+                    dict(row) for row in cur.fetchall()
                 ],
             }
 
@@ -775,7 +767,7 @@ async def wallet_transactions(
 
 
 # =========================================================
-# 18. ADMIN FOYDALANUVCHI BALANSINI TO'LDIRISHI
+# 19. ADMIN BALANS TO'LDIRISH
 # =========================================================
 
 @app.post("/admin/add-balance")
@@ -788,25 +780,17 @@ async def admin_add_balance(
     try:
         with conn:
             with conn.cursor() as cur:
-                get_wallet_row(
-                    cur,
-                    data.user_id,
-                    lock=True,
-                )
+                get_wallet_row(cur, data.user_id, lock=True)
 
                 cur.execute(
                     """
                     UPDATE wallets
-                    SET
-                        balance = balance + %s,
+                    SET balance = balance + %s,
                         updated_at = NOW()
                     WHERE user_id = %s
                     RETURNING balance
                     """,
-                    (
-                        data.amount,
-                        data.user_id,
-                    ),
+                    (data.amount, data.user_id),
                 )
 
                 wallet = cur.fetchone()
@@ -814,12 +798,7 @@ async def admin_add_balance(
                 cur.execute(
                     """
                     INSERT INTO wallet_transactions
-                    (
-                        user_id,
-                        type,
-                        amount,
-                        description
-                    )
+                    (user_id, type, amount, description)
                     VALUES (%s, %s, %s, %s)
                     """,
                     (
@@ -841,13 +820,11 @@ async def admin_add_balance(
 
 
 # =========================================================
-# 19. REFERAL RO'YXATDAN O'TKAZISH
+# 20. REFERAL
 # =========================================================
 
 @app.post("/referral")
-async def add_referral(
-    data: ReferralRequest,
-):
+async def add_referral(data: ReferralRequest):
     if data.user_id == data.referrer_id:
         raise HTTPException(
             status_code=400,
@@ -861,20 +838,12 @@ async def add_referral(
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    INSERT INTO referrals
-                    (
-                        referrer_id,
-                        referred_id
-                    )
+                    INSERT INTO referrals (referrer_id, referred_id)
                     VALUES (%s, %s)
-                    ON CONFLICT (referred_id)
-                    DO NOTHING
+                    ON CONFLICT (referred_id) DO NOTHING
                     RETURNING id
                     """,
-                    (
-                        data.referrer_id,
-                        data.user_id,
-                    ),
+                    (data.referrer_id, data.user_id),
                 )
 
                 created = cur.fetchone()
@@ -889,21 +858,12 @@ async def add_referral(
 
 
 # =========================================================
-# 20. YANGI BUYURTMA YARATISH
+# 21. YANGI BUYURTMA
 # =========================================================
 
 @app.post("/create-order")
-async def create_order(
-    order: OrderRequest,
-):
-    if not FRAGMENT_PURCHASES_ENABLED:
-        raise HTTPException(
-            status_code=503,
-            detail=(
-                "Avtomatik xarid vaqtincha o'chirilgan. "
-                "Xarid xavfsizligi tekshirilishi kerak."
-            ),
-        )
+async def create_order(order: OrderRequest):
+    ensure_fragment_enabled()
 
     kind, expected_price, months, stars = classify_order(
         order.product,
@@ -920,13 +880,9 @@ async def create_order(
             },
         )
 
-    username = clean_username(
-        order.recipient_username,
-    )
+    username = clean_username(order.recipient_username)
 
-    username_result = await check_telegram_username(
-        username,
-    )
+    username_result = await check_telegram_username(username)
 
     if not username_result.get("valid"):
         raise HTTPException(
@@ -937,44 +893,28 @@ async def create_order(
             ),
         )
 
-    try:
-        if kind == "premium":
-            if hasattr(fragment_api, "check_premium_availability"):
-                available = await fragment_api.check_premium_availability(
-                    username,
-                    months,
-                )
-            else:
-                available = True
-        else:
-            if hasattr(fragment_api, "check_stars_availability"):
-                available = await fragment_api.check_stars_availability(
-                    username,
-                    stars,
-                )
-            else:
-                available = True
+    quantity = months if kind == "premium" else stars
 
-    except Exception:
-        logger.exception(
-            "Supplier mavjudligini tekshirishda xatolik"
-        )
-
-        raise HTTPException(
-            status_code=502,
-            detail="Xizmat mavjudligini tekshirishda xatolik",
-        )
+    available = await check_fragment_availability(
+        kind,
+        username,
+        quantity,
+    )
 
     if not available:
         raise HTTPException(
             status_code=409,
-            detail="Bu xizmat hozir mavjud emas yoki tekshirilmadi",
+            detail=(
+                "Fragment xizmat mavjudligini tasdiqlamadi. "
+                "Balansdan pul yechilmadi."
+            ),
         )
 
     conn = get_db_connection()
     order_id = None
 
     try:
+        # Buyurtma va pul yechish bir DB tranzaksiyasida bajariladi.
         with conn:
             with conn.cursor() as cur:
                 wallet = get_wallet_row(
@@ -983,11 +923,7 @@ async def create_order(
                     lock=True,
                 )
 
-                current_balance = int(
-                    wallet["balance"]
-                )
-
-                if current_balance < expected_price:
+                if int(wallet["balance"]) < expected_price:
                     raise HTTPException(
                         status_code=400,
                         detail="Balans yetarli emas",
@@ -997,13 +933,8 @@ async def create_order(
                     """
                     INSERT INTO orders
                     (
-                        user_id,
-                        product,
-                        amount,
-                        status,
-                        telegram_username,
-                        months,
-                        stars
+                        user_id, product, amount, status,
+                        telegram_username, months, stars
                     )
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
@@ -1024,12 +955,10 @@ async def create_order(
                 cur.execute(
                     """
                     UPDATE wallets
-                    SET
-                        balance = balance - %s,
+                    SET balance = balance - %s,
                         updated_at = NOW()
-                    WHERE
-                        user_id = %s
-                        AND balance >= %s
+                    WHERE user_id = %s
+                      AND balance >= %s
                     RETURNING balance
                     """,
                     (
@@ -1039,9 +968,7 @@ async def create_order(
                     ),
                 )
 
-                updated_wallet = cur.fetchone()
-
-                if not updated_wallet:
+                if not cur.fetchone():
                     raise HTTPException(
                         status_code=400,
                         detail="Balans yetarli emas",
@@ -1050,12 +977,7 @@ async def create_order(
                 cur.execute(
                     """
                     INSERT INTO wallet_transactions
-                    (
-                        user_id,
-                        type,
-                        amount,
-                        description
-                    )
+                    (user_id, type, amount, description)
                     VALUES (%s, %s, %s, %s)
                     """,
                     (
@@ -1066,20 +988,19 @@ async def create_order(
                     ),
                 )
 
+        # Supplier javobi noaniq bo'lsa, avtomatik refund qilinmaydi.
         try:
             if kind == "premium":
-                result = (
-                    await fragment_api.init_gift_request(
-                        username,
-                        months,
-                    )
+                result = await fragment_api.init_gift_request(
+                    username,
+                    months,
+                    order_id=str(order_id),
                 )
             else:
-                result = (
-                    await fragment_api.init_buy_stars(
-                        username,
-                        stars,
-                    )
+                result = await fragment_api.init_buy_stars(
+                    username,
+                    stars,
+                    order_id=str(order_id),
                 )
 
         except Exception:
@@ -1087,17 +1008,12 @@ async def create_order(
                 "Buyurtma #%s supplier xatosi",
                 order_id,
             )
-
             result = {
                 "ok": False,
                 "status": "reconciliation_required",
             }
 
-        if not isinstance(result, dict):
-            result = {
-                "ok": False,
-                "status": "reconciliation_required",
-            }
+        result = normalize_supplier_result(result)
 
         supplier_status = str(
             result.get("status", "")
@@ -1113,6 +1029,7 @@ async def create_order(
             and supplier_status in {
                 "completed",
                 "success",
+                "succeeded",
                 "paid",
             }
         ):
@@ -1125,8 +1042,7 @@ async def create_order(
                 cur.execute(
                     """
                     UPDATE orders
-                    SET
-                        status = %s,
+                    SET status = %s,
                         supplier_order_id = %s
                     WHERE id = %s
                     """,
@@ -1149,9 +1065,8 @@ async def create_order(
                 "Buyurtma bajarildi"
                 if final_status == "completed"
                 else (
-                    "Buyurtma tekshiruvda. "
-                    "Supplier holati tasdiqlanmaguncha "
-                    "avtomatik refund amalga oshirilmaydi."
+                    "Buyurtma tekshiruvda. Supplier holati "
+                    "tasdiqlanmaguncha avtomatik refund qilinmaydi."
                 )
             ),
         }
@@ -1161,7 +1076,7 @@ async def create_order(
 
 
 # =========================================================
-# 21. FOYDALANUVCHINING BUYURTMALARI
+# 22. FOYDALANUVCHI BUYURTMALARI
 # =========================================================
 
 @app.get("/my-orders")
@@ -1175,16 +1090,8 @@ async def my_orders(
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT
-                    id,
-                    user_id,
-                    product,
-                    amount,
-                    status,
-                    telegram_username,
-                    months,
-                    stars,
-                    created_at
+                SELECT id, user_id, product, amount, status,
+                       telegram_username, months, stars, created_at
                 FROM orders
                 WHERE user_id = %s
                 ORDER BY created_at DESC
@@ -1193,12 +1100,10 @@ async def my_orders(
                 (user_id, limit),
             )
 
-            rows = cur.fetchall()
-
             return {
                 "ok": True,
                 "orders": [
-                    dict(row) for row in rows
+                    dict(row) for row in cur.fetchall()
                 ],
             }
 
@@ -1207,7 +1112,7 @@ async def my_orders(
 
 
 # =========================================================
-# 22. ADMIN BARCHA BUYURTMALARNI KO'RISHI
+# 23. ADMIN BARCHA BUYURTMALARI
 # =========================================================
 
 @app.get("/orders")
@@ -1221,18 +1126,9 @@ async def all_orders(
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT
-                    id,
-                    user_id,
-                    product,
-                    amount,
-                    status,
-                    telegram_username,
-                    months,
-                    stars,
-                    price_usd,
-                    supplier_order_id,
-                    created_at
+                SELECT id, user_id, product, amount, status,
+                       telegram_username, months, stars,
+                       price_usd, supplier_order_id, created_at
                 FROM orders
                 ORDER BY created_at DESC
                 LIMIT %s
@@ -1252,7 +1148,7 @@ async def all_orders(
 
 
 # =========================================================
-# 23. ADMIN BUYURTMA STATUSINI O'ZGARTIRISHI
+# 24. ADMIN BUYURTMA STATUSI
 # =========================================================
 
 @app.patch("/orders/{order_id}/status")
@@ -1288,10 +1184,7 @@ async def update_order_status(
                     WHERE id = %s
                     RETURNING id, status
                     """,
-                    (
-                        data.status,
-                        order_id,
-                    ),
+                    (data.status, order_id),
                 )
 
                 row = cur.fetchone()
@@ -1312,7 +1205,7 @@ async def update_order_status(
 
 
 # =========================================================
-# 24. RESELLCODES HISOBI
+# 25. RESELLCODES HISOBI
 # =========================================================
 
 @app.get("/supplier-account")
@@ -1323,7 +1216,7 @@ async def supplier_account(
 
 
 # =========================================================
-# 25. RESELLCODES PREMIUM NARXLARI
+# 26. RESELLCODES PREMIUM NARXLARI
 # =========================================================
 
 @app.get("/supplier-premium-prices")
@@ -1334,13 +1227,11 @@ async def supplier_premium_prices(
 
 
 # =========================================================
-# 26. PREMIUM TEST — XARID AMALGA OSHIRILMAYDI
+# 27. PREMIUM TEST — XARID QILMAYDI
 # =========================================================
 
 @app.post("/test-premium-buy")
-async def test_premium_buy(
-    data: PremiumTestRequest,
-):
+async def test_premium_buy(data: PremiumTestRequest):
     username = clean_username(data.username)
 
     if data.months not in (3, 6, 12):
@@ -1354,22 +1245,19 @@ async def test_premium_buy(
     if not check.get("valid"):
         raise HTTPException(
             status_code=400,
-            detail=check.get(
-                "message",
-                "Username tekshirilmadi",
-            ),
+            detail=check.get("message", "Username tekshirilmadi"),
         )
 
     return {
         "ok": True,
         "username": username,
         "months": data.months,
-        "message": "Username tekshirildi. Test endpoint xarid qilmaydi.",
+        "message": "Username tekshirildi. Bu endpoint xarid qilmaydi.",
     }
 
 
 # =========================================================
-# 27. DATABASE TEST
+# 28. DATABASE TEST
 # =========================================================
 
 @app.get("/database-test")
@@ -1393,24 +1281,17 @@ async def database_test(
 
 
 # =========================================================
-# 28. TO'G'RIDAN-TO'G'RI PREMIUM XARIDI
+# 29. TO'G'RIDAN-TO'G'RI PREMIUM XARIDI — ADMIN
 # =========================================================
 
 @app.post("/api/buy-premium")
-async def api_buy_premium(
-    data: BuyPremiumRequest,
-):
+async def api_buy_premium(data: BuyPremiumRequest):
     require_body_admin_key(data.admin_key)
-
-    if not FRAGMENT_PURCHASES_ENABLED:
-        raise HTTPException(
-            status_code=503,
-            detail="Fragment xaridlari xavfsizlik sabab o'chirilgan",
-        )
+    ensure_fragment_enabled()
 
     username = clean_username(data.username)
 
-    if data.months not in (3, 6, 12):
+    if data.months not in PREMIUM_PRICES:
         raise HTTPException(
             status_code=400,
             detail="Faqat 3, 6 yoki 12 oy",
@@ -1421,63 +1302,45 @@ async def api_buy_premium(
     if not check.get("valid"):
         raise HTTPException(
             status_code=400,
-            detail=check.get(
-                "message",
-                "Username tekshirilmadi",
-            ),
+            detail=check.get("message", "Username tekshirilmadi"),
+        )
+
+    available = await check_fragment_availability(
+        "premium",
+        username,
+        data.months,
+    )
+
+    if not available:
+        raise HTTPException(
+            status_code=409,
+            detail="Premium mavjudligi tasdiqlanmadi",
         )
 
     try:
-        if hasattr(fragment_api, "check_premium_availability"):
-            available = await fragment_api.check_premium_availability(
-                username,
-                data.months,
-            )
-        else:
-            available = True
-
-        if not available:
-            raise HTTPException(
-                status_code=409,
-                detail="Premium mavjudligi tasdiqlanmadi",
-            )
-
         result = await fragment_api.init_gift_request(
             username,
             data.months,
+            order_id=data.request_id,
         )
-
-        return result
-
-    except HTTPException:
-        raise
+        return normalize_supplier_result(result)
 
     except Exception:
-        logger.exception(
-            "To'g'ridan-to'g'ri Premium xaridida xatolik"
-        )
-
+        logger.exception("To'g'ridan-to'g'ri Premium xaridida xatolik")
         raise HTTPException(
             status_code=502,
-            detail="Premium xarid so'rovi xatolik bilan yakunlandi",
+            detail="Premium so'rovida xatolik. Xarid holatini tekshiring.",
         )
 
 
 # =========================================================
-# 29. TO'G'RIDAN-TO'G'RI STARS XARIDI
+# 30. TO'G'RIDAN-TO'G'RI STARS XARIDI — ADMIN
 # =========================================================
 
 @app.post("/api/buy-stars")
-async def api_buy_stars(
-    data: BuyStarsRequest,
-):
+async def api_buy_stars(data: BuyStarsRequest):
     require_body_admin_key(data.admin_key)
-
-    if not FRAGMENT_PURCHASES_ENABLED:
-        raise HTTPException(
-            status_code=503,
-            detail="Fragment xaridlari xavfsizlik sabab o'chirilgan",
-        )
+    ensure_fragment_enabled()
 
     username = clean_username(data.username)
 
@@ -1492,50 +1355,39 @@ async def api_buy_stars(
     if not check.get("valid"):
         raise HTTPException(
             status_code=400,
-            detail=check.get(
-                "message",
-                "Username tekshirilmadi",
-            ),
+            detail=check.get("message", "Username tekshirilmadi"),
+        )
+
+    available = await check_fragment_availability(
+        "stars",
+        username,
+        data.stars_amount,
+    )
+
+    if not available:
+        raise HTTPException(
+            status_code=409,
+            detail="Stars mavjudligi tasdiqlanmadi",
         )
 
     try:
-        if hasattr(fragment_api, "check_stars_availability"):
-            available = await fragment_api.check_stars_availability(
-                username,
-                data.stars_amount,
-            )
-        else:
-            available = True
-
-        if not available:
-            raise HTTPException(
-                status_code=409,
-                detail="Stars mavjudligi tasdiqlanmadi",
-            )
-
         result = await fragment_api.init_buy_stars(
             username,
             data.stars_amount,
+            order_id=data.request_id,
         )
-
-        return result
-
-    except HTTPException:
-        raise
+        return normalize_supplier_result(result)
 
     except Exception:
-        logger.exception(
-            "To'g'ridan-to'g'ri Stars xaridida xatolik"
-        )
-
+        logger.exception("To'g'ridan-to'g'ri Stars xaridida xatolik")
         raise HTTPException(
             status_code=502,
-            detail="Stars xarid so'rovida xatolik",
+            detail="Stars so'rovida xatolik. Xarid holatini tekshiring.",
         )
 
 
 # =========================================================
-# 30. WALLET HOLATI — FAQAT ADMIN UCHUN
+# 31. WALLET HOLATI — ADMIN
 # =========================================================
 
 @app.get("/api/wallet-info")
@@ -1556,7 +1408,7 @@ async def api_wallet_info(
 
 
 # =========================================================
-# 31. SDK WALLET TEKSHIRUVI — XAVFSIZLIK SABABLI O'CHIRILGAN
+# 32. SDK WALLET TEKSHIRUVI — O'CHIRILGAN
 # =========================================================
 
 @app.get("/api/check-sdk-wallet")
@@ -1573,7 +1425,7 @@ async def api_check_sdk_wallet(
 
 
 # =========================================================
-# 32. WALLET TRANZAKSIYALARI UCHUN MOSLIK ALIASI
+# 33. WALLET TRANZAKSIYALARI ALIASI
 # =========================================================
 
 @app.get("/api/wallet-transactions")
