@@ -52,6 +52,7 @@ app.add_middleware(
 
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 ADMIN_KEY = os.getenv("ADMIN_KEY", "").strip()
+BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 
 RESELLCODES_API_KEY = os.getenv(
     "RESELLCODES_API_KEY", ""
