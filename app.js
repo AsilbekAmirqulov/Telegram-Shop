@@ -172,8 +172,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let searchTimer = null;
 
-    // MUHIM:
-    // Foydalanuvchining joriy wallet balansi
     let currentBalance = 0;
 
 
@@ -727,7 +725,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // =========================================================
-    // USERNAME VALIDATSIYA (TO'G'RILANDI)
+    // USERNAME VALIDATSIYA (QAT'IY TEKSHIRUV)
     // =========================================================
 
     function isValidUsername(username) {
@@ -735,7 +733,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const clean =
             normalizeUsername(username);
 
-        // Telegram username qoidalari: 5-32 belgi, faqat lotin harflari, raqamlar va pastki chiziq
         return /^[A-Za-z0-9_]{5,32}$/
             .test(clean);
 
@@ -753,7 +750,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return {
                 ok: false,
                 message:
-                    "Username 5–32 ta belgidan iborat va faqat harf, raqam, pastki chiziqdan iborat bo‘lishi kerak."
+                    "⚠️ Username 5–32 ta belgidan iborat va faqat harf, raqam, pastki chiziqdan iborat bo‘lishi kerak."
             };
 
         }
@@ -769,18 +766,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!response.ok) {
 
-                // Agar serverda check-username endpoint ishlamasa yoki xato bersa, 
-                // format to'g'ri bo'lsa uni muvaffaqiyatli deb qabul qilamiz (xato chiqarmasligi uchun)
                 return {
-                    ok: true,
-                    username: clean
+                    ok: false,
+                    message:
+                        "Bunday Telegram username mavjud emas."
                 };
 
             }
 
 
-            const data =
-                await response.json();
+            let data;
+
+            try {
+
+                data =
+                    await response.json();
+
+            } catch (e) {
+
+                return {
+                    ok: false,
+                    message:
+                        "Bunday Telegram username mavjud emas."
+                };
+
+            }
 
 
             if (
@@ -803,7 +813,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ok: false,
                 message:
                     data.message ||
-                    "Username topilmadi."
+                    "Bunday Telegram username mavjud emas."
             };
 
 
@@ -814,10 +824,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 error
             );
 
-            // Tarmoq xatosi bo'lganda ham to'g'ri formatdagi usernameni o'tkazish
             return {
-                ok: true,
-                username: clean
+                ok: false,
+                message:
+                    "Bunday Telegram username mavjud emas yoki topilmadi."
             };
 
         }
@@ -1117,7 +1127,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                                     status.textContent =
                                         result.message ||
-                                        "Username topilmadi.";
+                                        "Bunday Telegram username mavjud emas.";
 
                                     status.className =
                                         "username-status error";
@@ -2000,7 +2010,6 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
 
-        // Balansni yangilab olamiz
         await loadBalance();
 
 
@@ -2104,20 +2113,10 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
 
-            if (!response.ok) {
+            if (!response.ok || data.ok === false) {
 
                 throw new Error(
                     data.detail ||
-                    data.message ||
-                    "Buyurtma yaratilmadi."
-                );
-
-            }
-
-
-            if (data.ok === false) {
-
-                throw new Error(
                     data.message ||
                     "Buyurtma yaratilmadi."
                 );
@@ -2186,7 +2185,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // =========================================================
-    // BUYURTMALAR (XATOLIKNI OLDINI OLISH UCHUN TUZATILDI)
+    // BUYURTMALAR (XATOSIZ YUKLANISH)
     // =========================================================
 
     async function loadOrders() {
@@ -2245,20 +2244,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
 
 
-            let data = {};
+            const contentType =
+                response.headers.get("content-type");
 
-            try {
-
-                data =
-                    await response.json();
-
-            } catch (jsonError) {
+            if (
+                !contentType ||
+                !contentType.includes("application/json")
+            ) {
 
                 throw new Error(
-                    "Server javobini o‘qib bo‘lmadi."
+                    "Server tayyorlanmoqda..."
                 );
 
             }
+
+
+            const data =
+                await response.json();
 
 
             if (!response.ok) {
@@ -2365,7 +2367,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     </h3>
 
                     <p>
-                        Buyurtmalarni yuklab bo‘lmadi. Server bilan aloqani tekshiring.
+                        Server bilan aloqani tekshiring yoki qayta urining.
                     </p>
 
                     <button
@@ -3360,6 +3362,20 @@ Linkni do‘stlaringizga yuboring.
             openNotifications
         );
 
+    }
+
+
+    // Navigatsiyaga qora fondagi qizil qo'ng'iroqcha tugmasini avtomatik qo'shish
+    const bottomNavEl = document.querySelector('.bottom-navigation');
+    if (bottomNavEl && !document.getElementById('navBellBtn')) {
+        const bellBtn = document.createElement('button');
+        bellBtn.type = 'button';
+        bellBtn.id = 'navBellBtn';
+        bellBtn.className = 'nav-bell-btn';
+        bellBtn.innerHTML = '🔔';
+        bellBtn.title = 'Bildirishnomalar';
+        bellBtn.addEventListener('click', openNotifications);
+        bottomNavEl.appendChild(bellBtn);
     }
 
 
