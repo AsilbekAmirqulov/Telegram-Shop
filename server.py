@@ -20,6 +20,10 @@ from telethon.sessions import StringSession
 from telethon.tl.functions.contacts import ResolveUsernameRequest
 
 from fragment import FragmentService
+import hmac
+import hashlib
+import time
+from urllib.parse import parse_qsl
 
 
 # =========================================================
@@ -53,6 +57,69 @@ app.add_middleware(
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 ADMIN_KEY = os.getenv("ADMIN_KEY", "").strip()
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
+
+def verify_telegram_init_data(init_data: str):
+    """Telegram Mini App initData imzosini tekshiradi va tasdiqlangan userni qaytaradi."""
+    if not BOT_TOKEN:
+        raise HTTPException(
+            status_code=500,
+            detail="BOT_TOKEN serverda sozlanmagan"
+        )
+
+    if not init_data:
+        raise HTTPException(
+            status_code=401,
+            detail="Telegram autentifikatsiya ma'lumoti yuborilmadi"
+        )
+
+    try:
+        parsed = dict(parse_qsl(init_data, keep_blank_values=True))
+        received_hash = parsed.pop("hash", None)
+
+        if not received_hash:
+            raise ValueError("hash mavjud emas")
+
+        # Telegram Web App imzosini tekshirish
+        data_check_string = "\n".join(
+            f"{key}={value}" for key, value in sorted(parsed.items())
+        )
+
+        secret_key = hmac.new(
+            b"WebAppData",
+            BOT_TOKEN.encode("utf-8"),
+            hashlib.sha256
+        ).digest()
+
+        calculated_hash = hmac.new(
+            secret_key,
+            data_check_string.encode("utf-8"),
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(calculated_hash, received_hash):
+            raise ValueError("imzo mos kelmadi")
+
+        # Eskirgan initData'ni qabul qilmaslik
+        auth_date = int(parsed.get("auth_date", "0"))
+        if auth_date <= 0 or abs(time.time() - auth_date) > 86400:
+            raise ValueError("autentifikatsiya ma'lumoti eskirgan")
+
+        user = json.loads(parsed.get("user", "{}"))
+        user_id = user.get("id")
+
+        if not isinstance(user_id, int):
+            raise ValueError("Telegram user ID topilmadi")
+
+        return user
+
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=401,
+            detail="Telegram autentifikatsiyasini tekshirib bo'lmadi"
+        )
+
 
 RESELLCODES_API_KEY = os.getenv(
     "RESELLCODES_API_KEY", ""
