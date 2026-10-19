@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
         { stars: 1000, price: 244000 },
         { stars: 1500, price: 365000 },
         { stars: 2500, price: 605000 },
-        { stars: 5000, price: 1205005 }
+        { stars: 5000, price: 1205000 }
     ];
 
     // =========================================================
